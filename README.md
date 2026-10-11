@@ -2,7 +2,7 @@
 
 Personal Home Assistant fork of [mr-reb00t/marco](https://github.com/mr-reb00t/marco), maintained at [mmihaylov00/marco](https://github.com/mmihaylov00/marco).
 
-Marco displays family calendars, weather, photos, local events, birthdays and Home Assistant announcements in a browser. Each screen has its own layout and private link. This fork uses English throughout and starts without sample calendars, news feeds or demo data.
+Marco displays family calendars, weather, photos, local events, birthdays and Home Assistant announcements in a browser. Each screen has its own layout. This fork uses English throughout and starts without sample calendars, news feeds or demo data.
 
 ## Install in Home Assistant
 
@@ -18,9 +18,9 @@ The [connection and installation guide](DOCS.md) explains the bundled HA integra
 
 ## Display
 
-Open a screen's private link from **Connected screens**, or open `/pair` on a display and claim its code in the admin. Use the admin preview to try layout changes before saving.
+Open a screen from **Connected screens** using your Home Assistant session. Use the admin preview to try layout changes before saving. The HA app does not require a separate pairing code.
 
-The display keeps cached data for network interruptions and refreshes when the server returns. Private links and paired-device tokens protect the displayed calendar data. See [the security policy](SECURITY.md).
+The display keeps cached data for network interruptions and refreshes when the server returns. Home Assistant authenticates access to the display and admin. See [the security policy](SECURITY.md).
 
 Useful display URL overrides include `?lite=1` for reduced graphics, `?weeks=2` for a shorter grid, `?compact=0` for normal-sized event rows, `?marquee=0` to stop scrolling titles, and `?rotate=0` to stop paging busy days. Append overrides with `&` when the URL already has a query string.
 
