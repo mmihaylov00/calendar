@@ -362,6 +362,51 @@ test('server/weather.js: one call for every language, cached until expiry, stale
   }
 });
 
+test('server/weather.js: HA weather and indoor temperatures use the configured display units', async () => {
+  const store = await import('../store.js');
+  const weather = await import('../weather.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'marco-ha-weather-'));
+  const originalFetch = globalThis.fetch;
+  store.initStore(dir);
+  store.updateSecrets((s) => { s.homeassistant.token = 'test-token'; });
+  let reading;
+  globalThis.fetch = fakeFetch((url) => {
+    if (url.endsWith('/api/states/weather.home')) return { body: {
+      state: 'sunny', attributes: { temperature: reading.temp, apparent_temperature: reading.feelsLike, temperature_unit: reading.unit },
+    } };
+    if (url.endsWith('/api/states/sensor.indoor_temperature')) return { body: {
+      state: reading.indoor, attributes: { unit_of_measurement: reading.unit },
+    } };
+    throw new Error(`Unexpected HA request: ${url}`);
+  });
+  weather.setWeatherFetch(fakeFetch(() => ({ body: json('open-meteo-lisbon.json') })));
+  try {
+    for (const c of [
+      { units: 'metric', unit: '°F', temp: 68, feelsLike: 59, indoor: '77', expected: [20, 15, 25] },
+      { units: 'imperial', unit: '°C', temp: 20, feelsLike: 15, indoor: '25', expected: [68, 59, 77] },
+      { units: 'metric', unit: '°C', temp: 20, feelsLike: 15, indoor: '25', expected: [20, 15, 25] },
+      { units: 'imperial', unit: '°F', temp: 68, feelsLike: 59, indoor: '77', expected: [68, 59, 77] },
+      { units: 'metric', unit: 'K', temp: 293.15, feelsLike: 288.15, indoor: '298.15', expected: [20, 15, 25] },
+      { units: 'metric', unit: '°C', temp: 'unavailable', feelsLike: 'unknown', indoor: 'unavailable', expected: [null, null, null] },
+    ]) {
+      reading = c;
+      const cfg = store.getConfig();
+      const saved = store.saveConfig({
+        ...cfg,
+        homeassistant: { ...cfg.homeassistant, enabled: true, url: 'http://homeassistant.test' },
+        weather: { ...cfg.weather, provider: 'homeassistant', units: c.units, haWeatherEntity: 'weather.home', haIndoorTempEntity: 'sensor.indoor_temperature' },
+      });
+      assert.equal(saved.ok, true, JSON.stringify(saved.errors));
+      const w = await weather.getWeather({ lang: 'en' });
+      assert.deepEqual([w.current.temp, w.current.feelsLike, w.indoor.temp], c.expected, `${c.unit} → ${c.units}`);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    weather.setWeatherFetch(null);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('admin API: weather key is stored, never sent back, checked once, and required to save Pirate Weather', async () => {
   const store = await import('../store.js');
   const weather = await import('../weather.js');

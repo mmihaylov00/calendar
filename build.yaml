@@ -1,0 +1,3 @@
+args:
+  # Supervisor's /data bind mount is owned by root; startup drops to node after creating /data/marco.
+  MARCO_RUNTIME_USER: root

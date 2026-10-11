@@ -61,6 +61,43 @@ test('tokens: format, only the sha256 hash is stored, lookup, revoke, max', () =
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('secrets: failed writes roll back revocation and credentials, preserving pending counters', (t) => {
+  const dir = setup();
+  store.updateSecrets((s) => { s.passwordHash = 'old-password'; s.sessionEpoch = 'old-epoch'; });
+  const { token, info } = createToken('Home Assistant');
+  const secrets = store.getSecrets();
+  const saved = fs.readFileSync(store.paths.secrets, 'utf8');
+  findToken(token).useCount = 3; // usage counters are changed in place before their next flush
+  const rename = fs.renameSync;
+  t.mock.method(fs, 'renameSync', (from, to) => {
+    if (to === store.paths.secrets) throw Object.assign(new Error('disk unavailable'), { code: 'EIO' });
+    return rename(from, to);
+  });
+  try {
+    assert.throws(() => revokeToken(info.id), { code: 'EIO' });
+    assert.equal(store.getSecrets(), secrets);
+    assert.equal(findToken(token).id, info.id);
+    assert.equal(findToken(token).useCount, 3);
+    assert.throws(() => store.updateSecrets((s) => {
+      s.passwordHash = 'failed-password';
+      s.sessionEpoch = 'failed-epoch';
+      s.newSecret = 'failed-secret';
+    }), { code: 'EIO' });
+    assert.equal(secrets.passwordHash, 'old-password');
+    assert.equal(secrets.sessionEpoch, 'old-epoch');
+    assert.equal(secrets.newSecret, undefined);
+    assert.equal(fs.readFileSync(store.paths.secrets, 'utf8'), saved);
+    assert.ok(!listActivity({ type: 'token' }).items.some((item) => item.type === 'token.revoked'));
+    t.mock.restoreAll();
+    assert.equal(revokeToken(info.id), true);
+    assert.equal(findToken(token), null);
+    assert.deepEqual(JSON.parse(fs.readFileSync(store.paths.secrets, 'utf8')).apiTokens, []);
+  } finally {
+    t.mock.restoreAll();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('tokens: sliding-window rate limit and throttled rejection log', () => {
   const dir = setup();
   const t0 = 1_000_000;

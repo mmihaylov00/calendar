@@ -1,3 +1,8 @@
+This Home Assistant fork adds app packaging and fixes Google Calendar reconnects, privacy-state persistence,
+and Home Assistant temperature conversion. Add `https://github.com/mmihaylov00/marco` as a custom app repository
+and follow [the Home Assistant guide](DOCS.md). Google Calendar supports both OAuth and private iCal feeds.
+Original Marco project: [mr-reb00t/marco](https://github.com/mr-reb00t/marco).
+
 <div align="center">
 
 <picture>

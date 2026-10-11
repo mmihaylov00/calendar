@@ -311,7 +311,7 @@ export async function googleCallbackHandler(req, res) {
     const e = String(req.query.error);
     return failEarly(GOOGLE_ERRORS.has(e) ? `google_${e}` : 'google_error');
   }
-  if (!state || !nonce || state.n.length !== nonce.length || !crypto.timingSafeEqual(Buffer.from(state.n), Buffer.from(nonce))
+  if (!state || typeof nonce !== 'string' || !nonce || Buffer.byteLength(state.n) !== Buffer.byteLength(nonce) || !crypto.timingSafeEqual(Buffer.from(state.n), Buffer.from(nonce))
     || !purpose || state.p !== purpose) {
     return failEarly('invalid_state');
   }
@@ -328,7 +328,7 @@ export async function googleCallbackHandler(req, res) {
   if (purpose === 'connect') {
     if (!sessionValid(req)) return fail('login_required');
     if (!tokens.refresh_token && !getSecrets().google.accounts[profile.email]?.refresh_token) return fail('no_refresh_token');
-    if (!String(tokens.scope || '').includes(google.CAL_SCOPE)) return fail('calendar_scope_denied');
+    if (!String(tokens.scope || '').split(/\s+/).includes(google.CAL_SCOPE)) return fail('calendar_scope_denied');
     google.storeAccount(profile, tokens);
     logActivity('google.connected', { req, data: { email: profile.email } });
     return res.redirect(`/admin/?connected=${encodeURIComponent(profile.email)}`);

@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, statSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { loadWebModules } from './webModules.js';
@@ -25,6 +25,8 @@ function readZip(buf) {
   const out = [];
   for (let i = 0; i < count; i++) {
     assert.equal(v.getUint32(p, true), 0x02014b50);
+    assert.equal(v.getUint16(p + 8, true) & 0x0800, 0x0800);
+    assert.equal(v.getUint32(p + 38, true) >>> 16, 0o100644);
     const crc = v.getUint32(p + 16, true);
     const size = v.getUint32(p + 20, true);
     const nameLen = v.getUint16(p + 28, true);
@@ -62,6 +64,8 @@ test('zipParts builds a stored archive that reads back entry by entry', () => {
       writeFileSync(path.join(dir, 'x.zip'), buf);
       execFileSync('unzip', ['-q', path.join(dir, 'x.zip'), '-d', path.join(dir, 'out')]);
       assert.deepEqual([...readFileSync(path.join(dir, 'out', 'a.jpg'))], [...a]);
+      assert.equal(Buffer.compare(readFileSync(path.join(dir, 'out', 'señal.png')), Buffer.from(b)), 0);
+      if (process.platform !== 'win32') assert.ok(statSync(path.join(dir, 'out', 'señal.png')).mode & 0o400, 'extracted photos remain readable');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

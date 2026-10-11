@@ -72,7 +72,7 @@ export function zipParts(entries: ZipEntry[]): Uint8Array[] {
     const cd = new Uint8Array(46 + name.length);
     const cv = new DataView(cd.buffer);
     cv.setUint32(0, 0x02014b50, true);
-    cv.setUint16(4, 20, true); // made by
+    cv.setUint16(4, 0x0314, true); // Unix creator avoids legacy unzip recoding UTF-8 names as DOS text
     cv.setUint16(6, 20, true);
     cv.setUint16(8, 0x0800, true);
     cv.setUint16(10, 0, true);
@@ -82,6 +82,7 @@ export function zipParts(entries: ZipEntry[]): Uint8Array[] {
     cv.setUint32(20, size, true);
     cv.setUint32(24, size, true);
     cv.setUint16(28, name.length, true);
+    cv.setUint32(38, 0o100644 << 16, true); // Unix regular file, mode 0644
     cv.setUint32(42, offset, true);
     cd.set(name, 46);
     central.push(cd);

@@ -208,8 +208,16 @@ export function updateConfig(fn, opts = {}) {
 }
 
 export function updateSecrets(fn) {
-  fn(secrets);
-  writeFileAtomic(paths.secrets, JSON.stringify(secrets, null, 2), 0o600);
+  const prev = structuredClone(secrets);
+  try {
+    fn(secrets);
+    writeFileAtomic(paths.secrets, JSON.stringify(secrets, null, 2), 0o600);
+  } catch (err) {
+    // Keep the root object stable for callers holding getSecrets() across an await.
+    for (const key of Object.keys(secrets)) delete secrets[key];
+    Object.assign(secrets, prev);
+    throw err;
+  }
   return secrets;
 }
 

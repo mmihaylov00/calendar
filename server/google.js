@@ -62,15 +62,19 @@ async function tokenRequest(params) {
     throwOnError: false,
   });
   let json;
-  try { json = JSON.parse(res.text); } catch { json = {}; }
+  try { json = JSON.parse(res.text); } catch { throw new HttpError('Google token error: invalid JSON response', res.ok ? 502 : res.status); }
+  if (!json || typeof json !== 'object' || Array.isArray(json)) throw new HttpError('Google token error: invalid response', res.ok ? 502 : res.status);
   if (!res.ok) throw new HttpError(`Google token error: ${json.error_description || json.error || res.status}`, res.status);
+  if (typeof json.access_token !== 'string' || !json.access_token || !Number.isFinite(json.expires_in) || json.expires_in <= 0) {
+    throw new HttpError('Google token error: invalid token response', 502);
+  }
   return json;
 }
 
 export async function exchangeCode(req, code) {
   const tok = await tokenRequest({ code, grant_type: 'authorization_code', redirect_uri: redirectUri(req) });
   const info = await requestJson(USERINFO_URL, { headers: { authorization: `Bearer ${tok.access_token}` } });
-  if (!info.email || info.email_verified === false) throw new Error('Google account email not verified');
+  if (typeof info?.email !== 'string' || !info.email || info.email_verified !== true) throw new Error('Google account email not verified');
   return { tokens: tok, profile: { email: info.email.toLowerCase(), name: info.name || info.email, picture: info.picture || '' } };
 }
 
@@ -106,11 +110,11 @@ export async function removeAccount(email) {
 }
 
 const refreshing = new Map();
-/** Valid access token for an account, refreshing when it expires within 60 s. */
-export async function getAccessToken(email) {
+/** Valid access token for an account, refreshing within 60 s of expiry or after Google rejects it. */
+export async function getAccessToken(email, rejectedToken) {
   const acct = getSecrets().google.accounts[email];
   if (!acct) throw new Error(`Google account not connected: ${email}`);
-  if (acct.access_token && acct.expiry > Date.now() + 60_000) return acct.access_token;
+  if (acct.access_token && acct.access_token !== rejectedToken && acct.expiry > Date.now() + 60_000) return acct.access_token;
   if (!acct.refresh_token) throw new Error(`No refresh token for ${email}; reconnect the account`);
   if (!googleConfigured()) throw new Error('Google OAuth not configured (GOOGLE_CLIENT_ID/SECRET)');
   if (!refreshing.has(email)) {
@@ -133,11 +137,13 @@ export async function getAccessToken(email) {
   return refreshing.get(email);
 }
 
-async function api(email, url) {
-  const token = await getAccessToken(email);
+async function api(email, url, rejectedToken) {
+  const token = await getAccessToken(email, rejectedToken);
   const res = await request(url, { headers: { authorization: `Bearer ${token}` }, throwOnError: false });
+  if (res.status === 401 && !rejectedToken) return api(email, url, token);
   let json;
-  try { json = JSON.parse(res.text); } catch { json = {}; }
+  try { json = JSON.parse(res.text); } catch { throw new HttpError('Google API: invalid JSON response', res.ok ? 502 : res.status); }
+  if (!json || typeof json !== 'object' || Array.isArray(json)) throw new HttpError('Google API: invalid response', res.ok ? 502 : res.status);
   if (!res.ok) throw new HttpError(`Google API: ${json.error?.message || `HTTP ${res.status}`}`, res.status);
   return json;
 }

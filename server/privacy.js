@@ -30,8 +30,8 @@ function load() {
   told = new Map(getConfig().screens.map((s) => [s.id, privacyStatus(getConfig(), s, states[s.id]).active]));
 }
 
-function save() {
-  try { writeFileAtomic(file(), JSON.stringify({ screens: states }, null, 2)); } catch (err) { console.warn('[privacy] save failed:', err.message); }
+function save(next) {
+  writeFileAtomic(file(), JSON.stringify({ screens: next }, null, 2));
 }
 
 /** Stored manual state of one screen (undefined when none). */
@@ -66,7 +66,9 @@ export function syncPrivacy(now = new Date()) {
   load();
   const cfg = getConfig();
   const pruned = pruneStates(cfg, states, now);
-  if (Object.keys(pruned).length !== Object.keys(states).length) { states = pruned; save(); }
+  if (Object.keys(pruned).length !== Object.keys(states).length) {
+    try { save(pruned); states = pruned; } catch (err) { console.warn('[privacy] save failed:', err.message); }
+  }
   const changed = [];
   for (const s of cfg.screens) {
     const active = privacyStatus(cfg, s, states[s.id], now).active;
@@ -108,8 +110,8 @@ export function handlePrivacy(req, via, now = new Date()) {
   const scr = resolveScreenList(cfg, r.value.screens);
   if (scr.error) return [400, { error: scr.error, ...(scr.unknown ? { unknown: scr.unknown } : {}) }];
   const out = applyPrivacyRequest(cfg, states, { mode: r.value.mode, end: r.value.end, screenIds: scr.ids, by: via }, now);
+  save(out.states);
   states = out.states;
-  save();
   syncPrivacy(now);
   const rows = privacyOverview(cfg, states, now);
   const targets = scr.ids.length ? rows.filter((x) => scr.ids.includes(x.screenId)) : rows;

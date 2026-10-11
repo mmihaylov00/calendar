@@ -20,7 +20,7 @@ import { closeAll } from '../sse.js';
 import { _resetDisplays, setServerVersion } from '../displays.js';
 import { _resetAnnouncements } from '../announce.js';
 import { _resetActivityThrottle, listActivity } from '../activity.js';
-import { _resetPrivacy } from '../privacy.js';
+import { _resetPrivacy, syncPrivacy } from '../privacy.js';
 import { createToken } from '../tokens.js';
 import { localDate, addDays } from '../core/lib/tz.js';
 
@@ -318,6 +318,49 @@ test('app: private titles never reach the display; admin and webhook endpoints',
     assert.deepEqual(off.json.changed.sort(), ['s_kitchen', 's_main']);
     assert.deepEqual((await call('GET', '/api/admin/privacy', { cookie })).json.screens.map((x) => x.active), [false, false]);
     assert.deepEqual(await titles('living-room'), ['Ana', 'Dentist appointment']);
+  });
+});
+
+test('app: privacy write failures leave the saved state and displays unchanged', async (t) => {
+  await withServer(async ({ call, login, dir }) => {
+    const cookie = await login();
+    const { token } = createToken('Home Assistant');
+    const headers = { authorization: `Bearer ${token}` };
+    const privacyFile = path.join(dir, 'privacy.json');
+    const on = await call('POST', '/api/admin/privacy', { cookie, body: { mode: 'on', hours: 1 } });
+    assert.equal(on.status, 200);
+    const saved = fs.readFileSync(privacyFile, 'utf8');
+    const poll = await call('GET', '/api/display/poll?client=privacy-save-test');
+    const rename = fs.renameSync;
+    const warnings = [];
+    const errors = [];
+    t.mock.method(console, 'warn', (...args) => warnings.push(args.join(' ')));
+    t.mock.method(console, 'error', (...args) => errors.push(args));
+    t.mock.method(fs, 'renameSync', (from, to) => {
+      if (to === privacyFile) throw Object.assign(new Error('disk unavailable'), { code: 'EIO' });
+      return rename(from, to);
+    });
+    try {
+      for (const options of [{ cookie }, { headers }]) {
+        const route = options.cookie ? '/api/admin/privacy' : '/api/hooks/privacy';
+        const failed = await call('POST', route, { ...options, body: { mode: 'off' } });
+        assert.equal(failed.status, 500);
+        assert.deepEqual(failed.json, { error: 'internal error' });
+      }
+      assert.ok((await call('GET', '/api/admin/privacy', { cookie })).json.screens.every((x) => x.active));
+      assert.equal(fs.readFileSync(privacyFile, 'utf8'), saved);
+      const later = await call('GET', `/api/display/poll?client=privacy-save-test&cursor=${poll.json.cursor}`);
+      assert.deepEqual(later.json.commands, []);
+      assert.doesNotMatch((await call('GET', '/api/events')).text, /Dentist appointment/);
+      assert.equal(errors.length, 2);
+
+      // Expired-state cleanup runs from timers and config listeners, where a write error must stay caught.
+      assert.doesNotThrow(() => syncPrivacy(new Date(Date.now() + 2 * 3600_000)));
+      assert.ok(warnings.some((message) => message.includes('[privacy] save failed: disk unavailable')));
+    } finally {
+      t.mock.restoreAll();
+    }
+    assert.equal((await call('POST', '/api/admin/privacy', { cookie, body: { mode: 'off' } })).status, 200);
   });
 });
 

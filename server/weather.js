@@ -43,6 +43,15 @@ const HA_TO_WMO = {
 const round1 = (n) => (n == null || Number.isNaN(+n) ? null : Math.round(+n * 10) / 10);
 const round0 = (n) => (n == null || Number.isNaN(+n) ? null : Math.round(+n));
 
+function temperature(value, unit, units) {
+  if (value == null || value === '' || !Number.isFinite(Number(value))) return null;
+  let n = Number(value);
+  if (unit === 'K') { n -= 273.15; unit = '°C'; }
+  if (unit === '°C' && units === 'imperial') n = n * 9 / 5 + 32;
+  else if (unit === '°F' && units !== 'imperial') n = (n - 32) * 5 / 9;
+  return round1(n);
+}
+
 async function applyHomeAssistant(data, w, lang) {
   if (!ha.haUsable()) return data;
   const num = (s) => {
@@ -56,8 +65,8 @@ async function applyHomeAssistant(data, w, lang) {
       const code = HA_TO_WMO[s.state];
       const cur = data.current;
       data.source = { ...data.source, also: 'Home Assistant' };
-      if (a.temperature != null) cur.temp = round1(a.temperature);
-      if (a.apparent_temperature != null) cur.feelsLike = round1(a.apparent_temperature);
+      if (a.temperature != null) cur.temp = temperature(a.temperature, a.temperature_unit, w.units);
+      if (a.apparent_temperature != null) cur.feelsLike = temperature(a.apparent_temperature, a.temperature_unit, w.units);
       if (a.humidity != null) cur.humidity = round0(a.humidity);
       if (a.wind_speed != null) {
         const unit = String(a.wind_speed_unit || 'km/h').toLowerCase();
@@ -79,7 +88,7 @@ async function applyHomeAssistant(data, w, lang) {
   }
   let indoor = null;
   if (w.haIndoorTempEntity) {
-    tasks.push(ha.getState(w.haIndoorTempEntity).then((s) => { indoor = { ...(indoor || {}), temp: round1(num(s)) }; })
+    tasks.push(ha.getState(w.haIndoorTempEntity).then((s) => { indoor = { ...(indoor || {}), temp: temperature(s.state, s.attributes?.unit_of_measurement, w.units) }; })
       .catch((err) => console.warn('[weather] HA indoor temp:', err.message)));
   }
   if (w.haIndoorHumidityEntity) {
