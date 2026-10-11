@@ -112,8 +112,7 @@ function loadConfig() {
 }
 
 /**
- * One-time, additive update of the icon rules in an existing config (v2 rule set: more keywords in English,
- * Spanish and Portuguese, and new categories). Rules the user kept from the defaults gain the missing keywords;
+ * One-time, additive update of the icon rules in an existing config (v2 rule set: more keywords in English and new categories). Rules the user kept from the defaults gain the missing keywords;
  * new default rules are appended after the user's own, so custom rules keep their priority. Nothing is removed.
  * A marker file in the data folder makes it run once: rules deleted afterwards stay deleted.
  */

@@ -18,27 +18,27 @@ export function importNoteText(n: ImportNote): string {
   const list = (n.items ?? []).join(', ');
   switch (n.code) {
     case 'secrets':
-      return t('La copia trae secretos (contraseña, tokens, enlaces privados, dispositivos vinculados). Aquí no se importan: los enlaces y dispositivos de tus pantallas siguen como están.');
+      return t('The file has secrets (password, tokens, private links, paired devices). They are not imported here: your screens keep their links and devices.');
     case 'homeassistant':
-      return t('Home Assistant no se importa: Marco Cloud no puede conectarse a tu red de casa. El tiempo se toma de Open-Meteo.');
+      return t('Home Assistant is not imported: Marco Cloud cannot reach your home network. The weather comes from Open-Meteo.');
     case 'signIn':
-      return t('La contraseña del panel y el inicio de sesión con Google no se importan: aquí entras con tu cuenta de Marco.');
+      return t('The admin password and Google sign-in are not imported: here you sign in with your Marco account.');
     case 'openDisplayAccess':
-      return t('El acceso abierto a las pantallas no se importa: aquí cada pantalla usa su enlace privado o un dispositivo vinculado.');
+      return t('Open display access is not imported: here each screen uses its private link or a paired device.');
     case 'insecureTls':
-      return t('Se importan con la comprobación de certificados activada: {list}.', { list });
+      return t('Imported with certificate checks on: {list}.', { list });
     case 'google':
-      return t('Calendarios de Google de cuentas que no están conectadas aquí, no se importan: {list}. Conecta la cuenta en Calendarios y vuelve a añadirlos.', { list });
+      return t('Google calendars of accounts not connected here are not imported: {list}. Connect the account in Calendars and add them again.', { list });
     case 'microsoft':
-      return t('Calendarios de Microsoft de cuentas que no están conectadas aquí, no se importan: {list}. Conecta la cuenta en Calendarios y vuelve a añadirlos.', { list });
+      return t('Microsoft calendars of accounts not connected here are not imported: {list}. Connect the account in Calendars and add them again.', { list });
     case 'blockedUrl':
-      return t('No se importan porque su dirección no es accesible desde Internet (red local o nombre interno): {list}.', { list });
+      return t('Not imported because their address cannot be reached from the internet (local network or internal name): {list}.', { list });
     case 'refreshMin':
-      return t('Se actualizarán cada 30 minutos, el mínimo aquí: {list}.', { list });
+      return t('They will refresh every 30 minutes, the minimum here: {list}.', { list });
     case 'news':
-      return t('Las fuentes de noticias no se importan: este servidor no ofrece noticias.');
+      return t('News feeds are not imported: this server does not offer news.');
     case 'photos':
-      return t('Las fotos de la galería no van en la copia: súbelas en Fotos.');
+      return t('Gallery photos are not in the file: upload them in Photos.');
     default:
       return list;
   }
@@ -51,7 +51,7 @@ function backupFileName(b: BackupInfo): string {
   return `config-${stamp}-r${b.revision}-${b.reason}.json`;
 }
 
-const REASON: Record<string, string> = { save: 'Al guardar', manual: 'Manual', restore: 'Antes de restaurar', import: 'Antes de importar', migration: 'Migración v1' };
+const REASON: Record<string, string> = { save: 'On save', manual: 'Manual', restore: 'Before restore', import: 'Before import', migration: 'v1 migration' };
 
 export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
   const [secrets, setSecrets] = useState(false);
@@ -94,9 +94,9 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
       const b = await api.exportConfig(withSecrets);
       const day = new Date().toISOString().slice(0, 10);
       downloadJson(b, `marco-${day}${withSecrets ? '-secrets' : ''}.json`);
-      toast(t('Copia descargada'));
+      toast(t('Backup downloaded'));
     } catch (e) {
-      toast(`${t('No se pudo exportar')}: ${(e as ApiError).message}`, 'error');
+      toast(`${t('Could not export')}: ${(e as ApiError).message}`, 'error');
     } finally {
       setExporting(false);
     }
@@ -106,7 +106,7 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
     setCreating(true);
     try {
       await api.createBackup();
-      toast(t('Copia de seguridad creada'));
+      toast(t('Backup created'));
       load();
     } catch (e) {
       toast((e as ApiError).message, 'error');
@@ -119,12 +119,12 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
     setPreview(null);
     setBundle(null);
     setFileName(f.name);
-    if (f.size > 5 * 1024 * 1024) return toast(t('El archivo es demasiado grande (máx. 5 MB)'), 'error');
+    if (f.size > 5 * 1024 * 1024) return toast(t('The file is too large (max. 5 MB)'), 'error');
     let data: unknown;
     try {
       data = JSON.parse(await f.text());
     } catch {
-      return toast(t('El archivo no es un JSON válido'), 'error');
+      return toast(t('The file is not valid JSON'), 'error');
     }
     setBundle(data);
     setBusy('preview');
@@ -135,7 +135,7 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
       setSections(p.sections.filter((s) => s.changed && !over.has(s.key)).map((s) => s.key));
       setImpSecrets(false);
     } catch (e) {
-      toast(`${t('No se pudo analizar')}: ${(e as ApiError).message}`, 'error');
+      toast(`${t('Could not analyse')}: ${(e as ApiError).message}`, 'error');
     } finally {
       setBusy('');
     }
@@ -145,16 +145,16 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
     if (!preview || !bundle) return;
     const all = preview.sections.length === sections.length;
     const ok = await confirmDialog({
-      title: t('¿Importar esta configuración?'),
+      title: t('Import these settings?'),
       body: (
         <>
-          <p>{all ? t('Se reemplazará toda la configuración actual.') : t('Se reemplazarán: {list}.', { list: sections.map(sectionLabel).join(', ') })}</p>
-          <p class="muted small">{t('Antes se guarda una copia automática de la configuración actual.')}</p>
-          {dirty && <p class="err-text">{t('Perderás los cambios sin guardar.')}</p>}
-          {secretsOn && impSecrets && <p class="err-text">{t('Si la copia trae otra contraseña, se cerrarán todas las sesiones.')}</p>}
+          <p>{all ? t('All current settings will be replaced.') : t('Will replace: {list}.', { list: sections.map(sectionLabel).join(', ') })}</p>
+          <p class="muted small">{t('An automatic backup of the current settings is made first.')}</p>
+          {dirty && <p class="err-text">{t('You will lose unsaved changes.')}</p>}
+          {secretsOn && impSecrets && <p class="err-text">{t('If the backup has another password, all sessions will be signed out.')}</p>}
         </>
       ),
-      confirm: t('Importar'),
+      confirm: t('Import'),
       danger: true,
     });
     if (!ok) return;
@@ -162,7 +162,7 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
     try {
       const r = await api.importApply({ bundle, includeSecrets: secretsOn && impSecrets, sections: all ? undefined : sections });
       if (r.loggedOut) {
-        toast(t('Importado. La contraseña ha cambiado: vuelve a entrar.'), 'info');
+        toast(t('Imported. The password changed: sign in again.'), 'info');
         setTimeout(() => location.reload(), 1500);
         return;
       }
@@ -170,10 +170,10 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
       setPreview(null);
       setBundle(null);
       setFileName('');
-      toast(t('Configuración importada'));
+      toast(t('Settings imported'));
       load();
     } catch (e) {
-      toast(`${t('No se pudo importar')}: ${(e as ApiError).message}`, 'error');
+      toast(`${t('Could not import')}: ${(e as ApiError).message}`, 'error');
     } finally {
       setBusy('');
     }
@@ -181,14 +181,14 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
 
   const restore = async (b: BackupInfo) => {
     const ok = await confirmDialog({
-      title: t('¿Restaurar la copia del {date}?', { date: fmtDateTime(b.createdAt) }),
+      title: t('Restore the backup from {date}?', { date: fmtDateTime(b.createdAt) }),
       body: (
         <>
-          <p>{t('La configuración actual se reemplazará (antes se guarda una copia).')}</p>
-          {dirty && <p class="err-text">{t('Perderás los cambios sin guardar.')}</p>}
+          <p>{t('The current settings will be replaced (a backup is made first).')}</p>
+          {dirty && <p class="err-text">{t('You will lose unsaved changes.')}</p>}
         </>
       ),
-      confirm: t('Restaurar'),
+      confirm: t('Restore'),
       danger: true,
     });
     if (!ok) return;
@@ -196,8 +196,8 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
     try {
       const r = await api.restoreBackup(b.id);
       replaceConfig(r.config);
-      if (r.repaired?.length) toast(t('Copia restaurada · se corrigieron {n} valores no válidos (ver Actividad)', { n: r.repaired.length }), 'info', 6000);
-      else toast(t('Copia restaurada · las pantallas se actualizan solas'));
+      if (r.repaired?.length) toast(t('Backup restored · {n} invalid values were fixed (see Activity)', { n: r.repaired.length }), 'info', 6000);
+      else toast(t('Backup restored · screens update automatically'));
       load();
     } catch (e) {
       toast((e as ApiError).message, 'error');
@@ -206,7 +206,7 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
     }
   };
   const remove = async (b: BackupInfo) => {
-    if (!(await confirmDialog({ title: t('¿Eliminar esta copia?'), confirm: t('Eliminar'), danger: true }))) return;
+    if (!(await confirmDialog({ title: t('Delete this backup?'), confirm: t('Delete'), danger: true }))) return;
     try {
       await api.deleteBackup(b.id);
       load();
@@ -234,9 +234,9 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
     } catch (e) {
       return toast((e as ApiError).message, 'error');
     }
-    if (!list.length) return toast(t('La galería está vacía'), 'info');
+    if (!list.length) return toast(t('The gallery is empty'), 'info');
     const total = list.reduce((n, p) => n + (p.size || 0), 0);
-    if (total > ZIP_MAX_BYTES) return toast(t('La galería es demasiado grande para un solo .zip'), 'error');
+    if (total > ZIP_MAX_BYTES) return toast(t('The gallery is too large for one .zip'), 'error');
     setZipping({ done: 0, total: list.length });
     const names = uniqueNames(list.map((p) => p.file));
     const entries = [];
@@ -260,10 +260,10 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
-      if (failed) toast(t('Fotos descargadas · {n} no se pudieron leer', { n: failed }), 'info', 6000);
-      else toast(t('Fotos descargadas'));
+      if (failed) toast(t('Photos downloaded · {n} could not be read', { n: failed }), 'info', 6000);
+      else toast(t('Photos downloaded'));
     } catch (e) {
-      toast(`${t('No se pudieron descargar las fotos')}: ${(e as Error).message}`, 'error');
+      toast(`${t('Could not download the photos')}: ${(e as Error).message}`, 'error');
     } finally {
       setZipping(null);
     }
@@ -289,33 +289,33 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
 
   return (
     <>
-      <PageHeader title={t('Copias de seguridad')} desc={t('Exporta toda la configuración a un archivo, impórtala en otra instalación o vuelve a una versión anterior.')} />
+      <PageHeader title={t('Backups')} desc={t('Export all settings to a file, import them on another install or go back to an earlier version.')} />
 
       {transferOn && (
-        <Card title={t('Exportar')} icon="download" id="bk-export" desc={t('Pantallas, calendarios, cumpleaños, filtros, avisos programados… en un archivo JSON.')}>
+        <Card title={t('Export')} icon="download" id="bk-export" desc={t('Screens, calendars, birthdays, filters, scheduled alerts… in one JSON file.')}>
           {secretsOn && (
             <label class="mini-toggle">
               <Toggle checked={secrets} onChange={setSecrets} />
-              <span>{t('Incluir secretos (contraseña cifrada, token de Home Assistant, cuentas de Google, tokens de API)')}</span>
+              <span>{t('Include secrets (hashed password, Home Assistant token, Google accounts, API tokens)')}</span>
             </label>
           )}
-          {secretsOn && secrets && <Callout kind="warn">{t('Con secretos, quien tenga el archivo podría acceder a tus calendarios de Google y a Home Assistant. Guárdalo en un lugar seguro.')}</Callout>}
+          {secretsOn && secrets && <Callout kind="warn">{t('With secrets, anyone holding the file could access your Google calendars and Home Assistant. Keep it somewhere safe.')}</Callout>}
           {!secretsOn && !isSelfHosted() && (
             <p class="muted small">
-              {t('Sirve también para pasar a un Marco instalado en casa: impórtalo en su panel. No lleva enlaces privados, dispositivos vinculados, tokens de API ni cuentas de Google, así que después vincula de nuevo las pantallas y vuelve a conectar Google Calendar.')}{' '}
-              {t('Contiene las direcciones de tus calendarios: guárdalo en un lugar seguro.')}
+              {t('It also moves you to a Marco installed at home: import it in its admin. It has no private links, paired devices, API tokens or Google accounts, so afterwards pair the screens again and reconnect Google Calendar.')}{' '}
+              {t('It has the addresses of your calendars: keep it somewhere safe.')}
             </p>
           )}
           <div>
             <Button variant="primary" icon="download" loading={exporting} onClick={doExport}>
-              {t('Descargar copia')}
+              {t('Download backup')}
             </Button>
           </div>
         </Card>
       )}
 
       {transferOn && (
-        <Card title={t('Importar')} icon="upload" id="bk-import">
+        <Card title={t('Import')} icon="upload" id="bk-import">
           <div
             class={`dropzone dropzone--sm ${drag ? 'is-drag' : ''}`}
             onClick={() => fileRef.current?.click()}
@@ -333,8 +333,8 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
           >
             <span class="dropzone__icon">{busy === 'preview' ? <span class="spinner" /> : <Icon name="upload" size={20} />}</span>
             <div>
-              <strong>{fileName || t('Elige o arrastra un archivo .json')}</strong>
-              <div class="muted small">{t('Copias exportadas desde aquí o un config.json (también del formato antiguo).')}</div>
+              <strong>{fileName || t('Choose or drop a .json file')}</strong>
+              <div class="muted small">{t('Backups exported from here or a config.json (old format too).')}</div>
             </div>
             <input
               ref={fileRef}
@@ -353,17 +353,17 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
               <div class="import-prev__head">
                 {preview.ok ? (
                   <span class="ok-text">
-                    <Icon name="check" size={15} /> {t('Archivo válido')}
+                    <Icon name="check" size={15} /> {t('Valid file')}
                   </span>
                 ) : (
                   <span class="err-text">
-                    <Icon name="alert" size={15} /> {t('{n} errores de validación', { n: preview.errors.length })}
+                    <Icon name="alert" size={15} /> {t('{n} validation errors', { n: preview.errors.length })}
                   </span>
                 )}
                 <span class="muted small">
-                  {preview.fromVersion === 1 ? t('formato antiguo (v1), se migrará') : 'v2'}
+                  {preview.fromVersion === 1 ? t('old format (v1), will be migrated') : 'v2'}
                   {preview.appVersion && ` · app ${preview.appVersion}`}
-                  {preview.exportedAt && ` · ${t('exportada {when}', { when: fmtDateTime(preview.exportedAt) })}`}
+                  {preview.exportedAt && ` · ${t('exported {when}', { when: fmtDateTime(preview.exportedAt) })}`}
                 </span>
               </div>
               {!preview.ok && (
@@ -394,20 +394,20 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
                           </span>
                           <span class="import-sec__name">{sectionLabel(s.key)}</span>
                           <span class={`import-sec__sum small ${over ? 'err-text' : 'muted'}`}>
-                            {over ? t('Supera el límite de tu plan ({max}): no se puede importar', { max: over.max }) : s.summary}
+                            {over ? t('Over your plan limit ({max}): cannot be imported', { max: over.max }) : s.summary}
                           </span>
                         </label>
                       );
                     })}
                   </div>
-                  {diffList(t('Pantallas'), preview.screens)}
-                  {diffList(t('Calendarios'), preview.sources)}
+                  {diffList(t('Screens'), preview.screens)}
+                  {diffList(t('Calendars'), preview.sources)}
                   <div class="muted small">
-                    {t('Contiene')}: {t('{n} eventos locales', { n: preview.counts.localEvents })} · {t('{n} cumpleaños', { n: preview.counts.birthdays })} · {t('{n} reglas', { n: preview.counts.eventRules })} · {t('{n} cuentas atrás', { n: preview.counts.countdowns })} · {t('{n} mensajes programados', { n: preview.counts.schedules })}
+                    {t('Contains')}: {t('{n} local events', { n: preview.counts.localEvents })} · {t('{n} birthdays', { n: preview.counts.birthdays })} · {t('{n} rules', { n: preview.counts.eventRules })} · {t('{n} countdowns', { n: preview.counts.countdowns })} · {t('{n} scheduled messages', { n: preview.counts.schedules })}
                   </div>
                   {preview.notes && preview.notes.length > 0 && (
                     <Callout kind="info">
-                      <strong>{t('Lo que no se importa aquí')}</strong>
+                      <strong>{t('What is not imported here')}</strong>
                       <ul class="import-prev__notes">
                         {preview.notes.map((n) => (
                           <li>{importNoteText(n)}</li>
@@ -421,39 +421,39 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
                       : sections.includes('schedules') && !sections.includes('screens') ? o?.schedulesOnly : null;
                     return list?.length ? (
                       <p class="err-text small">
-                        {t('Estos mensajes programados se quedarán sin pantallas y se desactivarán: {list}. Importa también «Pantallas» y «Mensajes programados» juntos para conservarlos.', { list: list.join(', ') })}
+                        {t('These scheduled messages will be left without screens and disabled: {list}. Import “Screens” and “Scheduled messages” together to keep them.', { list: list.join(', ') })}
                       </p>
                     ) : null;
                   })()}
                   {secretsOn && preview.hasSecrets && (
                     <label class="mini-toggle">
                       <Toggle checked={impSecrets} onChange={setImpSecrets} />
-                      <span>{t('Importar también los secretos que trae la copia')}</span>
+                      <span>{t('Also import the secrets in the backup')}</span>
                     </label>
                   )}
                   {secretsOn && preview.hasSecrets && impSecrets && preview.secretsImpact && (preview.secretsImpact.linksChanged.length > 0 || preview.secretsImpact.devicesRemoved.length > 0) && (
                     <Callout kind="warn">
                       {preview.secretsImpact.linksChanged.length > 0 && (
-                        <p>{t('Cambiará el enlace privado de: {list}. Las pantallas abiertas con el enlace actual se desconectan; vuelve a funcionar el de la copia.', { list: preview.secretsImpact.linksChanged.join(', ') })}</p>
+                        <p>{t('The private link of {list} will change. Screens open with the current link are disconnected; the one in the file works again.', { list: preview.secretsImpact.linksChanged.join(', ') })}</p>
                       )}
                       {preview.secretsImpact.devicesRemoved.length > 0 && (
-                        <p>{t('Se quitarán estos dispositivos vinculados (se desconectan al instante): {list}.', { list: preview.secretsImpact.devicesRemoved.join(', ') })}</p>
+                        <p>{t('These paired devices will be removed (disconnected at once): {list}.', { list: preview.secretsImpact.devicesRemoved.join(', ') })}</p>
                       )}
                     </Callout>
                   )}
                   {preview.displayAccess && (
                     <p class="muted small">
-                      {t('El acceso a las pantallas ({mode}) no cambia al importar ni al restaurar: se cambia en Seguridad.', {
-                        mode: preview.displayAccess === 'open' ? t('Abierto (red local)') : t('Privado'),
+                      {t('Display access ({mode}) does not change when importing or restoring: change it in Security.', {
+                        mode: preview.displayAccess === 'open' ? t('Open (local network)') : t('Private'),
                       })}
                     </p>
                   )}
                   <div class="btn-row">
                     <Button variant="ghost" onClick={() => (setPreview(null), setBundle(null), setFileName(''))}>
-                      {t('Cancelar')}
+                      {t('Cancel')}
                     </Button>
                     <Button variant="primary" icon="upload" loading={busy === 'apply'} disabled={!sections.length} onClick={apply}>
-                      {t('Importar {n} secciones', { n: sections.length })}
+                      {t('Import {n} sections', { n: sections.length })}
                     </Button>
                   </div>
                 </>
@@ -464,10 +464,10 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
       )}
 
       {transferOn && has('gallery') && (
-        <Card title={t('Fotos')} icon="photos" id="bk-photos" desc={t('Las fotos de la galería no van en la copia de la configuración. Descárgalas todas en un .zip para guardarlas o subirlas en otra instalación.')}>
+        <Card title={t('Photos')} icon="photos" id="bk-photos" desc={t('Gallery photos are not in the config file. Download them all in a .zip to keep them or upload them to another installation.')}>
           <div>
             <Button icon="download" loading={!!zipping} onClick={downloadPhotos}>
-              {zipping ? t('Descargando {done} de {total}…', zipping) : t('Descargar fotos (.zip)')}
+              {zipping ? t('Downloading {done} of {total}…', zipping) : t('Download photos (.zip)')}
             </Button>
           </div>
         </Card>
@@ -475,13 +475,13 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
 
       {backupsOn && (
         <Card
-          title={t('Copias automáticas')}
+          title={t('Automatic backups')}
           icon="archive"
           id="bk-auto"
-          desc={t('Se crea una copia cada vez que guardas (se conservan las 20 últimas).')}
+          desc={t('A backup is made every time you save (the last 20 are kept).')}
           actions={
             <Button size="sm" icon="plus" loading={creating} onClick={createNow}>
-              {t('Crear copia ahora')}
+              {t('Back up now')}
             </Button>
           }
         >
@@ -492,8 +492,8 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
               <div class="skeleton" />
             </div>
           ) : list.length === 0 ? (
-            <Empty icon="archive" title={t('Todavía no hay copias')}>
-              {t('Aparecerán aquí cuando guardes cambios.')}
+            <Empty icon="archive" title={t('No backups yet')}>
+              {t('They will appear here when you save changes.')}
             </Empty>
           ) : (
             <ul class="bk-list">
@@ -505,21 +505,21 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
                   <div class="bk__main">
                     <strong>
                       {fmtDateTime(b.createdAt)} <span class="muted small">· {relTime(b.createdAt)}</span>
-                      {i === 0 && <span class="badge badge--soft">{t('la más reciente')}</span>}
+                      {i === 0 && <span class="badge badge--soft">{t('latest')}</span>}
                     </strong>
                     <span class="muted small">
-                      {t(REASON[b.reason] ?? b.reason)} · {t('revisión {n}', { n: b.revision })} · {nScreens(b.screens)} · {t('{n} calendarios', { n: b.sources })} · {formatBytes(b.size)}
+                      {t(REASON[b.reason] ?? b.reason)} · {t('revision {n}', { n: b.revision })} · {nScreens(b.screens)} · {t('{n} calendars', { n: b.sources })} · {formatBytes(b.size)}
                     </span>
                   </div>
                   <div class="bk__actions">
-                    <button type="button" class="icon-btn" title={t('Descargar')} disabled={busy === `d-${b.id}`} onClick={() => download(b)}>
+                    <button type="button" class="icon-btn" title={t('Download')} disabled={busy === `d-${b.id}`} onClick={() => download(b)}>
                       <Icon name="download" size={15} />
                     </button>
                     <Button size="sm" variant="ghost" icon="history" loading={busy === `r-${b.id}`} onClick={() => restore(b)}>
-                      {t('Restaurar')}
+                      {t('Restore')}
                     </Button>
                     {b.reason !== 'migration' && (
-                      <button type="button" class="icon-btn icon-btn--danger" title={t('Eliminar')} onClick={() => remove(b)}>
+                      <button type="button" class="icon-btn icon-btn--danger" title={t('Delete')} onClick={() => remove(b)}>
                         <Icon name="trash" size={15} />
                       </button>
                     )}

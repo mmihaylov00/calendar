@@ -123,16 +123,16 @@ test('geocode with an admin session: query, language, cache, short queries, upst
     const u = new URL(fetchJson.urls[0]);
     assert.equal(`${u.origin}${u.pathname}`, GEOCODE_URL);
     assert.equal(u.searchParams.get('name'), 'Porto');
-    assert.equal(u.searchParams.get('language'), 'pt');
+    assert.equal(u.searchParams.get('language'), 'en');
     // cached (case-insensitive): no second upstream call
     assert.equal((await call('GET', '/api/admin/geocode?q=porto&lang=pt')).status, 200);
     assert.equal(fetchJson.urls.length, 1);
-    // another language is another entry; an unknown language becomes English
+    // All locale requests use the same English cache entry.
     await call('GET', '/api/admin/geocode?q=porto&lang=xx');
-    assert.equal(new URL(fetchJson.urls[1]).searchParams.get('language'), 'en');
+    assert.equal(fetchJson.urls.length, 1);
     // too short: no upstream call
     assert.deepEqual((await call('GET', '/api/admin/geocode?q=p')).json, { results: [] });
-    assert.equal(fetchJson.urls.length, 2);
+    assert.equal(fetchJson.urls.length, 1);
   }, { secrets: { passwordHash: hash, sessionEpoch: 'e1' } });
 
   await withApp(async ({ call }) => {
@@ -158,7 +158,7 @@ test('geocode during setup: LAN without token, remote needs the setup token, clo
     assert.equal(fetchJson.urls.length, 2);
     // the wizard completes: the place search now needs a session
     assert.equal((await call('POST', '/api/setup/complete', {
-      password: GOOD, passwordConfirm: GOOD, language: 'es', screenName: 'Cocina', units: 'metric', format24: true, calendars: [],
+      password: GOOD, passwordConfirm: GOOD, language: 'en', screenName: 'Cocina', units: 'metric', format24: true, calendars: [],
     })).status, 200);
     assert.equal((await call('GET', '/api/admin/geocode?q=madrid&lang=es')).status, 200, 'the wizard signed this browser in');
     const other = await call('GET', '/api/admin/geocode?q=madrid&lang=es', undefined, { headers: { cookie: '', 'x-setup-token': setupToken() } });

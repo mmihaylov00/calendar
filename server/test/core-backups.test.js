@@ -67,7 +67,7 @@ test('backups: rotation keeps the 20 newest, never the pre-migration copy; list/
   assert.equal(list.at(-1).reason, 'migration');
   assert.equal(list.at(-1).revision, 3);
   assert.equal(list[0].screens, 1);
-  assert.equal(list[0].sources, 1);
+  assert.equal(list[0].sources, 0);
   assert.ok(list[0].size > 100);
   assert.equal(list[0].createdAt, new Date(t0 + 24 * 60_000).toISOString());
 
@@ -109,6 +109,7 @@ test('export bundle: secrets only when asked, never the session secret', () => {
 
 test('import preview: bundle or bare v1/v2 config, localized section summaries, diff of screens/sources', () => {
   const cur = defaultConfig();
+  cur.calendar.sources = [{ id: 'c_existing', type: 'ics', name: 'AL', url: 'https://example.com/a.ics', color: '#123456' }];
   const next = structuredClone(cur);
   next.screens.push(defaultScreenProfile({ id: 's_cocina', slug: 'cocina', name: 'Cocina' }));
   next.calendar.sources.push({ id: 'c_new', type: 'ics', name: 'Colegio', url: 'https://e.com/c.ics', color: '#112233' });
@@ -123,22 +124,22 @@ test('import preview: bundle or bare v1/v2 config, localized section summaries, 
   assert.deepEqual(p.screens, { added: ['Cocina'], removed: [], changed: [] });
   assert.deepEqual(p.sources, { added: ['Colegio', 'Fútbol'], removed: [], changed: ['AL renamed'] });
   const sec = Object.fromEntries(p.sections.map((x) => [x.key, x]));
-  assert.equal(sec.screens.summary, '+1 pantalla');
-  assert.equal(sec.calendar.summary, '+2 fuentes, 1 modificada');
-  assert.equal(sec.birthdays.summary, '+1 elemento');
+  assert.equal(sec.screens.summary, '+1 screen');
+  assert.equal(sec.calendar.summary, '+2 sources, 1 modified');
+  assert.equal(sec.birthdays.summary, '+1 item');
   assert.equal(sec.weather.changed, false);
-  assert.equal(sec.weather.summary, 'sin cambios');
+  assert.equal(sec.weather.summary, 'unchanged');
   assert.equal(p.counts.birthdays, 1);
-  // same preview in English (default) and Portuguese
+  // Removed locale requests also return the English preview.
   const en = Object.fromEntries(importPreview(makeBundle(next, { appVersion: '0.2.0' }), cur).sections.map((x) => [x.key, x.summary]));
   assert.equal(en.screens, '+1 screen');
   assert.equal(en.calendar, '+2 sources, 1 modified');
   assert.equal(en.birthdays, '+1 item');
   assert.equal(en.weather, 'unchanged');
   const pt = Object.fromEntries(importPreview(makeBundle(next, { appVersion: '0.2.0' }), cur, 'pt').sections.map((x) => [x.key, x.summary]));
-  assert.equal(pt.screens, '+1 ecrã');
-  assert.equal(pt.calendar, '+2 fontes, 1 modificada');
-  assert.equal(pt.weather, 'sem alterações');
+  assert.equal(pt.screens, '+1 screen');
+  assert.equal(pt.calendar, '+2 sources, 1 modified');
+  assert.equal(pt.weather, 'unchanged');
 
   // bare v1 config
   const v1 = importPreview({ version: 1, revision: 9, screen: { name: 'Cocina' }, calendar: { sources: [] } }, cur);

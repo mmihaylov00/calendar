@@ -39,7 +39,7 @@ export function CopyField({ value, mono = true, label }: { value: string; mono?:
       <button
         type="button"
         class={`btn btn--default btn--sm ${done ? 'is-done' : ''}`}
-        aria-label={label ?? t('Copiar')}
+        aria-label={label ?? t('Copy')}
         onClick={async () => {
           if (await copyText(value)) {
             setDone(true);
@@ -48,7 +48,7 @@ export function CopyField({ value, mono = true, label }: { value: string; mono?:
         }}
       >
         <Icon name={done ? 'check' : 'copy'} size={15} />
-        <span>{done ? t('Copiado') : t('Copiar')}</span>
+        <span>{done ? t('Copied') : t('Copy')}</span>
       </button>
     </div>
   );

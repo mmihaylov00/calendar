@@ -25,7 +25,7 @@ export function SourcePicker({ options, value, onChange, allLabel, compact }: { 
     };
   }, [open]);
   const sel = options.filter((o) => value.includes(o.id));
-  const label = !value.length ? allLabel ?? t('Todos los calendarios') : sel.length === 1 ? sel[0].name : t('{n} calendarios', { n: sel.length });
+  const label = !value.length ? allLabel ?? t('All calendars') : sel.length === 1 ? sel[0].name : t('{n} calendars', { n: sel.length });
   return (
     <div class="pop" ref={ref}>
       <button type="button" class={`src-pick ${compact ? 'src-pick--compact' : ''} ${value.length ? 'is-some' : ''}`} onClick={() => setOpen(!open)}>
@@ -44,7 +44,7 @@ export function SourcePicker({ options, value, onChange, allLabel, compact }: { 
             <span class="check-box">
               <Icon name="check" size={12} />
             </span>
-            <strong>{allLabel ?? t('Todos los calendarios')}</strong>
+            <strong>{allLabel ?? t('All calendars')}</strong>
           </label>
           <div class="src-pick__sep" />
           {options.map((o) => {

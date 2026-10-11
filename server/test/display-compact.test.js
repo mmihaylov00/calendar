@@ -59,7 +59,7 @@ test('the display reads ?compact= and ?weeks=, and the README documents ?compact
   const main = read('web/display/main.ts');
   assert.match(main, /params\.get\('compact'\)/);
   assert.match(main, /params\.get\('weeks'\)/);
-  for (const f of ['README.md', 'README.es.md']) assert.match(read(f), /\?compact=0/, f);
+  for (const f of ['README.md']) assert.match(read(f), /\?compact=0/, f);
 });
 
 test('rows stay equal while every week fits in an equal share', ts, () => {

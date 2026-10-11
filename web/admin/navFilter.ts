@@ -22,31 +22,31 @@ export interface NavMeta {
 }
 
 export const NAV_ITEMS: NavMeta[] = [
-  { id: 'home', label: 'Inicio', icon: 'home2', group: '', keywords: 'dashboard resumen panel' },
-  { id: 'layout', label: 'Diseño', icon: 'layout', group: 'Pantalla', perScreen: true },
-  { id: 'background', label: 'Fondo', icon: 'image', group: 'Pantalla', enabled: (c) => c.background.enabled, perScreen: true },
-  { id: 'screen', label: 'Ajustes', icon: 'settings', group: 'Pantalla', perScreen: true },
-  { id: 'datetime', label: 'Fecha y hora', icon: 'clock', group: 'Pantalla', enabled: (c) => c.datetime.enabled, perScreen: true },
-  { id: 'calendars', label: 'Calendarios', icon: 'calendar', group: 'Contenido', enabled: (c) => c.calendar.enabled },
-  { id: 'local', label: 'Eventos locales', icon: 'edit', group: 'Contenido', enabled: (c) => c.localEvents.enabled },
-  { id: 'birthdays', label: 'Cumpleaños', icon: 'cake', group: 'Contenido', enabled: (c) => c.birthdays.enabled },
-  { id: 'filters', label: 'Filtros y cambios', icon: 'filter', group: 'Contenido' },
-  { id: 'icons', label: 'Iconos', icon: 'tag', group: 'Contenido' },
-  { id: 'countdowns', label: 'Cuentas atrás', icon: 'hourglass', group: 'Contenido', enabled: (c) => c.countdowns.enabled },
-  { id: 'weather', label: 'Tiempo', icon: 'cloud', group: 'Contenido', enabled: (c) => c.weather.enabled },
-  { id: 'news', label: 'Noticias', icon: 'news', group: 'Contenido', feature: 'news', enabled: (c) => c.news.enabled },
-  { id: 'todo', label: 'Tareas', icon: 'checklist', group: 'Contenido', enabled: (c) => c.todo.enabled },
-  { id: 'message', label: 'Mensaje', icon: 'message', group: 'Contenido', enabled: (c) => c.message.enabled, perScreen: true },
-  { id: 'alerts', label: 'Avisos', icon: 'megaphone', group: 'Avisos', feature: ['announcements', 'schedules'], keywords: 'announce anuncios mensajes programados' },
-  { id: 'photos', label: 'Galería', icon: 'photos', group: 'Integraciones', feature: 'gallery' },
-  { id: 'homeassistant', label: 'Home Assistant', icon: 'home', group: 'Integraciones', feature: 'homeassistant', enabled: (c) => c.homeassistant.enabled },
-  { id: 'api', label: 'API y webhooks', icon: 'code', group: 'Integraciones', feature: ['apiTokens', 'webhooks'], keywords: 'tokens webhook' },
-  { id: 'screens', label: 'Pantallas', icon: 'monitor', group: 'Sistema', keywords: 'perfiles profiles' },
-  { id: 'displays', label: 'Pantallas conectadas', icon: 'wifi', group: 'Sistema', keywords: 'kiosk dispositivos' },
-  { id: 'backups', label: 'Copias de seguridad', icon: 'archive', group: 'Sistema', feature: ['backups', 'importExport'], keywords: 'backup export import' },
-  { id: 'activity', label: 'Actividad', icon: 'history', group: 'Sistema', feature: 'activity', keywords: 'log registro' },
-  { id: 'security', label: 'Seguridad', icon: 'shield', group: 'Sistema' },
-  { id: 'status', label: 'Estado', icon: 'activity', group: 'Sistema', feature: 'status' },
+  { id: 'home', label: 'Home', icon: 'home2', group: '' },
+  { id: 'layout', label: 'Layout', icon: 'layout', group: 'Screen', perScreen: true },
+  { id: 'background', label: 'Background', icon: 'image', group: 'Screen', enabled: (c) => c.background.enabled, perScreen: true },
+  { id: 'screen', label: 'Settings', icon: 'settings', group: 'Screen', perScreen: true },
+  { id: 'datetime', label: 'Date & time', icon: 'clock', group: 'Screen', enabled: (c) => c.datetime.enabled, perScreen: true },
+  { id: 'calendars', label: 'Calendars', icon: 'calendar', group: 'Content', enabled: (c) => c.calendar.enabled },
+  { id: 'local', label: 'Local events', icon: 'edit', group: 'Content', enabled: (c) => c.localEvents.enabled },
+  { id: 'birthdays', label: 'Birthdays', icon: 'cake', group: 'Content', enabled: (c) => c.birthdays.enabled },
+  { id: 'filters', label: 'Filters & overrides', icon: 'filter', group: 'Content' },
+  { id: 'icons', label: 'Icons', icon: 'tag', group: 'Content' },
+  { id: 'countdowns', label: 'Countdowns', icon: 'hourglass', group: 'Content', enabled: (c) => c.countdowns.enabled },
+  { id: 'weather', label: 'Weather', icon: 'cloud', group: 'Content', enabled: (c) => c.weather.enabled },
+  { id: 'news', label: 'News', icon: 'news', group: 'Content', feature: 'news', enabled: (c) => c.news.enabled },
+  { id: 'todo', label: 'To-dos', icon: 'checklist', group: 'Content', enabled: (c) => c.todo.enabled },
+  { id: 'message', label: 'Message', icon: 'message', group: 'Content', enabled: (c) => c.message.enabled, perScreen: true },
+  { id: 'alerts', label: 'Alerts', icon: 'megaphone', group: 'Alerts', feature: ['announcements', 'schedules'] },
+  { id: 'photos', label: 'Gallery', icon: 'photos', group: 'Integrations', feature: 'gallery' },
+  { id: 'homeassistant', label: 'Home Assistant', icon: 'home', group: 'Integrations', feature: 'homeassistant', enabled: (c) => c.homeassistant.enabled },
+  { id: 'api', label: 'API & webhooks', icon: 'code', group: 'Integrations', feature: ['apiTokens', 'webhooks'] },
+  { id: 'screens', label: 'Screens', icon: 'monitor', group: 'System' },
+  { id: 'displays', label: 'Connected screens', icon: 'wifi', group: 'System' },
+  { id: 'backups', label: 'Backups', icon: 'archive', group: 'System', feature: ['backups', 'importExport'] },
+  { id: 'activity', label: 'Activity', icon: 'history', group: 'System', feature: 'activity' },
+  { id: 'security', label: 'Security', icon: 'shield', group: 'System' },
+  { id: 'status', label: 'Status', icon: 'activity', group: 'System', feature: 'status' },
 ];
 
 /** Command palette actions that depend on a feature (by PaletteItem id). */
@@ -91,5 +91,5 @@ export function routeFor(id: string, visible: readonly { id: string }[]): string
  *  #/security keep working. Single-tenant servers keep Security as it is. */
 export function accountNav<T extends NavMeta>(items: readonly T[], caps: Caps): T[] {
   if (caps.tenancy !== 'multi') return [...items];
-  return items.map((n) => (n.id === 'security' ? { ...n, label: 'Cuenta', icon: 'user' as IconName, keywords: 'account cuenta conta hogar household casa sesiones sessions' } : n));
+  return items.map((n) => (n.id === 'security' ? { ...n, label: 'Account', icon: 'user' as IconName } : n));
 }

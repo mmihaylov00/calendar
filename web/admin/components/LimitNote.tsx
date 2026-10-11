@@ -6,6 +6,6 @@ import { Callout } from './ui';
 export function LimitNote({ name, count }: { name: LimitName; count: number }) {
   const max = limit(name);
   if (max == null || !atLimit(name, count)) return null;
-  if (count > max) return <Callout kind="error">{t('Hay {n} y el máximo es {max}. Quita algunos para poder guardar.', { n: count, max })}</Callout>;
-  return <p class="muted small limit-note">{t('Has llegado al máximo ({max}).', { max })}</p>;
+  if (count > max) return <Callout kind="error">{t('There are {n} and the maximum is {max}. Remove some to be able to save.', { n: count, max })}</Callout>;
+  return <p class="muted small limit-note">{t('You have reached the maximum ({max}).', { max })}</p>;
 }

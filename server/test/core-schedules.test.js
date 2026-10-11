@@ -56,6 +56,7 @@ test('DST: local wall time is used across the October change (WEST → WET)', ()
 
 test('schedulesNow lists active messages with their end time', () => {
   const cfg = defaultConfig();
+  cfg.datetime.timezone = TZ;
   cfg.schedules.items = [
     msg({ id: 'm_a', days: [5] }),
     msg({ id: 'm_b', from: '08:00', to: '09:00' }),

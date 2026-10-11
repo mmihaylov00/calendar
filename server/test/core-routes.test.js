@@ -184,7 +184,7 @@ test('admin routes: backups, restore, export/import with secrets → logged out,
     const pv = (await call('POST', '/api/admin/import/preview', { bundle, lang: 'es' })).json;
     assert.equal(pv.ok, true);
     assert.equal(pv.hasSecrets, true);
-    assert.equal(pv.sections.find((s) => s.key === 'birthdays').summary, '+1 elemento');
+    assert.equal(pv.sections.find((s) => s.key === 'birthdays').summary, '+1 item');
     const pvEn = (await call('POST', '/api/admin/import/preview', { bundle })).json;
     assert.equal(pvEn.sections.find((s) => s.key === 'birthdays').summary, '+1 item');
     assert.equal((await call('POST', '/api/admin/import/preview', {})).status, 400);

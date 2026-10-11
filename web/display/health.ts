@@ -28,7 +28,7 @@ const EMOJI_CSS = 'https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&dis
 
 /**
  * Self-hosted displays also load Noto Color Emoji from Google Fonts, as before 0.5: an optional, non-blocking
- * fallback for systems without fonts-noto-color-emoji (installed by deploy/install.sh); offline it is simply
+ * fallback for systems without fonts-noto-color-emoji (provided by the display device); offline it is simply
  * skipped. Other editions load nothing from third parties: the bundled "Marco Emoji" subset (web/shared/emoji-font.css)
  * covers the emoji the admin offers.
  */

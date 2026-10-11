@@ -4,14 +4,7 @@ import ICON_RULES from './iconRules.js';
 // Icon rules are shared with the admin and display (server/core/iconRules.js).
 export const DEFAULT_ICON_RULES = ICON_RULES.map((r) => ({ id: r.id, match: [...r.match], emoji: r.emoji, color: null }));
 
-export const DEFAULT_SOURCES = [
-  // A public example feed only. Add your own calendars (Google, iCal, vacation-rental feeds…) in the admin panel.
-  {
-    id: 'c_holidays', type: 'ics', name: 'Public holidays',
-    url: 'https://calendar.google.com/calendar/ical/en.portuguese%23holiday%40group.v.calendar.google.com/public/basic.ics',
-    color: '#f4a261', emoji: '🎉', kind: 'holidays', enabled: true, refreshMin: 360, insecureTls: false, privacy: 'keep',
-  },
-];
+export const DEFAULT_SOURCES = [];
 
 // ---- Config schema v2 (multi-screen). See docs/ARCHITECTURE.md. ----
 export const CONFIG_VERSION = 2;
@@ -82,14 +75,14 @@ export function defaultConfig() {
     screens: [defaultScreenProfile()],
     // ---- global sections ----
     calendar: { sources: DEFAULT_SOURCES, iconRules: DEFAULT_ICON_RULES },
-    datetime: { timezone: 'Europe/Lisbon' },
+    datetime: { timezone: 'Europe/Sofia' },
     weather: {
       // provider: a source of server/core/weather.js (or 'homeassistant'); model: an Open-Meteo forecast model
-      provider: 'open-meteo', model: 'best_match', locationName: 'Lisbon, Portugal', lat: 38.7223, lon: -9.1393, units: 'metric',
+      provider: 'open-meteo', model: 'best_match', locationName: 'Sofia, Bulgaria', lat: 42.6977, lon: 23.3219, units: 'metric',
       haWeatherEntity: '', haIndoorTempEntity: '', haIndoorHumidityEntity: '',
     },
     news: {
-      feeds: [{ id: 'n1', name: 'BBC News – World', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', enabled: true }],
+      feeds: [],
       maxItems: 30,
     },
     todo: { items: [] },

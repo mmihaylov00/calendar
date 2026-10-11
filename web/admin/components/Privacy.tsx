@@ -60,19 +60,19 @@ export function privacyTime(iso: string, tz: string): string {
   const today = day(new Date());
   const tomorrow = day(new Date(Date.now() + 86_400_000));
   if (day(d) === today) return time;
-  if (day(d) === tomorrow) return t('mañana a las {time}', { time });
+  if (day(d) === tomorrow) return t('tomorrow at {time}', { time });
   const wd = new Intl.DateTimeFormat(locale(), { weekday: 'long', day: 'numeric', timeZone: tz }).format(d);
-  return t('el {day} a las {time}', { day: wd, time });
+  return t('{day} at {time}', { day: wd, time });
 }
 
 /** "hasta las 14:30" / "hasta que lo quites". */
 export function privacyUntilText(r: Pick<PrivacyScreenState, 'until'>, tz: string): string {
-  if (!r.until) return t('hasta que lo quites');
+  if (!r.until) return t('until you turn it off');
   const when = privacyTime(r.until, tz);
-  return /^\d/.test(when) ? t('hasta las {time}', { time: when }) : t('hasta {when}', { when });
+  return /^\d/.test(when) ? t('until {time}', { time: when }) : t('until {when}', { when });
 }
 
-const joinNames = (names: string[]) => (names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} ${t('y')} ${names[names.length - 1]}`);
+const joinNames = (names: string[]) => (names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} ${t('and')} ${names[names.length - 1]}`);
 
 /** Banner on every page while at least one screen is private. */
 export function PrivacyBanner({ tz, go }: { tz: string; go: (route: string) => void }) {
@@ -90,7 +90,7 @@ export function PrivacyBanner({ tz, go }: { tz: string; go: (route: string) => v
     try {
       await api.setPrivacy({ mode: 'off', screens: on.map((r) => r.screenId) });
       await refreshPrivacy();
-      toast(t('Modo privado desactivado'));
+      toast(t('Private mode off'));
     } catch (e) {
       toast((e as ApiError).message, 'error');
     } finally {
@@ -103,20 +103,20 @@ export function PrivacyBanner({ tz, go }: { tz: string; go: (route: string) => v
       <span class="update-banner__text">
         {[...groups.values()].map((g) => (
           <span class="privacy-banner__line">
-            {t('Modo privado en {screen} {until}', {
-              screen: all && groups.size === 1 ? t('todas las pantallas') : joinNames(g.map((r) => r.name)),
+            {t('Private mode on {screen} {until}', {
+              screen: all && groups.size === 1 ? t('all screens') : joinNames(g.map((r) => r.name)),
               until: privacyUntilText(g[0], tz),
             })}
-            {g.every((r) => r.by === 'schedule') && <span class="muted small"> · {t('por horario')}</span>}
+            {g.every((r) => r.by === 'schedule') && <span class="muted small"> · {t('scheduled')}</span>}
           </span>
         ))}
       </span>
       <span class="update-banner__actions">
         <Button size="sm" variant="ghost" onClick={() => go('screen')}>
-          {t('Ajustes')}
+          {t('Settings')}
         </Button>
         <Button size="sm" icon="x" loading={busy} onClick={off}>
-          {t('Desactivar')}
+          {t('Turn off')}
         </Button>
       </span>
     </div>
@@ -138,7 +138,7 @@ export function PrivacyActions({ screenIds = [], active, onDone, size }: { scree
     try {
       await api.setPrivacy({ ...choiceBody(c), ...(screenIds.length ? { screens: screenIds } : {}) });
       await refreshPrivacy();
-      toast(c === 'off' ? t('Modo privado desactivado') : t('Modo privado activado'));
+      toast(c === 'off' ? t('Private mode off') : t('Private mode on'));
       onDone?.();
     } catch (e) {
       toast((e as ApiError).message, 'error');
@@ -147,14 +147,14 @@ export function PrivacyActions({ screenIds = [], active, onDone, size }: { scree
     }
   };
   const opts: [Choice, string, string][] = [
-    ['h1', t('1 h'), t('Modo privado durante 1 hora')],
-    ['h3', t('3 h'), t('Modo privado durante 3 horas')],
-    ['morning', t('Hasta mañana'), t('Hasta mañana a las 06:00')],
-    ['open', t('Hasta que lo quite'), t('Sin hora de fin')],
+    ['h1', t('1 h'), t('Private mode for 1 hour')],
+    ['h3', t('3 h'), t('Private mode for 3 hours')],
+    ['morning', t('Until tomorrow'), t('Until 06:00 tomorrow')],
+    ['open', t('Until I turn it off'), t('No end time')],
   ];
   return (
     <div class="privacy-actions">
-      <div class="btn-group" role="group" aria-label={t('Modo privado')}>
+      <div class="btn-group" role="group" aria-label={t('Private mode')}>
         {opts.map(([c, label, title]) => (
           <Button size={size} icon={c === 'h1' ? 'lock' : undefined} loading={busy === c} onClick={() => run(c)} title={title}>
             {label}
@@ -163,7 +163,7 @@ export function PrivacyActions({ screenIds = [], active, onDone, size }: { scree
       </div>
       {active && (
         <Button size={size} variant="ghost" icon="x" loading={busy === 'off'} onClick={() => run('off')}>
-          {t('Desactivar')}
+          {t('Turn off')}
         </Button>
       )}
     </div>
@@ -195,16 +195,16 @@ export function PrivacyMenu({ screenId, row, tz }: { screenId: string; row: Pick
         type="button"
         class={`icon-btn ${active ? 'is-private' : ''}`}
         aria-expanded={open}
-        title={active ? `${t('Modo privado')} · ${privacyUntilText(row!, tz)}` : t('Modo privado')}
+        title={active ? `${t('Private mode')} · ${privacyUntilText(row!, tz)}` : t('Private mode')}
         onClick={() => setOpen(!open)}
       >
         <Icon name="lock" size={15} />
       </button>
       {open && (
-        <div class="privacy-menu__pop" role="dialog" aria-label={t('Modo privado')}>
-          <strong>{t('Modo privado')}</strong>
+        <div class="privacy-menu__pop" role="dialog" aria-label={t('Private mode')}>
+          <strong>{t('Private mode')}</strong>
           <p class="muted small">
-            {active ? t('Activo {until}', { until: privacyUntilText(row!, tz) }) : screenId ? t('Los eventos se ven como «Ocupado» en esta pantalla.') : t('Los eventos se ven como «Ocupado» en todas las pantallas.')}
+            {active ? t('On {until}', { until: privacyUntilText(row!, tz) }) : screenId ? t('Events show as “Busy” on this screen.') : t('Events show as “Busy” on every screen.')}
           </p>
           <PrivacyActions size="sm" screenIds={screenId ? [screenId] : []} active={active} onDone={() => setOpen(false)} />
         </div>

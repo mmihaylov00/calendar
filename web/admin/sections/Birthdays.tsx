@@ -28,12 +28,12 @@ function parseCsvLocal(text: string, existing: Birthday[]): BirthdayCsvResult {
     if (i === 0 && /^(nombre|name|nome)$/i.test(parts[0]) ) return;
     const [name, date] = parts;
     const m = /^(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2}|\d{4}))?$/.exec(date ?? '');
-    if (!name || !m) return void errors.push({ line: i + 1, text: raw, message: !name ? 'falta el nombre' : 'fecha no válida' });
+    if (!name || !m) return void errors.push({ line: i + 1, text: raw, message: !name ? 'missing name' : 'invalid date' });
     const day = Number(m[1]);
     const month = Number(m[2]);
     let year: number | null = m[3] ? Number(m[3]) : null;
     if (year != null && m[3].length === 2) year += year <= yy ? 2000 : 1900;
-    if (month < 1 || month > 12 || day < 1 || day > daysInMonth(month) || (year != null && (year < 1900 || year > 2100))) return void errors.push({ line: i + 1, text: raw, message: 'fecha no válida' });
+    if (month < 1 || month > 12 || day < 1 || day > daysInMonth(month) || (year != null && (year < 1900 || year > 2100))) return void errors.push({ line: i + 1, text: raw, message: 'invalid date' });
     const k = key(name, day, month);
     if (seen.has(k)) return void duplicates++;
     seen.add(k);
@@ -60,21 +60,21 @@ function CsvDialog({ existing, onClose, onAdd }: { existing: Birthday[]; onClose
   };
   return (
     <Modal
-      title={t('Importar cumpleaños')}
+      title={t('Import birthdays')}
       icon="upload"
       onClose={onClose}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            {t('Cancelar')}
+            {t('Cancel')}
           </Button>
           {res && res.items.length > 0 ? (
             <Button variant="primary" icon="plus" onClick={() => onAdd(res.items)}>
-              {t('Añadir {n} cumpleaños', { n: res.items.length })}
+              {t('Add {n} birthdays', { n: res.items.length })}
             </Button>
           ) : (
             <Button variant="primary" icon="play" loading={busy} disabled={!text.trim()} onClick={parse}>
-              {t('Analizar')}
+              {t('Check')}
             </Button>
           )}
         </>
@@ -82,13 +82,13 @@ function CsvDialog({ existing, onClose, onAdd }: { existing: Birthday[]; onClose
     >
       <div class="stack">
         <p class="muted small">
-          {t('Pega una línea por persona:')} <code>{t('nombre')};dd/mm</code> {t('o')} <code>{t('nombre')};dd/mm/aaaa</code>. {t('También vale coma o tabulador (copiar desde una hoja de cálculo).')}
+          {t('Paste one line per person:')} <code>{t('name')};dd/mm</code> {t('or')} <code>{t('name')};dd/mm/yyyy</code>. {t('Comma or tab also work (copy from a spreadsheet).')}
         </p>
         <Textarea
           mono
           rows={8}
           value={text}
-          placeholder={'María;14/03/1990\nAbuelo Juan;02/11\nLucía,29/02/2016'}
+          placeholder={t('name;dd/mm/yyyy')}
           onValue={(v) => {
             setText(v);
             setRes(null);
@@ -98,12 +98,12 @@ function CsvDialog({ existing, onClose, onAdd }: { existing: Birthday[]; onClose
           <div class="csv-result">
             <div class="csv-result__sum">
               <span class="ok-text">
-                <Icon name="check" size={14} /> {t('{n} válidos', { n: res.items.length })}
+                <Icon name="check" size={14} /> {t('{n} valid', { n: res.items.length })}
               </span>
-              {res.duplicates > 0 && <span class="muted">{t('{n} ya existían', { n: res.duplicates })}</span>}
+              {res.duplicates > 0 && <span class="muted">{t('{n} already existed', { n: res.duplicates })}</span>}
               {res.errors.length > 0 && (
                 <span class="err-text">
-                  <Icon name="alert" size={14} /> {t('{n} con errores', { n: res.errors.length })}
+                  <Icon name="alert" size={14} /> {t('{n} with errors', { n: res.errors.length })}
                 </span>
               )}
             </div>
@@ -141,7 +141,7 @@ function DayMonth({ day, month, onChange, error }: { day: number; month: number;
   const months = monthNames('short');
   return (
     <div class={`daymonth ${error ? 'is-invalid' : ''}`}>
-      <select class="daymonth__d" value={day} aria-label={t('Día')} onChange={(e) => onChange(Number(e.currentTarget.value), month)}>
+      <select class="daymonth__d" value={day} aria-label={t('Day')} onChange={(e) => onChange(Number(e.currentTarget.value), month)}>
         {Array.from({ length: daysInMonth(month) }, (_, i) => (
           <option value={i + 1}>{i + 1}</option>
         ))}
@@ -149,7 +149,7 @@ function DayMonth({ day, month, onChange, error }: { day: number; month: number;
       <select
         class="daymonth__m"
         value={month}
-        aria-label={t('Mes')}
+        aria-label={t('Month')}
         onChange={(e) => {
           const m = Number(e.currentTarget.value);
           onChange(Math.min(day, daysInMonth(m)), m);
@@ -198,27 +198,27 @@ export function BirthdaysSection({ full, setFull, errors, cfg }: SectionProps) {
     e.preventDefault();
     if (!name.trim() || yearBad || atMax) return;
     if (bd.items.some((b) => normalize(b.name) === normalize(name) && b.day === day && b.month === month)) {
-      toast(t('Ese cumpleaños ya está en la lista'), 'info');
+      toast(t('That birthday is already in the list'), 'info');
       return;
     }
     setFull((d) => void d.birthdays.items.push({ id: uid('b'), name: name.trim().slice(0, 80), day, month, year: yearNum, emoji }));
-    toast(t('🎂 {name} añadido · guarda para publicarlo', { name: name.trim() }), 'ok', 2200);
+    toast(t('🎂 {name} added · save to publish', { name: name.trim() }), 'ok', 2200);
     setName('');
     setYear('');
     setEmoji('');
   };
   const remove = async (b: Birthday) => {
-    const ok = await confirmDialog({ title: t('Eliminar el cumpleaños de {name}', { name: b.name }), confirm: t('Eliminar'), danger: true });
+    const ok = await confirmDialog({ title: t('Delete {name}’s birthday', { name: b.name }), confirm: t('Delete'), danger: true });
     if (ok) setFull((d) => void (d.birthdays.items = d.birthdays.items.filter((x) => x.id !== b.id)));
   };
 
-  const labelFor = (n: { days: number; age: number | null }) => (n.age != null && bd.showAge ? `${relDays(n.days)} · ${t('cumple {n}', { n: n.age })}` : relDays(n.days));
+  const labelFor = (n: { days: number; age: number | null }) => (n.age != null && bd.showAge ? `${relDays(n.days)} · ${t('turns {n}', { n: n.age })}` : relDays(n.days));
 
   return (
     <>
-      <PageHeader title={t('Cumpleaños')} desc={t('Se muestran cada año en el calendario. Si indicas el año de nacimiento, la pantalla muestra la edad: “🎂 María (34)”.')}>
+      <PageHeader title={t('Birthdays')} desc={t('Shown every year on the calendar. With a birth year the screen shows the age: “🎂 Name (34)”.')}>
         <Button icon="upload" disabled={atMax} onClick={() => setCsv(true)}>
-          {t('Importar CSV')}
+          {t('Import CSV')}
         </Button>
       </PageHeader>
 
@@ -238,32 +238,32 @@ export function BirthdaysSection({ full, setFull, errors, cfg }: SectionProps) {
         </div>
       )}
 
-      <Card title={t('Calendario de cumpleaños')} icon="cake" scope="global" id="bday-settings">
-        <ToggleRow label={t('Mostrar cumpleaños')} checked={bd.enabled} onChange={(v) => setFull((d) => void (d.birthdays.enabled = v))} />
+      <Card title={t('Birthday calendar')} icon="cake" scope="global" id="bday-settings">
+        <ToggleRow label={t('Show birthdays')} checked={bd.enabled} onChange={(v) => setFull((d) => void (d.birthdays.enabled = v))} />
         <div class={`stack ${bd.enabled ? '' : 'is-disabled'}`}>
           <div class="legend-edit">
             <EmojiPicker value={bd.emoji} allowNone onChange={(v) => setFull((d) => void (d.birthdays.emoji = v))} />
             <ColorPicker compact value={bd.color} onChange={(v) => v && setFull((d) => void (d.birthdays.color = v))} />
-            <TextInput value={bd.name} maxLength={60} placeholder={t('Cumpleaños')} onValue={(v) => setFull((d) => void (d.birthdays.name = v))} />
-            <span class="muted small">{t('Nombre en la leyenda')}</span>
+            <TextInput value={bd.name} maxLength={60} placeholder={t('Birthdays')} onValue={(v) => setFull((d) => void (d.birthdays.name = v))} />
+            <span class="muted small">{t('Name in the legend')}</span>
           </div>
-          <ToggleRow icon="🔢" label={t('Mostrar la edad')} hint={t('Solo si conoces el año de nacimiento')} checked={bd.showAge} onChange={(v) => setFull((d) => void (d.birthdays.showAge = v))} />
+          <ToggleRow icon="🔢" label={t('Show age')} hint={t('Only if the birth year is known')} checked={bd.showAge} onChange={(v) => setFull((d) => void (d.birthdays.showAge = v))} />
           {has('privacy') && <PrivacyModeField value={bd.privacy ?? 'keep'} onChange={(v) => setFull((d) => void (d.birthdays.privacy = v))} />}
         </div>
       </Card>
 
       <Card
-        title={t('Personas')}
+        title={t('People')}
         icon="list"
         id="bday-list"
-        desc={t('{n} cumpleaños', { n: bd.items.length })}
+        desc={t('{n} birthdays', { n: bd.items.length })}
         actions={
           <Segmented
             size="sm"
             value={sort}
             options={[
-              { value: 'next', label: t('Próximos') },
-              { value: 'month', label: t('Por mes') },
+              { value: 'next', label: t('Upcoming') },
+              { value: 'month', label: t('By month') },
               { value: 'name', label: t('A-Z') },
             ]}
             onChange={setSort}
@@ -272,7 +272,7 @@ export function BirthdaysSection({ full, setFull, errors, cfg }: SectionProps) {
       >
         <form class="bday-add" onSubmit={add}>
           <EmojiPicker value={emoji} allowNone onChange={setEmoji} />
-          <TextInput class="bday-add__name" value={name} onValue={setName} placeholder={t('Nombre')} maxLength={80} autoFocus={focusAdd} />
+          <TextInput class="bday-add__name" value={name} onValue={setName} placeholder={t('Name')} maxLength={80} autoFocus={focusAdd} />
           <DayMonth
             day={day}
             month={month}
@@ -281,16 +281,16 @@ export function BirthdaysSection({ full, setFull, errors, cfg }: SectionProps) {
               setMonth(m);
             }}
           />
-          <input class={`input bday-add__year ${yearBad ? 'is-invalid' : ''}`} inputMode="numeric" placeholder={t('Año (opc.)')} value={year} maxLength={4} onInput={(e) => setYear(e.currentTarget.value.replace(/\D/g, ''))} />
+          <input class={`input bday-add__year ${yearBad ? 'is-invalid' : ''}`} inputMode="numeric" placeholder={t('Year (opt.)')} value={year} maxLength={4} onInput={(e) => setYear(e.currentTarget.value.replace(/\D/g, ''))} />
           <Button type="submit" variant="primary" icon="plus" disabled={!name.trim() || yearBad || atMax}>
-            {t('Añadir')}
+            {t('Add')}
           </Button>
         </form>
         <LimitNote name="birthdays" count={bd.items.length} />
-        {bd.items.length > 8 && <SearchInput value={q} onValue={setQ} placeholder={t('Buscar persona…')} />}
+        {bd.items.length > 8 && <SearchInput value={q} onValue={setQ} placeholder={t('Search person…')} />}
         {bd.items.length === 0 ? (
-          <Empty icon="cake" title={t('Aún no hay cumpleaños')}>
-            {t('Añádelos uno a uno o pega una lista con “Importar CSV”.')}
+          <Empty icon="cake" title={t('No birthdays yet')}>
+            {t('Add them one by one or paste a list with “Import CSV”.')}
           </Empty>
         ) : (
           <div class="bday-table">
@@ -304,7 +304,7 @@ export function BirthdaysSection({ full, setFull, errors, cfg }: SectionProps) {
                   <input
                     class={`input bday-row__year ${errors[`bday.${b.id}.year`] ? 'is-invalid' : ''}`}
                     inputMode="numeric"
-                    placeholder={t('Año')}
+                    placeholder={t('Year')}
                     value={b.year ?? ''}
                     maxLength={4}
                     onInput={(e) => {
@@ -313,16 +313,16 @@ export function BirthdaysSection({ full, setFull, errors, cfg }: SectionProps) {
                     }}
                   />
                   <span class={`bday-row__next ${next.days <= 7 ? 'is-soon' : ''}`}>{labelFor(next)}</span>
-                  <button type="button" class="icon-btn icon-btn--danger" aria-label={t('Eliminar')} onClick={() => remove(b)}>
+                  <button type="button" class="icon-btn icon-btn--danger" aria-label={t('Delete')} onClick={() => remove(b)}>
                     <Icon name="trash" size={15} />
                   </button>
                 </div>
               );
             })}
-            {q && rows.length === 0 && <div class="muted small">{t('Sin resultados')}</div>}
+            {q && rows.length === 0 && <div class="muted small">{t('No results')}</div>}
           </div>
         )}
-        {Object.keys(errors).some((k) => k.startsWith('bday.')) && <Callout kind="error">{t('Revisa los cumpleaños marcados en rojo.')}</Callout>}
+        {Object.keys(errors).some((k) => k.startsWith('bday.')) && <Callout kind="error">{t('Check the birthdays marked in red.')}</Callout>}
       </Card>
       {csv && (
         <CsvDialog
@@ -333,8 +333,8 @@ export function BirthdaysSection({ full, setFull, errors, cfg }: SectionProps) {
             const added = items.slice(0, room);
             setFull((d) => void d.birthdays.items.push(...added));
             setCsv(false);
-            toast(t('{n} cumpleaños añadidos · guarda para publicarlos', { n: added.length }), added.length ? 'ok' : 'info');
-            if (added.length < items.length) toast(t('Has llegado al máximo ({max}).', { max: limit('birthdays') ?? bd.items.length }), 'info');
+            toast(t('{n} birthdays added · save to publish', { n: added.length }), added.length ? 'ok' : 'info');
+            if (added.length < items.length) toast(t('You have reached the maximum ({max}).', { max: limit('birthdays') ?? bd.items.length }), 'info');
           }}
         />
       )}

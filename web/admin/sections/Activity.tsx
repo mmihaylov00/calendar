@@ -49,10 +49,10 @@ export function ActivitySection(_: SectionProps) {
   }, [type, level, qDeb]);
 
   const clear = async () => {
-    if (!(await confirmDialog({ title: t('¿Vaciar el registro de actividad?'), body: t('Se borrarán todas las entradas. No se puede deshacer.'), confirm: t('Vaciar'), danger: true }))) return;
+    if (!(await confirmDialog({ title: t('Clear the activity log?'), body: t('All entries will be deleted. This cannot be undone.'), confirm: t('Clear'), danger: true }))) return;
     try {
       await api.clearActivity();
-      toast(t('Registro vaciado'));
+      toast(t('Log cleared'));
       load(false);
     } catch (e) {
       toast((e as ApiError).message, 'error');
@@ -68,12 +68,12 @@ export function ActivitySection(_: SectionProps) {
 
   return (
     <>
-      <PageHeader title={t('Actividad')} desc={t('Quién hizo qué y cuándo: accesos, cambios de configuración, avisos, uso de la API y errores de los calendarios.')}>
+      <PageHeader title={t('Activity')} desc={t('Who did what and when: sign-ins, setting changes, alerts, API usage and calendar errors.')}>
         <Button icon="refresh" loading={loading && !!items} onClick={() => load(false)}>
-          {t('Actualizar')}
+          {t('Refresh')}
         </Button>
         <Button variant="ghost" icon="trash" onClick={clear}>
-          {t('Vaciar')}
+          {t('Clear')}
         </Button>
       </PageHeader>
 
@@ -89,18 +89,18 @@ export function ActivitySection(_: SectionProps) {
           size="sm"
           value={level}
           options={[
-            { value: '', label: t('Todos') },
-            { value: 'warn', label: t('Avisos') },
-            { value: 'error', label: t('Errores') },
+            { value: '', label: t('All') },
+            { value: 'warn', label: t('Alerts') },
+            { value: 'error', label: t('Errors') },
           ]}
           onChange={setLevel}
         />
-        <SearchInput value={q} onValue={setQ} placeholder={t('Buscar (email, IP, calendario…)')} />
+        <SearchInput value={q} onValue={setQ} placeholder={t('Search (email, IP, calendar…)')} />
       </div>
 
       <Card>
         {err && !items ? (
-          <Empty icon="alert" title={t('No se pudo cargar la actividad')}>
+          <Empty icon="alert" title={t('Could not load activity')}>
             {err}
           </Empty>
         ) : !items ? (
@@ -110,7 +110,7 @@ export function ActivitySection(_: SectionProps) {
             <div class="skeleton" />
           </div>
         ) : items.length === 0 ? (
-          <Empty icon="history" title={type || level || qDeb ? t('Nada coincide con el filtro') : t('Sin actividad registrada.')} />
+          <Empty icon="history" title={type || level || qDeb ? t('Nothing matches the filter') : t('No activity recorded.')} />
         ) : (
           <ul class={`act-list ${loading ? 'is-loading' : ''}`}>
             {items.map((a, i) => {
@@ -121,7 +121,7 @@ export function ActivitySection(_: SectionProps) {
               const hasData = a.data && Object.keys(a.data).length > 0;
               return (
                 <>
-                  {head && <li class="act-day">{day === today ? t('Hoy') : fmtDay(day, { year: 'auto' })}</li>}
+                  {head && <li class="act-day">{day === today ? t('Today') : fmtDay(day, { year: 'auto' })}</li>}
                   <li class={`act act--${a.level} ${isOpen ? 'is-open' : ''}`}>
                     <button type="button" class="act__row" onClick={() => hasData && setOpen(isOpen ? null : a.id)} aria-expanded={hasData ? isOpen : undefined}>
                       <span class="act__time mono small">{timeFmt.format(new Date(a.ts))}</span>
@@ -149,7 +149,7 @@ export function ActivitySection(_: SectionProps) {
         {hasMore && (
           <div class="center">
             <Button variant="ghost" loading={loading} onClick={() => load(true)}>
-              {t('Cargar más')}
+              {t('Load more')}
             </Button>
           </div>
         )}

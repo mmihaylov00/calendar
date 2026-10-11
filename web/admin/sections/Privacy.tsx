@@ -14,15 +14,15 @@ export const DEFAULT_SCREEN_PRIVACY: ScreenPrivacyConfig = { hidePhotos: false, 
 export const defaultPrivacyOf = (kind: SourceKind): PrivacyMode => (kind === 'holidays' || kind === 'birthdays' ? 'keep' : 'busy');
 
 export const privacyModeOptions = () => [
-  { value: 'busy' as PrivacyMode, label: t('Mostrar como Ocupado') },
-  { value: 'hide' as PrivacyMode, label: t('Ocultar') },
-  { value: 'keep' as PrivacyMode, label: t('No cambiar') },
+  { value: 'busy' as PrivacyMode, label: t('Show as Busy') },
+  { value: 'hide' as PrivacyMode, label: t('Hide') },
+  { value: 'keep' as PrivacyMode, label: t('Leave as is') },
 ];
 
 /** "En modo privado" select of one calendar (Calendars, Local events, Birthdays). */
 export function PrivacyModeField({ value, onChange }: { value: PrivacyMode; onChange: (v: PrivacyMode) => void }) {
   return (
-    <Field label={t('En modo privado')} hint={value === 'busy' ? t('Solo la hora y el color del calendario, con el título «Ocupado».') : undefined}>
+    <Field label={t('In private mode')} hint={value === 'busy' ? t('Only the time and the calendar colour, titled “Busy”.') : undefined}>
       <Select value={value} options={privacyModeOptions()} onChange={onChange} />
     </Field>
   );
@@ -57,31 +57,31 @@ export function PrivacyCard({ cfg, set, errors, go }: { cfg: AppConfig; set: (fn
     <Card
       id="scr-privacy"
       scope="screen"
-      title={t('Modo privado')}
+      title={t('Private mode')}
       icon="lock"
-      desc={t('Para cuando hay invitados: los eventos se ven como «Ocupado», sin títulos, lugares ni notas. Se filtra en el servidor, así que la pantalla nunca recibe los datos reales.')}
+      desc={t('For when you have guests: events show as “Busy”, without titles, places or notes. The server does the filtering, so the screen never receives the real data.')}
     >
       <div class="privacy-now">
         <span class={`privacy-now__state ${row?.active ? 'is-on' : ''}`}>
           <Icon name="lock" size={14} />
-          {row?.active ? t('Activo {until}', { until: privacyUntilText(row, tz) }) : t('Desactivado ahora')}
-          {row?.active && row.by === 'schedule' && <span class="muted small"> · {t('por horario')}</span>}
+          {row?.active ? t('On {until}', { until: privacyUntilText(row, tz) }) : t('Off right now')}
+          {row?.active && row.by === 'schedule' && <span class="muted small"> · {t('scheduled')}</span>}
         </span>
         <PrivacyActions size="sm" screenIds={[cfg.screenId]} active={!!row?.active} />
       </div>
 
       <ToggleRow
-        label={t('Ocultar las fotos')}
-        hint={t('Mientras está activo, el fondo y el marco de fotos usan fotos de stock en vez de las de tu galería.')}
+        label={t('Hide photos')}
+        hint={t('While it is on, the background and the photo frame use stock photos instead of your gallery.')}
         checked={p.hidePhotos}
         onChange={(v) => upd((x) => void (x.hidePhotos = v))}
       />
-      <ToggleRow label={t('Mostrar un candado en la pantalla')} hint={t('Un candado pequeño en la esquina indica que está en modo privado.')} checked={p.showLock} onChange={(v) => upd((x) => void (x.showLock = v))} />
+      <ToggleRow label={t('Show a lock on the screen')} hint={t('A small lock in the corner shows that private mode is on.')} checked={p.showLock} onChange={(v) => upd((x) => void (x.showLock = v))} />
 
       <div>
-        <h4 class="privacy-sub">{t('Horario')}</h4>
+        <h4 class="privacy-sub">{t('Schedule')}</h4>
         <p class="muted small privacy-note">
-          {t('Se activa solo en estas franjas. Si lo quitas a mano durante una franja, vuelve en la siguiente. Si lo activas a mano, dura lo que elijas aunque la franja termine antes.')}
+          {t('It turns on by itself during these times. If you turn it off by hand during one, it comes back with the next. If you turn it on by hand, it lasts as long as you chose, even when the time slot ends earlier.')}
         </p>
       </div>
       {p.schedule.map((r) => {
@@ -92,20 +92,20 @@ export function PrivacyCard({ cfg, set, errors, go }: { cfg: AppConfig; set: (fn
             <div class="privacy-rule__head">
               <label class="mini-toggle">
                 <Toggle checked={r.enabled} onChange={(v) => updRule(r.id, (x) => void (x.enabled = v))} />
-                <span>{r.enabled ? t('Activa') : t('En pausa')}</span>
+                <span>{r.enabled ? t('Enabled') : t('Paused')}</span>
               </label>
-              <button type="button" class="icon-btn" title={t('Eliminar')} onClick={() => upd((x) => void (x.schedule = x.schedule.filter((y) => y.id !== r.id)))}>
+              <button type="button" class="icon-btn" title={t('Delete')} onClick={() => upd((x) => void (x.schedule = x.schedule.filter((y) => y.id !== r.id)))}>
                 <Icon name="trash" size={15} />
               </button>
             </div>
-            <Field label={t('Días')} hint={r.days.length ? undefined : t('Ninguno marcado: todos los días')}>
+            <Field label={t('Days')} hint={r.days.length ? undefined : t('None ticked: every day')}>
               <WeekdayPicker labels={wd} value={r.days} onChange={(v) => updRule(r.id, (x) => void (x.days = v))} />
             </Field>
             <div class="grid grid--2">
-              <Field label={t('Desde')}>
+              <Field label={t('From')}>
                 <input class="input" type="time" value={r.from} onInput={(ev) => updRule(r.id, (x) => void (x.from = ev.currentTarget.value))} />
               </Field>
-              <Field label={t('Hasta')} error={err ? t(err) : undefined} hint={crosses ? t('Termina al día siguiente') : undefined}>
+              <Field label={t('To')} error={err ? t(err) : undefined} hint={crosses ? t('Ends the next day') : undefined}>
                 <input class={`input ${err ? 'is-invalid' : ''}`} type="time" value={r.to} onInput={(ev) => updRule(r.id, (x) => void (x.to = ev.currentTarget.value))} />
               </Field>
             </div>
@@ -114,13 +114,13 @@ export function PrivacyCard({ cfg, set, errors, go }: { cfg: AppConfig; set: (fn
       })}
       {p.schedule.length < 10 && (
         <Button size="sm" icon="plus" onClick={() => upd((x) => void x.schedule.push(newRule()))}>
-          {t('Añadir franja')}
+          {t('Add a time slot')}
         </Button>
       )}
 
       <div>
-        <h4 class="privacy-sub">{t('Qué se ve de cada calendario')}</h4>
-        <p class="muted small privacy-note">{t('Vale para todas las pantallas. El tiempo, los avisos y los mensajes no cambian.')}</p>
+        <h4 class="privacy-sub">{t('What each calendar shows')}</h4>
+        <p class="muted small privacy-note">{t('This applies to every screen. Weather, alerts and messages do not change.')}</p>
       </div>
       <ul class="privacy-sources">
         {sources.map((s) => (
@@ -132,9 +132,9 @@ export function PrivacyCard({ cfg, set, errors, go }: { cfg: AppConfig; set: (fn
         ))}
       </ul>
       <p class="muted small">
-        {t('Para que Home Assistant lo active, usa el webhook /api/hooks/privacy.')}{' '}
+        {t('To let Home Assistant turn it on, use the /api/hooks/privacy webhook.')}{' '}
         <a href="#api" onClick={(e) => (e.preventDefault(), go('api'))}>
-          {t('API y webhooks')}
+          {t('API & webhooks')}
         </a>
       </p>
     </Card>

@@ -1,6 +1,7 @@
 // Help and feedback form (Marco Cloud, features.feedback): limits, the technical details it can attach and how they
 // are shown before sending. Plain TypeScript with type-only imports, so the server tests can load it.
 import type { FeedbackKind, FeedbackMeta, FeedbackRequest } from '../shared/types';
+import { REPO_URL } from '../shared/project';
 
 /** Same limits as the cloud's POST /api/admin/feedback. */
 export const FEEDBACK_MIN = 3;
@@ -8,7 +9,7 @@ export const FEEDBACK_MAX = 4000;
 export const FEEDBACK_KINDS: readonly FeedbackKind[] = ['problem', 'idea', 'other'];
 
 /** Where people can open a public issue instead. */
-export const GITHUB_ISSUES_URL = 'https://github.com/mr-reb00t/marco/issues/new/choose';
+export const GITHUB_ISSUES_URL = `${REPO_URL}/issues/new`;
 
 const cut = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
@@ -29,26 +30,26 @@ export function feedbackMeta(input: { version?: string; page?: string; screens?:
   return meta;
 }
 
-/** Label (Spanish key for t()) and value of each detail, in the order the form shows them. */
+/** Label and value of each detail, in the order the form shows them. */
 export function metaRows(meta: FeedbackMeta): [string, string][] {
   const rows: [string, string][] = [];
-  if (meta.version) rows.push(['Versión', meta.version]);
-  if (meta.page) rows.push(['Página', meta.page]);
-  if (meta.screens !== undefined) rows.push(['Pantallas', String(meta.screens)]);
-  if (meta.lang) rows.push(['Idioma', meta.lang]);
-  if (meta.timeZone) rows.push(['Zona horaria', meta.timeZone]);
-  if (meta.userAgent) rows.push(['Navegador', meta.userAgent]);
+  if (meta.version) rows.push(['Version', meta.version]);
+  if (meta.page) rows.push(['Page', meta.page]);
+  if (meta.screens !== undefined) rows.push(['Screens', String(meta.screens)]);
+  if (meta.lang) rows.push(['Language', meta.lang]);
+  if (meta.timeZone) rows.push(['Time zone', meta.timeZone]);
+  if (meta.userAgent) rows.push(['Browser', meta.userAgent]);
   return rows;
 }
 
 /** Length of the message as the server counts it (trimmed). */
 export const messageLength = (message: string) => message.trim().length;
 
-/** Spanish key of the problem with a message, or '' when it can be sent. */
+/** Message describing the problem with a message, or '' when it can be sent. */
 export function messageError(message: string): string {
   const n = messageLength(message);
-  if (n < FEEDBACK_MIN) return 'Escribe un poco más para que podamos entenderlo.';
-  if (n > FEEDBACK_MAX) return 'El mensaje es demasiado largo.';
+  if (n < FEEDBACK_MIN) return 'Write a little more so we can understand it.';
+  if (n > FEEDBACK_MAX) return 'The message is too long.';
   return '';
 }
 

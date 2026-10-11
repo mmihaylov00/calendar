@@ -76,11 +76,11 @@ export function fmtTime(iso: string): string {
 
 /** "Hoy" / "Mañana" / "En 3 días" / "Hace 2 días". */
 export function relDays(n: number): string {
-  if (n === 0) return t('Hoy');
-  if (n === 1) return t('Mañana');
-  if (n === -1) return t('Ayer');
-  if (n > 0) return t('En {n} días', { n });
-  return t('Hace {n} días', { n: -n });
+  if (n === 0) return t('Today');
+  if (n === 1) return t('Tomorrow');
+  if (n === -1) return t('Yesterday');
+  if (n > 0) return t('In {n} days', { n });
+  return t('{n} days ago', { n: -n });
 }
 
 /** Next occurrence (≥ today) of a birthday; 29/02 → 28/02 on non-leap years. */
@@ -103,7 +103,7 @@ export const eventDay = (e: CalEvent) => e.start.slice(0, 10);
 
 /** "14:00–15:30" or "Todo el día" for an event. */
 export function eventTimeLabel(e: CalEvent): string {
-  if (e.allDay) return t('Todo el día');
+  if (e.allDay) return t('All day');
   const s = e.start.slice(11, 16);
   const en = e.end.slice(11, 16);
   return en && en !== s ? `${s}–${en}` : s;

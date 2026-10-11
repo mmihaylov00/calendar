@@ -3480,9 +3480,6 @@ h1 .scope {
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
-.wz-top__lang .seg {
-  min-width: 132px;
-}
 .wz-progress {
   width: min(860px, 100%);
   list-style: none;
@@ -3659,49 +3656,12 @@ h1 .scope {
   background: var(--surface-3);
   color: var(--accent);
 }
-.wz-langs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-.wz-lang {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 14px 16px;
-  border-radius: var(--r-lg);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s var(--ease);
-}
-.wz-lang:hover {
-  transform: translateY(-1px);
-  border-color: var(--border-strong);
-}
-.wz-lang:focus-visible,
 .wz-chip:focus-visible,
 .preset:focus-visible,
 .fx:focus-visible,
 .wz-swatches .swatch:focus-visible {
   outline: none;
   box-shadow: var(--focus);
-}
-.wz-lang.is-active {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
-}
-.wz-lang__hello {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-.wz-lang__name {
-  color: var(--muted);
-  font-size: 13px;
 }
 /* password */
 .strength {
@@ -4102,15 +4062,6 @@ h1 .scope {
   .wz-features li {
     padding: 10px 12px;
   }
-  .wz-langs {
-    gap: 8px;
-  }
-  .wz-lang {
-    padding: 10px 12px;
-  }
-  .wz-lang__hello {
-    font-size: 18px;
-  }
   .wz-ics {
     grid-template-columns: 1fr;
   }
@@ -4132,9 +4083,6 @@ h1 .scope {
   }
   .wz-top__step {
     display: none;
-  }
-  .wz-top__lang {
-    margin-left: auto;
   }
   .wz-nav__end {
     width: 100%;

@@ -6,7 +6,7 @@ import { t } from './i18n';
 
 /** The delay note for a polling server, or '' when the screens get commands right away. */
 export function pollNote(): string {
-  return caps().live === 'poll' ? t('llegará a las pantallas en unos 90 s') : '';
+  return caps().live === 'poll' ? t('reaches the screens within about 90 s') : '';
 }
 
 /** `msg` followed by the delay note when the server polls. */

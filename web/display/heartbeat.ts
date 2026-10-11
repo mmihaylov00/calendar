@@ -11,7 +11,6 @@ export interface HeartbeatSource {
   lite(): boolean;
   night(): boolean;
   nightOverride(): NightCommand;
-  demo(): boolean;
   photoFrame?(): PhotoFrame | null;
 }
 
@@ -77,7 +76,7 @@ export class Heartbeat {
   }
 
   async send(): Promise<void> {
-    if (this.src.demo() || isPreview || this.stopped) return;
+    if (isPreview || this.stopped) return;
     try {
       const r = await api.heartbeat(buildHeartbeat(this.src));
       if (r?.now) this.onResponse?.(r.now);

@@ -107,23 +107,23 @@ export function UpdateBanner() {
     <div class={`update-banner update-banner--${b.kind}`} role="status">
       <Icon name={b.kind === 'failed' ? 'alert' : b.kind === 'updated' ? 'check' : b.kind === 'updating' ? 'refresh' : 'sparkles'} size={16} />
       <span class="update-banner__text">
-        {b.kind === 'available' && t('Marco {v} disponible', { v: b.version })}
-        {b.kind === 'updating' && t('Actualizando Marco a {v}…', { v: b.version })}
-        {b.kind === 'updated' && t('Marco se ha actualizado a {v}. Recarga el panel para usar la nueva versión.', { v: b.version })}
-        {b.kind === 'failed' && t('No se pudo actualizar a {v}. Marco sigue en {cur}.', { v: b.version, cur: s.info?.current ?? '' })}
+        {b.kind === 'available' && t('Marco {v} is available', { v: b.version })}
+        {b.kind === 'updating' && t('Updating Marco to {v}…', { v: b.version })}
+        {b.kind === 'updated' && t('Marco has been updated to {v}. Reload the admin to use the new version.', { v: b.version })}
+        {b.kind === 'failed' && t('Could not update to {v}. Marco is still on {cur}.', { v: b.version, cur: s.info?.current ?? '' })}
       </span>
       <span class="update-banner__actions">
         {b.kind === 'updated' ? (
           <Button variant="primary" size="sm" icon="refresh" onClick={() => location.reload()}>
-            {t('Recargar')}
+            {t('Reload')}
           </Button>
         ) : (
           <Button variant={b.kind === 'available' ? 'primary' : 'default'} size="sm" onClick={openUpdateDialog}>
-            {b.kind === 'available' ? t('Ver novedades') : t('Detalles')}
+            {b.kind === 'available' ? t('See what’s new') : t('Details')}
           </Button>
         )}
         {(b.kind === 'available' || b.kind === 'failed') && (
-          <button type="button" class="icon-btn" aria-label={t('Cerrar')} title={t('Ocultar hasta la próxima versión')} onClick={() => dismiss(b.kind === 'failed' ? `failed:${b.version}` : b.version)}>
+          <button type="button" class="icon-btn" aria-label={t('Close')} title={t('Hide until the next version')} onClick={() => dismiss(b.kind === 'failed' ? `failed:${b.version}` : b.version)}>
             <Icon name="x" size={14} />
           </button>
         )}
@@ -140,7 +140,7 @@ export function UpdateDialogHost() {
 
 function Notes({ md }: { md: string }) {
   const blocks = noteBlocks(md);
-  if (!blocks.length) return <p class="muted">{t('Esta versión no trae notas.')}</p>;
+  if (!blocks.length) return <p class="muted">{t('This version has no release notes.')}</p>;
   const out: any[] = [];
   let list: string[] = [];
   const flush = () => {
@@ -165,7 +165,7 @@ function HowTo({ info }: { info: UpdateInfo }) {
       <p class="muted small">{t(h.where)}</p>
       <CopyField value={h.commands.join(info.install.kind === 'docker' || !info.install.cli ? ' && ' : '\n')} />
       {info.install.kind === 'release' && !info.install.canApply && (
-        <p class="muted small">{t('Para actualizar desde aquí la próxima vez, ejecuta «sudo marco update» una vez en el servidor: activa el botón Actualizar.')}</p>
+        <p class="muted small">{t('To update from here next time, run “sudo marco update” once on the server: it turns on the Update button.')}</p>
       )}
     </div>
   );
@@ -185,34 +185,34 @@ function Progress({ info, phase }: { info: UpdateInfo; phase: Phase }) {
         <Callout kind="info">
           <span class="update-progress__line">
             <span class="spinner" />
-            {phase === 'requested' && t('Esperando al servicio de actualización…')}
-            {phase === 'running' && t('Descargando e instalando la nueva versión…')}
-            {phase === 'restarting' && t('Reiniciando el servidor…')}
+            {phase === 'requested' && t('Waiting for the update service…')}
+            {phase === 'running' && t('Downloading and installing the new version…')}
+            {phase === 'restarting' && t('Restarting the server…')}
           </span>
-          <span class="muted small">{t('Las pantallas se recargarán solas cuando termine. No cierres esta página.')}</span>
+          <span class="muted small">{t('The screens reload by themselves when it finishes. Keep this page open.')}</span>
         </Callout>
       )}
       {phase === 'done' && (
         <Callout kind="ok">
-          {t('Marco se ha actualizado a {v}.', { v: st?.to || info.current })} {reloadable && t('El panel se recargará en unos segundos.')}
+          {t('Marco has been updated to {v}.', { v: st?.to || info.current })} {reloadable && t('The admin reloads in a few seconds.')}
         </Callout>
       )}
-      {phase === 'current' && <Callout kind="ok">{t('Marco ya tenía la última versión ({v}).', { v: info.current })}</Callout>}
+      {phase === 'current' && <Callout kind="ok">{t('Marco already had the latest version ({v}).', { v: info.current })}</Callout>}
       {phase === 'failed' && (
         <Callout kind="error">
           {st?.rolledBack
-            ? t('La nueva versión no arrancó y Marco ha vuelto a la versión {v}. No se ha perdido nada.', { v: st.from || info.current })
-            : t('La actualización no se pudo completar. Marco sigue en la versión {v}.', { v: info.current })}
+            ? t('The new version did not start and Marco went back to version {v}. Nothing was lost.', { v: st.from || info.current })
+            : t('The update could not finish. Marco is still on version {v}.', { v: info.current })}
         </Callout>
       )}
       {phase === 'stalled' && (
         <Callout kind="warn">
-          {t('El servicio de actualización no ha respondido. Actualiza desde el servidor con «sudo marco update».')}
+          {t('The update service did not answer. Update on the server with “sudo marco update”.')}
         </Callout>
       )}
       {info.log.length > 0 && (
         <details class="update-log" open={phase === 'failed'}>
-          <summary>{t('Registro de la actualización')}</summary>
+          <summary>{t('Update log')}</summary>
           <pre>{info.log.join('\n')}</pre>
         </details>
       )}
@@ -236,11 +236,11 @@ function UpdateDialog({ info, unreachable, started, onClose }: { info: UpdateInf
       const code = (err.body as { error?: string } | undefined)?.error;
       toast(
         code === 'busy'
-          ? t('Ya hay una actualización en marcha.')
+          ? t('An update is already running.')
           : code === 'up_to_date'
-            ? t('Marco ya tiene la última versión.')
+            ? t('Marco already has the latest version.')
             : code === 'not_supported'
-              ? t('Este servidor no se puede actualizar desde el panel.')
+              ? t('This server cannot be updated from the admin.')
               : err.message,
         'error'
       );
@@ -252,7 +252,7 @@ function UpdateDialog({ info, unreachable, started, onClose }: { info: UpdateInf
 
   return (
     <Modal
-      title={rel ? t('Marco {v}', { v: rel.version }) : t('Actualizaciones')}
+      title={rel ? t('Marco {v}', { v: rel.version }) : t('Updates')}
       icon="sparkles"
       size="lg"
       onClose={onClose}
@@ -260,28 +260,28 @@ function UpdateDialog({ info, unreachable, started, onClose }: { info: UpdateInf
         <>
           {rel?.url && (
             <a class="btn btn--ghost" href={rel.url} target="_blank" rel="noopener noreferrer">
-              <Icon name="external" size={15} /> <span>{t('Ver en GitHub')}</span>
+              <Icon name="external" size={15} /> <span>{t('View on GitHub')}</span>
             </a>
           )}
           <span class="spacer" />
           {canStart ? (
             <Button variant="primary" icon="download" loading={sending} onClick={start}>
-              {t('Actualizar ahora')}
+              {t('Update now')}
             </Button>
           ) : (
-            <Button onClick={onClose}>{t('Cerrar')}</Button>
+            <Button onClick={onClose}>{t('Close')}</Button>
           )}
         </>
       }
     >
       <p class="muted small">
-        {t('Tienes la versión {cur}.', { cur: info.current })}
-        {rel?.publishedAt && ` ${t('Publicada {when}.', { when: relTime(rel.publishedAt) })}`}
+        {t('You have version {cur}.', { cur: info.current })}
+        {rel?.publishedAt && ` ${t('Published {when}.', { when: relTime(rel.publishedAt) })}`}
       </p>
       {showProgress && <Progress info={info} phase={phase} />}
       {canStart && !showProgress && (
         <Callout kind="info">
-          {t('Se descarga la nueva versión, se comprueba y se cambia en un momento. Si no arranca, Marco vuelve solo a la versión actual. Tus datos no se tocan y las pantallas se recargan solas.')}
+          {t('The new version is downloaded, checked and switched to in a moment. If it does not start, Marco goes back to the current version by itself. Your data is not touched and the screens reload by themselves.')}
         </Callout>
       )}
       {!info.install.canApply && info.available && <HowTo info={info} />}
@@ -313,8 +313,8 @@ export function UpdatesCard() {
     try {
       const next = await api.updateCheck();
       setState({ info: next });
-      if (next.error) toast(t('No se pudo consultar GitHub. Se volverá a intentar más tarde.'), 'error');
-      else toast(next.available ? t('Marco {v} disponible', { v: next.latest?.version ?? '' }) : t('Tienes la última versión.'), next.available ? 'info' : 'ok');
+      if (next.error) toast(t('Could not reach GitHub. It will try again later.'), 'error');
+      else toast(next.available ? t('Marco {v} is available', { v: next.latest?.version ?? '' }) : t('You have the latest version.'), next.available ? 'info' : 'ok');
     } catch (e) {
       toast((e as ApiError).message, 'error');
     } finally {
@@ -327,12 +327,12 @@ export function UpdatesCard() {
   return (
     <Card
       id="updates"
-      title={t('Actualizaciones')}
+      title={t('Updates')}
       icon="download"
-      desc={info ? t('Versión instalada: {v}', { v: info.current }) : undefined}
+      desc={info ? t('Installed version: {v}', { v: info.current }) : undefined}
       actions={
         <Button size="sm" icon="refresh" loading={checking} disabled={!info || envOff} onClick={checkNow}>
-          {t('Buscar ahora')}
+          {t('Check now')}
         </Button>
       }
     >
@@ -342,26 +342,26 @@ export function UpdatesCard() {
         <div class="stack">
           {info.available && info.latest ? (
             <Callout kind="info">
-              <span>{t('Marco {v} disponible', { v: info.latest.version })}</span>{' '}
+              <span>{t('Marco {v} is available', { v: info.latest.version })}</span>{' '}
               <button type="button" class="link-btn" onClick={openUpdateDialog}>
-                {canApply ? t('Ver novedades y actualizar') : t('Ver novedades')}
+                {canApply ? t('See what’s new and update') : t('See what’s new')}
               </button>
             </Callout>
           ) : (
-            info.latest && !envOff && <p class="muted small">{t('Tienes la última versión.')}</p>
+            info.latest && !envOff && <p class="muted small">{t('You have the latest version.')}</p>
           )}
           {!envOff && (
             <p class="muted small">
-              {info.checkedAt ? t('Última comprobación: {when}', { when: relTime(info.checkedAt) }) : t('Todavía no se ha comprobado.')}
-              {info.error && ` · ${t('No se pudo consultar GitHub. Se volverá a intentar más tarde.')}`}
+              {info.checkedAt ? t('Last checked: {when}', { when: relTime(info.checkedAt) }) : t('Not checked yet.')}
+              {info.error && ` · ${t('Could not reach GitHub. It will try again later.')}`}
             </p>
           )}
           {envOff ? (
-            <Callout kind="info">{t('Las comprobaciones están desactivadas en el servidor (MARCO_UPDATE_CHECK=0).')}</Callout>
+            <Callout kind="info">{t('Checks are turned off on the server (MARCO_UPDATE_CHECK=0).')}</Callout>
           ) : (
             <ToggleRow
-              label={t('Buscar actualizaciones')}
-              hint={t('Una vez al día, Marco pregunta a GitHub cuál es la última versión. No se envía ningún dato.')}
+              label={t('Check for updates')}
+              hint={t('Once a day, Marco asks GitHub which version is the latest. No data is sent.')}
               checked={info.settings.check}
               onChange={(v) => save({ check: v })}
             />
@@ -369,37 +369,37 @@ export function UpdatesCard() {
           {canApply && !envOff && (
             <>
               <ToggleRow
-                label={t('Actualizar automáticamente')}
-                hint={t('Instala la nueva versión sola dentro del horario elegido. Si no arranca, vuelve a la anterior y no lo reintenta.')}
+                label={t('Update automatically')}
+                hint={t('Installs the new version by itself within the chosen hours. If it does not start, it goes back to the previous one and does not try again.')}
                 checked={info.settings.auto}
                 disabled={!info.settings.check}
                 onChange={(v) => save({ auto: v })}
               />
               {info.settings.auto && info.settings.check && (
                 <div class="update-window">
-                  <span>{t('Entre las')}</span>
+                  <span>{t('Between')}</span>
                   <input type="time" class="input input--sm" value={info.settings.from} onChange={(e) => save({ from: (e.target as HTMLInputElement).value })} />
-                  <span>{t('y las')}</span>
+                  <span>{t('and')}</span>
                   <input type="time" class="input input--sm" value={info.settings.to} onChange={(e) => save({ to: (e.target as HTMLInputElement).value })} />
-                  <span class="muted small">{t('(en la zona horaria de Fecha y hora)')}</span>
+                  <span class="muted small">{t('(in the time zone set in Date & time)')}</span>
                 </div>
               )}
             </>
           )}
           {!canApply && (
             <div>
-              <p class="small"><strong>{t('Cómo actualizar este servidor')}</strong></p>
+              <p class="small"><strong>{t('How to update this server')}</strong></p>
               <HowTo info={info} />
             </div>
           )}
           {info.status && info.status.state !== 'requested' && info.status.state !== 'running' && info.status.at && (
             <p class="muted small">
               {info.status.state === 'failed'
-                ? t('Última actualización: falló ({when})', { when: relTime(info.status.at) })
-                : t('Última actualización: {from} → {to} ({when})', { from: info.status.from, to: info.status.to, when: relTime(info.status.at) })}{' '}
+                ? t('Last update: failed ({when})', { when: relTime(info.status.at) })
+                : t('Last update: {from} → {to} ({when})', { from: info.status.from, to: info.status.to, when: relTime(info.status.at) })}{' '}
               {info.log.length > 0 && (
                 <button type="button" class="link-btn" onClick={openUpdateDialog}>
-                  {t('Detalles')}
+                  {t('Details')}
                 </button>
               )}
             </p>
@@ -441,7 +441,7 @@ export function WhatsNewHost() {
     setNotes(null);
   };
   return (
-    <Modal title={t('Novedades de Marco {v}', { v: version })} icon="sparkles" size="lg" onClose={close} footer={<Button variant="primary" onClick={close}>{t('Entendido')}</Button>}>
+    <Modal title={t('What’s new in Marco {v}', { v: version })} icon="sparkles" size="lg" onClose={close} footer={<Button variant="primary" onClick={close}>{t('Got it')}</Button>}>
       <Notes md={notes} />
     </Modal>
   );

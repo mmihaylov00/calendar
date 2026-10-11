@@ -13,45 +13,43 @@ try {
 }
 const opts = { skip: mod && data ? false : 'TypeScript imports need Node ≥ 22.18' };
 const FREQ = ['🎂', '✈️', '⚽', '🏠'];
-const index = () => mod.buildEmojiIndex(data.EMOJI_CATEGORIES, { id: 'frequent', icon: '⭐', title: 'Frecuentes', emojis: FREQ });
-const first = (q, lang = 'es') => mod.searchEmoji(index(), q, lang).slice(0, 5).map((e) => e.e);
+const index = () => mod.buildEmojiIndex(data.EMOJI_CATEGORIES, { id: 'frequent', icon: '⭐', title: 'Frequent', emojis: FREQ });
+const first = (q) => mod.searchEmoji(index(), q).slice(0, 5).map((e) => e.e);
 
-test('emoji data: unique, three languages, compact', opts, () => {
+test('emoji data: unique English keywords, compact', opts, () => {
   const seen = new Set();
   for (const c of data.EMOJI_CATEGORIES) {
     for (const it of c.items) {
       const e = it.slice(0, it.indexOf(' '));
       assert.ok(!seen.has(e), `duplicate ${e}`);
       seen.add(e);
-      const parts = it.slice(it.indexOf(' ') + 1).split('|');
-      assert.equal(parts.length, 3, it);
-      for (const p of parts) assert.ok(p.trim(), it);
+      const keywords = it.slice(it.indexOf(' ') + 1);
+      assert.ok(keywords.trim(), it);
+      assert.ok(!keywords.includes('|'), it);
     }
   }
   assert.ok(seen.size >= 350 && seen.size <= 460, `${seen.size} emojis`);
 });
 
-test('emoji search: accents, languages and ranking', opts, () => {
-  assert.equal(first('cumple')[0], '🎂');
-  assert.ok(first('avion').includes('✈️'));
-  assert.ok(first('AVIÓN').includes('✈️'));
+test('emoji search: English words, accents and ranking', opts, () => {
+  assert.equal(first('birthday')[0], '🎂');
+  assert.ok(first('AIRPLANE').includes('✈️'));
+  assert.ok(first('pinata').includes('🪅'));
   assert.equal(first('football')[0], '⚽');
-  assert.ok(first('futebol', 'pt').includes('⚽'));
-  assert.ok(first('praia', 'pt').includes('🏖️'));
-  assert.ok(first('tarta cumple').includes('🎂'));
+  assert.ok(first('birthday cake').includes('🎂'));
+  assert.deepEqual(first('cumpleaños'), []);
+  assert.deepEqual(first('futebol'), []);
   assert.deepEqual(first('zzqx'), []);
   assert.deepEqual(first('  '), []);
   assert.equal(first('🎂')[0], '🎂');
 });
 
-test('emoji names follow the language; frequent section comes first', opts, () => {
+test('emoji names are English; frequent section comes first', opts, () => {
   const idx = index();
   assert.equal(idx.sections[0].id, 'frequent');
   assert.deepEqual(idx.sections[0].list.map((e) => e.e), FREQ);
   const cake = idx.byEmoji.get('🎂');
-  assert.equal(mod.emojiName(cake, 'es'), 'tarta de cumpleaños');
-  assert.equal(mod.emojiName(cake, 'en'), 'birthday cake');
-  assert.equal(mod.emojiName(cake, 'pt'), 'bolo de aniversário');
+  assert.equal(mod.emojiName(cake), 'birthday cake');
   assert.ok(mod.looksLikeEmoji('🦩'));
   assert.ok(!mod.looksLikeEmoji('abc'));
 });

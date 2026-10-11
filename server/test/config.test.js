@@ -6,15 +6,14 @@ import path from 'node:path';
 import { validateConfig, mergeDefaults } from '../core/validate.js';
 import { defaultConfig } from '../core/defaults.js';
 
-test('defaults are valid, ship no personal sources, only a public example + rules', () => {
+test('defaults are valid, ship no seeded calendars or news feeds', () => {
   const { ok, errors, value } = validateConfig(defaultConfig());
   assert.equal(ok, true, JSON.stringify(errors));
-  assert.equal(value.calendar.sources.length, 1);
-  assert.ok(value.calendar.sources.find((s) => s.kind === 'holidays' && s.enabled && s.url.startsWith('https://calendar.google.com/')));
-  assert.ok(!value.calendar.sources.some((s) => s.kind === 'airbnb'));
+  assert.deepEqual(value.calendar.sources, []);
   assert.ok(value.calendar.iconRules.length >= 18);
-  assert.equal(value.news.feeds[0].url, 'https://feeds.bbci.co.uk/news/world/rss.xml');
-  assert.equal(value.weather.locationName, 'Lisbon, Portugal');
+  assert.deepEqual(value.news.feeds, []);
+  assert.equal(value.weather.locationName, 'Sofia, Bulgaria');
+  assert.equal(value.datetime.timezone, 'Europe/Sofia');
   assert.equal(value.screens[0].screen.language, 'en');
   assert.equal(value.version, 2);
   assert.equal(value.screens.length, 1);
@@ -35,7 +34,7 @@ test('invalid values are reported', () => {
   const { ok, errors } = validateConfig(c);
   assert.equal(ok, false);
   const p = errors.map((e) => e.path);
-  for (const want of ['screens[0].screen.language', 'screens[0].screen.accent', 'calendar.sources[1].url', 'calendar.sources[2].googleAccount', 'weather.lat', 'datetime.timezone', badRule]) {
+  for (const want of ['screens[0].screen.language', 'screens[0].screen.accent', 'calendar.sources[0].url', 'calendar.sources[1].googleAccount', 'weather.lat', 'datetime.timezone', badRule]) {
     assert.ok(p.includes(want), `missing error for ${want}: ${p}`);
   }
 });
@@ -95,6 +94,27 @@ test('mergeDefaults back-fills new keys but keeps stored arrays', () => {
   assert.equal(validateConfig(m).value.revision, 7);
 });
 
+test('removed stored locales become English and preserve all unrelated settings', async () => {
+  const { loadWebModules } = await import('./webModules.js');
+  const [display] = await loadWebModules('/web/display/defaults.ts');
+  for (const language of ['es', 'pt']) {
+    const cfg = defaultConfig();
+    cfg.screens[0].screen.language = language;
+    cfg.screens[0].screen.accent = '#123456';
+    cfg.screens[0].message.text = 'Familia · Семейство';
+    cfg.datetime.timezone = 'Europe/Lisbon';
+    cfg.calendar.sources = [{ id: 'c_saved', type: 'ics', name: 'Família', url: 'https://example.com/private.ics', color: '#abcdef' }];
+    const { ok, errors, value } = validateConfig(cfg);
+    assert.equal(ok, true, JSON.stringify(errors));
+    assert.equal(value.screens[0].screen.language, 'en');
+    assert.equal(value.screens[0].screen.accent, '#123456');
+    assert.equal(value.screens[0].message.text, cfg.screens[0].message.text);
+    assert.equal(value.datetime.timezone, cfg.datetime.timezone);
+    assert.equal(value.calendar.sources[0].url, cfg.calendar.sources[0].url);
+    assert.equal(display.normalizeConfig({ screen: { language, accent: '#123456' } }).screen.language, 'en');
+  }
+});
+
 test('store: first run writes defaults, save bumps revision atomically, secrets created', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-store-'));
   const store = await import('../store.js');
@@ -151,7 +171,7 @@ test('migration v1 → v2 keeps every value (global vs screens[0])', async () =>
   assert.equal(s.slug, 'cocina');
   const { name, ...scr } = V1.screen;
   // the display style is back-filled as classic, the Modern glass options with their defaults
-  assert.deepEqual(s.screen, { ...scr, style: 'classic', glass: { appearance: 'auto', opacity: 0.5, blur: 18, tint: 'dark', edge: true } });
+  assert.deepEqual(s.screen, { ...scr, language: 'en', style: 'classic', glass: { appearance: 'auto', opacity: 0.5, blur: 18, tint: 'dark', edge: true } });
   // v1 had no options for the newer layouts: they are back-filled with their defaults
   assert.deepEqual(s.layout, { ...V1.layout, people: null, corner: 'br' });
   assert.deepEqual(s.background, { ...V1.background, order: 'random', panelBlur: 18, panelShade: 0.5, weatherFx: 'simple' }); // new keys back-filled with defaults
@@ -198,6 +218,7 @@ test('screens: ids/slugs unique, unknown sourceIds dropped, defaultScreen fixed,
   const { flatView, resolveScreen, displayConfig } = await import('../core/screens.js');
   const c = defaultConfig();
   c.screens.push({ ...structuredClone(c.screens[0]), name: 'Living room 2' }); // same id + slug
+  c.calendar.sources = [{ id: 'c_holidays', type: 'ics', name: 'Holidays', url: 'https://example.com/holidays.ics', color: '#f4a261', kind: 'holidays', enabled: true }];
   c.screens[1].calendar.sourceIds = ['c_holidays', 'nope', 'birthdays'];
   c.screens.push({ name: 'Entrada Principal' });
   c.defaultScreen = 'missing';
@@ -211,7 +232,7 @@ test('screens: ids/slugs unique, unknown sourceIds dropped, defaultScreen fixed,
   assert.equal(resolveScreen(v, 'zzz').fallback, true);
   const f = flatView(v, v.screens[2]);
   assert.equal(f.screen.name, 'Entrada Principal');
-  assert.equal(f.datetime.timezone, 'Europe/Lisbon');
+  assert.equal(f.datetime.timezone, 'Europe/Sofia');
   assert.ok(Array.isArray(f.calendar.sources));
   const d = displayConfig(v, v.screens[1]);
   assert.deepEqual(d.calendar.sources.map((s) => s.id), ['c_holidays']); // birthdays has no items yet
@@ -220,7 +241,7 @@ test('screens: ids/slugs unique, unknown sourceIds dropped, defaultScreen fixed,
 
 test('reserved source ids are never used by user sources', () => {
   const c = defaultConfig();
-  c.calendar.sources[0].id = 'local';
+  c.calendar.sources = [{ id: 'local', type: 'ics', name: 'Calendar', url: 'https://example.com/calendar.ics', color: '#123456' }];
   const { value } = validateConfig(c);
   assert.notEqual(value.calendar.sources[0].id, 'local');
 });

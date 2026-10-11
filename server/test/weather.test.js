@@ -145,7 +145,7 @@ test('met-norway: symbol codes map to WMO codes the icons know', () => {
   assert.equal(metSymbolToWmo('heavysnowandthunder'), 95);
   assert.equal(metSymbolToWmo('unknownsymbol'), null);
   assert.equal(metSymbolToWmo(undefined), null);
-  assert.equal(wmoDescription(68, 'es'), 'Aguanieve');
+  assert.equal(wmoDescription(68, 'es'), 'Sleet');
 });
 
 test('met-norway: URL keeps at most 4 decimals', () => {
@@ -189,7 +189,7 @@ test('pirate-weather: docs sample → fractions to %, local dates, sun times fro
   assert.equal(base.hourly[0].precipChance, 47);
   assert.equal(base.hourly[9].code, 0); // "breezy" with a clear sky
   const w = localizeWeather(base, { lang: 'es', forecastDays: 7, now });
-  assert.equal(w.current.description, 'Nevada');
+  assert.equal(w.current.description, 'Snow');
   assert.equal(w.source.name, 'Pirate Weather');
 });
 
@@ -324,7 +324,7 @@ test('server/weather.js: one call for every language, cached until expiry, stale
     const en = await weather.getWeather({ lang: 'en' });
     assert.equal(f.calls.length, 1);
     assert.equal(es.source.provider, 'met-norway');
-    assert.notEqual(es.current.description, en.current.description);
+    assert.equal(es.current.description, en.current.description);
     assert.match(f.calls[0].headers['User-Agent'], /^Marco\/\d/);
     // force (the admin) still waits for MET Norway's Expires
     await weather.getWeather({ lang: 'es', force: true });

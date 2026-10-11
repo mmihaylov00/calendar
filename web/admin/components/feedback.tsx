@@ -90,7 +90,7 @@ const dlgListeners = new Set<() => void>();
 export function choiceDialog<T extends string>(opts: { title: string; body?: ComponentChildren; choices: DialogChoice<T>[]; cancel?: string; closeX?: boolean }): Promise<T | null> {
   return new Promise((resolve) => {
     pending?.resolve(null);
-    pending = { title: opts.title, body: opts.body, choices: opts.choices, cancel: opts.cancel ?? t('Cancelar'), closeX: !!opts.closeX, resolve: resolve as (v: string | null) => void };
+    pending = { title: opts.title, body: opts.body, choices: opts.choices, cancel: opts.cancel ?? t('Cancel'), closeX: !!opts.closeX, resolve: resolve as (v: string | null) => void };
     dlgListeners.forEach((l) => l());
   });
 }
@@ -100,7 +100,7 @@ export function confirmDialog(opts: ConfirmOpts): Promise<boolean> {
     title: opts.title,
     body: opts.body,
     cancel: opts.cancel,
-    choices: [{ value: 'ok', label: opts.confirm ?? t('Aceptar'), kind: opts.danger ? 'danger' : 'primary' }],
+    choices: [{ value: 'ok', label: opts.confirm ?? t('OK'), kind: opts.danger ? 'danger' : 'primary' }],
   }).then((v) => v === 'ok');
 }
 
@@ -127,7 +127,7 @@ export function DialogHost() {
     <div class="modal-backdrop" onClick={(e) => e.target === e.currentTarget && close(null)} onKeyDown={(e) => e.key === 'Escape' && (e.preventDefault(), close(null))}>
       <div class={`modal ${p.closeX ? 'modal--picker' : ''}`} role="alertdialog" aria-modal="true" aria-labelledby="dlg-title">
         {p.closeX && (
-          <button type="button" class="icon-btn modal__x" onClick={() => close(null)} aria-label={t('Cerrar')} title={t('Cerrar')}>
+          <button type="button" class="icon-btn modal__x" onClick={() => close(null)} aria-label={t('Close')} title={t('Close')}>
             <Icon name="x" size={16} />
           </button>
         )}

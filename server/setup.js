@@ -24,7 +24,6 @@ import { passwordProblem, PASSWORD_MESSAGES } from './lib/password.js';
 import { isHttpUrl, LAYOUT_PRESETS, slugify } from './core/validate.js';
 import { isValidTimeZone } from './core/lib/tz.js';
 import { LANGS, langFromHeader } from './core/lib/i18n.js';
-import { DEFAULT_SOURCES } from './core/defaults.js';
 import { displayAccessMode, displayKeyFor } from './displayAccess.js';
 
 let generatedToken = null;
@@ -159,7 +158,7 @@ export function parseSetupBody(b) {
   const pw = passwordProblem(b.password, typeof b.passwordConfirm === 'string' ? b.passwordConfirm : '');
   if (pw) err(pw === 'mismatch' ? 'passwordConfirm' : 'password', PASSWORD_MESSAGES[pw]);
   v.password = b.password;
-  v.language = LANGS.includes(b.language) ? b.language : (err('language', 'expected es, en or pt'), 'en');
+  v.language = b.language === undefined || LANGS.includes(b.language) ? 'en' : (err('language', 'expected en'), 'en');
   v.screenName = cleanText(b.screenName, 40) || 'Living room';
   if (b.location !== undefined) {
     const l = b.location;
@@ -240,9 +239,6 @@ export function applySetup(cfg, v) {
   }
   if (v.timezone && !v.location?.timezone) next.datetime.timezone = v.timezone;
   if (v.units) next.weather.units = v.units;
-  // The example holiday feed shipped in the defaults is replaced by the wizard's choice (when untouched).
-  const sample = DEFAULT_SOURCES[0];
-  next.calendar.sources = next.calendar.sources.filter((s) => !(s.id === sample.id && s.url === sample.url));
   const used = new Set(next.calendar.sources.map((s) => s.id));
   v.calendars.forEach((c, i) => {
     let id;

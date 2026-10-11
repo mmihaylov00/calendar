@@ -215,7 +215,8 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs) {
   const gl = obj(ctx, `${p}.screen.glass`, sc.glass);
   const GD = D.screen.glass;
   const screen = {
-    language: oneOf(ctx, `${p}.screen.language`, sc.language, D.screen.language, LANGS),
+    // Older screen profiles retain their settings when their removed locale becomes English.
+    language: oneOf(ctx, `${p}.screen.language`, sc.language === 'es' || sc.language === 'pt' ? 'en' : sc.language, D.screen.language, LANGS),
     fontScale: num(ctx, `${p}.screen.fontScale`, sc.fontScale, D.screen.fontScale, 0.5, 3),
     theme: oneOf(ctx, `${p}.screen.theme`, sc.theme, D.screen.theme, ['dark', 'light', 'auto']),
     // display style: 'classic' (the original look) or 'modern' (glass cards, Apple-like); independent of the layout.

@@ -46,24 +46,24 @@ const onWorkers = () => runtime() === 'workers';
 
 function errorText(e: unknown): string {
   if (e instanceof PhotoError) {
-    if (e.code === 'too-big') return t('Supera el límite de 100 MB');
-    if (e.code === 'not-image') return t('No es una imagen');
-    if (e.code === 'heic') return t('No se pudo convertir la foto HEIC. Expórtala como JPG y vuelve a intentarlo.');
-    return t('El navegador no puede leer esta imagen. Guárdala como JPG y vuelve a intentarlo.');
+    if (e.code === 'too-big') return t('Exceeds the 100 MB limit');
+    if (e.code === 'not-image') return t('Not an image');
+    if (e.code === 'heic') return t('Could not convert the HEIC photo. Export it as JPG and try again.');
+    return t('The browser cannot read this image. Save it as JPG and try again.');
   }
   if (e instanceof ApiError) {
     if (e.code === 'photo_quota') {
       const b = (e.body ?? {}) as { reason?: string; limit?: number; maxPhotos?: number };
-      if (b.reason === 'count') return t('Has llegado al máximo de {n} fotos. Borra alguna para subir más.', { n: b.maxPhotos ?? limit('photos') ?? '' });
-      return t('La galería está llena ({max}). Borra alguna foto para subir más.', { max: formatBytes(b.limit ?? limit('totalPhotoBytes') ?? 0) });
+      if (b.reason === 'count') return t('You have reached the maximum of {n} photos. Delete some to upload more.', { n: b.maxPhotos ?? limit('photos') ?? '' });
+      return t('The gallery is full ({max}). Delete a photo to upload more.', { max: formatBytes(b.limit ?? limit('totalPhotoBytes') ?? 0) });
     }
     if (e.status === 413) {
       const each = limit('photoBytes');
-      return each != null ? t('Ocupa más de {size} incluso optimizada.', { size: formatBytes(each) }) : t('Supera el límite de 100 MB');
+      return each != null ? t('It takes more than {size} even after optimizing.', { size: formatBytes(each) }) : t('Exceeds the 100 MB limit');
     }
-    if (e.status === 429 && onWorkers()) return t('Demasiadas subidas seguidas. Espera un minuto y vuelve a intentarlo.');
-    if (e.status === 415) return t('Formato no admitido (usa JPG, PNG o WebP)');
-    if (e.status === 0) return t('Sin conexión con el servidor');
+    if (e.status === 429 && onWorkers()) return t('Too many uploads in a row. Wait a minute and try again.');
+    if (e.status === 415) return t('Unsupported format (use JPG, PNG or WebP)');
+    if (e.status === 0) return t('No connection to the server');
     return e.message;
   }
   return (e as Error)?.message || String(e);
@@ -82,7 +82,7 @@ function pickFrame(cfg: AppConfig, displays: DisplayInfo[]): { frame: PhotoFrame
   const d = withFrame[0];
   if (d?.photoFrame) {
     const res = d.viewport ? ` · ${d.viewport.w}×${d.viewport.h}` : '';
-    return { frame: d.photoFrame, note: t('medido en «{name}»', { name: d.screenName || d.screenSlug || d.clientId }) + res };
+    return { frame: d.photoFrame, note: t('measured on “{name}”', { name: d.screenName || d.screenSlug || d.clientId }) + res };
   }
   const preset = cfg.layout?.preset;
   const side = preset === 'bigCalendar' || preset === 'agenda' || preset === 'leftRight';
@@ -90,7 +90,7 @@ function pickFrame(cfg: AppConfig, displays: DisplayInfo[]): { frame: PhotoFrame
   const blocks: [number, number][] = side ? [[0.03, 0.25]] : [[0.04, 0.2]];
   if (cfg.weather?.enabled !== false) blocks.push(side ? [0.45, 0.97] : [0.72, 0.95]);
   const band = freeBand(blocks);
-  return { frame: { aspect, targetY: band.target, freeTop: band.top, freeBottom: band.bottom, blocks }, note: t('aproximado: abre la pantalla para medirlo') };
+  return { frame: { aspect, targetY: band.target, freeTop: band.top, freeBottom: band.bottom, blocks }, note: t('approximate: open the screen to measure it') };
 }
 
 export function PhotosSection({ cfg, set }: SectionProps) {
@@ -166,11 +166,11 @@ export function PhotosSection({ cfg, set }: SectionProps) {
     // A plan with a storage limit: say so before optimizing anything when the gallery is already full.
     const usedNow = (photos ?? []).reduce((s, p) => s + (p.size || 0), 0);
     if (maxTotal != null && usedNow >= maxTotal) {
-      toast(t('La galería está llena ({max}). Borra alguna foto para subir más.', { max: formatBytes(maxTotal) }), 'error', 9000);
+      toast(t('The gallery is full ({max}). Delete a photo to upload more.', { max: formatBytes(maxTotal) }), 'error', 9000);
       return;
     }
     if (maxCount != null && (photos?.length ?? 0) >= maxCount) {
-      toast(t('Has llegado al máximo de {n} fotos. Borra alguna para subir más.', { n: maxCount }), 'error', 9000);
+      toast(t('You have reached the maximum of {n} photos. Delete some to upload more.', { n: maxCount }), 'error', 9000);
       return;
     }
     clearQueue();
@@ -180,13 +180,13 @@ export function PhotosSection({ cfg, set }: SectionProps) {
     // Rejected up front: say which and why.
     const rejected: string[] = [];
     for (const it of items) {
-      if (it.file.size > MAX_UPLOAD_BYTES) Object.assign(it, { status: 'error', error: t('Supera el límite de 100 MB') });
-      else if (!looksLikeImage(it.file)) Object.assign(it, { status: 'error', error: t('No es una imagen') });
+      if (it.file.size > MAX_UPLOAD_BYTES) Object.assign(it, { status: 'error', error: t('Exceeds the 100 MB limit') });
+      else if (!looksLikeImage(it.file)) Object.assign(it, { status: 'error', error: t('Not an image') });
       if (it.status === 'error') rejected.push(`${it.name} (${it.error})`);
     }
     if (rejected.length) {
       toast(
-        t('{n} archivos rechazados: {list}', { n: rejected.length, list: rejected.slice(0, 3).join(', ') + (rejected.length > 3 ? '…' : '') }),
+        t('{n} files rejected: {list}', { n: rejected.length, list: rejected.slice(0, 3).join(', ') + (rejected.length > 3 ? '…' : '') }),
         'error',
         9000
       );
@@ -218,7 +218,7 @@ export function PhotosSection({ cfg, set }: SectionProps) {
         for (const [k, v] of Object.entries(choice)) policies[Number(k)] = v;
       }
     } catch (e) {
-      toast(`${t('No se pudo comprobar si las fotos ya existen')}: ${errorText(e)}`, 'error');
+      toast(`${t('Could not check whether the photos already exist')}: ${errorText(e)}`, 'error');
       return;
     }
 
@@ -229,7 +229,7 @@ export function PhotosSection({ cfg, set }: SectionProps) {
     for (const it of ok) {
       const policy = policies[it.id] ?? 'rename';
       if (policy === 'skip') {
-        patch(it.id, { status: 'skipped', note: t('Omitida: ya existe') });
+        patch(it.id, { status: 'skipped', note: t('Skipped: already exists') });
         continue;
       }
       try {
@@ -244,31 +244,31 @@ export function PhotosSection({ cfg, set }: SectionProps) {
           // On Workers every photo is optimized (metadata such as the location must not be stored).
           if (!cloud && e instanceof PhotoError && e.code === 'decode' && SERVER_TYPES.test(it.file.name) && /^image\/(jpeg|png|webp)$/.test(it.file.type)) {
             up = { blob: it.file, name: it.file.name };
-            note = t('subida sin optimizar');
+            note = t('uploaded without optimizing');
           } else throw e;
         }
         if (maxEach != null && up.blob.size > maxEach) {
           failed++;
-          patch(it.id, { status: 'error', error: t('Ocupa más de {size} incluso optimizada.', { size: formatBytes(maxEach) }) });
+          patch(it.id, { status: 'error', error: t('It takes more than {size} even after optimizing.', { size: formatBytes(maxEach) }) });
           continue;
         }
         if (policy !== 'replace' && up.blob.size > room) {
           noRoom++;
-          patch(it.id, { status: 'error', error: t('No cabe: quedan {free} libres en la galería.', { free: formatBytes(Math.max(0, room)) }) });
+          patch(it.id, { status: 'error', error: t('It does not fit: {free} left in the gallery.', { free: formatBytes(Math.max(0, room)) }) });
           continue;
         }
         patch(it.id, { status: 'uploading', pct: 0.4 });
         const res = await uploadPhotos([up], up.name === jpgName(it.file.name) ? policy : 'rename', (fr) => patch(it.id, { pct: 0.4 + fr * 0.6 }));
         const f = res.files[0];
         if (!f) {
-          patch(it.id, { status: 'skipped', note: t('Omitida: ya existe') });
+          patch(it.id, { status: 'skipped', note: t('Skipped: already exists') });
           continue;
         }
         uploaded++;
         if (f.status !== 'replaced') room -= f.size;
         before += it.file.size;
         after += up.blob.size;
-        const extra = f.status === 'replaced' ? t('reemplazada') : f.status === 'renamed' ? t('guardada como {name}', { name: f.file }) : '';
+        const extra = f.status === 'replaced' ? t('replaced') : f.status === 'renamed' ? t('saved as {name}', { name: f.file }) : '';
         patch(it.id, { status: 'done', pct: 1, after: up.blob.size, note: [note, extra].filter(Boolean).join(' · ') });
       } catch (e) {
         failed++;
@@ -276,9 +276,9 @@ export function PhotosSection({ cfg, set }: SectionProps) {
       }
     }
     setQueue((q) => q && { ...q, running: false });
-    if (uploaded) toast(t('{n} fotos subidas · {before} → {after}', { n: uploaded, before: formatBytes(before), after: formatBytes(after) }));
-    if (failed) toast(t('{n} archivos no se pudieron subir', { n: failed }), 'error');
-    if (noRoom) toast(t('{n} fotos no caben en la galería', { n: noRoom }), 'error', 9000);
+    if (uploaded) toast(t('{n} photos uploaded · {before} → {after}', { n: uploaded, before: formatBytes(before), after: formatBytes(after) }));
+    if (failed) toast(t('{n} files could not be uploaded', { n: failed }), 'error');
+    if (noRoom) toast(t('{n} photos do not fit in the gallery', { n: noRoom }), 'error', 9000);
     load();
   };
 
@@ -296,12 +296,12 @@ export function PhotosSection({ cfg, set }: SectionProps) {
     const todo = (photos ?? []).filter(needsWork);
     if (!todo.length) return;
     const ok = await confirmDialog({
-      title: t('Optimizar y encuadrar fotos existentes'),
+      title: t('Optimize and frame existing photos'),
       body: t(
-        'Se procesarán {n} fotos en este navegador, una a una: se reducen a 2560 px como máximo, se crea una miniatura y se calcula el punto de foco (los encuadres que ya hayas elegido se conservan). Puede tardar un par de minutos; deja esta página abierta.',
+        '{n} photos will be processed in this browser, one at a time: scaled down to 2560 px at most, given a thumbnail and a focal point (framing you already chose is kept). It may take a couple of minutes; keep this page open.',
         { n: todo.length }
       ),
-      confirm: t('Optimizar {n} fotos', { n: todo.length }),
+      confirm: t('Optimize {n} photos', { n: todo.length }),
     });
     if (!ok) return;
     clearQueue();
@@ -325,7 +325,7 @@ export function PhotosSection({ cfg, set }: SectionProps) {
           // Already a light JPEG: only the thumbnail and the focal point are missing.
           await uploadThumb(p.file, o.thumb);
           if (!hasFocus(p)) await api.setPhotoFocus(p.file, o.focusX, o.focusY);
-          note = t('ya estaba optimizada · miniatura y encuadre listos');
+          note = t('already optimized · thumbnail and framing ready');
         } else if (jpgName(p.file) === p.file) {
           await uploadPhotos([o], 'replace', (fr) => patch(id, { pct: 0.5 + fr * 0.5 }));
         } else {
@@ -333,7 +333,7 @@ export function PhotosSection({ cfg, set }: SectionProps) {
           const r = await uploadPhotos([o], 'rename', (fr) => patch(id, { pct: 0.5 + fr * 0.45 }));
           if (r.files[0] && p.hidden) await api.setPhotoHidden(r.files[0].file, true);
           if (r.files[0]) await api.deletePhoto(p.file);
-          note = t('convertida a {name}', { name: r.files[0]?.file ?? o.name });
+          note = t('converted to {name}', { name: r.files[0]?.file ?? o.name });
         }
         done++;
         before += p.size;
@@ -345,13 +345,13 @@ export function PhotosSection({ cfg, set }: SectionProps) {
       }
     }
     setQueue((q) => q && { ...q, running: false });
-    if (done) toast(t('{n} fotos optimizadas · {before} → {after}', { n: done, before: formatBytes(before), after: formatBytes(after) }));
-    if (failed) toast(t('{n} fotos no se pudieron optimizar', { n: failed }), 'error');
+    if (done) toast(t('{n} photos optimized · {before} → {after}', { n: done, before: formatBytes(before), after: formatBytes(after) }));
+    if (failed) toast(t('{n} photos could not be optimized', { n: failed }), 'error');
     load();
   });
 
   const remove = async (p: AdminPhoto) => {
-    const ok = await confirmDialog({ title: t('Eliminar foto'), body: p.file, confirm: t('Eliminar'), danger: true });
+    const ok = await confirmDialog({ title: t('Delete photo'), body: p.file, confirm: t('Delete'), danger: true });
     if (!ok) return;
     try {
       await api.deletePhoto(p.file);
@@ -372,7 +372,7 @@ export function PhotosSection({ cfg, set }: SectionProps) {
     markHidden([p.file], hidden); // optimistic
     try {
       await api.setPhotoHidden(p.file, hidden);
-      toast(hidden ? t('Oculta: ya no saldrá en pantalla') : t('En rotación: volverá a salir en pantalla'));
+      toast(hidden ? t('Hidden: it won\'t be shown on screen') : t('In rotation: it will be shown on screen again'));
     } catch (e) {
       markHidden([p.file], !hidden);
       toast((e as ApiError).message, 'error');
@@ -381,14 +381,14 @@ export function PhotosSection({ cfg, set }: SectionProps) {
   const bulkHidden = async (hidden: boolean) => {
     const files = [...selected].filter((f) => photos?.some((p) => p.file === f && !!p.hidden !== hidden));
     if (!files.length) {
-      toast(hidden ? t('Las fotos seleccionadas ya están ocultas') : t('Las fotos seleccionadas ya están en rotación'));
+      toast(hidden ? t('The selected photos are already hidden') : t('The selected photos are already in rotation'));
       return;
     }
     setBulkBusy(true);
     try {
       const r = await api.setPhotosHidden(files, hidden);
       markHidden(r.updated, hidden);
-      toast(hidden ? t('{n} fotos ocultas', { n: r.updated.length }) : t('{n} fotos vuelven a la rotación', { n: r.updated.length }));
+      toast(hidden ? t('{n} photos hidden', { n: r.updated.length }) : t('{n} photos back in rotation', { n: r.updated.length }));
       setSelected(new Set());
       setSelecting(false);
     } catch (e) {
@@ -420,18 +420,18 @@ export function PhotosSection({ cfg, set }: SectionProps) {
   return (
     <>
       <PageHeader
-        title={t('Galería')}
-        desc={cloud ? t('Tus fotos para el fondo de pantalla. Se guardan en tu cuenta de Marco.') : t('Tus fotos para el fondo de pantalla. Se guardan en el propio servidor.')}
+        title={t('Gallery')}
+        desc={cloud ? t('Your photos for the screen background. They are stored in your Marco account.') : t('Your photos for the screen background. Stored on the server itself.')}
       />
       {cfg.background.source === 'stock' && (
         <Callout>
-          {t('Ahora mismo el fondo usa fotos de stock.')}{' '}
+          {t('The background currently uses stock photos.')}{' '}
           <button type="button" class="link-btn" onClick={() => set((d) => void (d.background.source = 'gallery'))}>
-            {t('Usar mi galería')}
+            {t('Use my gallery')}
           </button>{' '}
           ·{' '}
           <button type="button" class="link-btn" onClick={() => set((d) => void (d.background.source = 'mixed'))}>
-            {t('Mezclar ambas')}
+            {t('Mix both')}
           </button>
         </Callout>
       )}
@@ -466,11 +466,11 @@ export function PhotosSection({ cfg, set }: SectionProps) {
           }}
         />
         <span class="dropzone__icon">{busy ? <span class="spinner" /> : <Icon name="upload" size={26} />}</span>
-        <strong>{busy ? t('Procesando fotos…') : t('Arrastra fotos aquí o haz clic para elegir')}</strong>
+        <strong>{busy ? t('Processing photos…') : t('Drag photos here or click to choose')}</strong>
         <span class="muted small">
           {cloud
-            ? t('JPG, HEIC, PNG, WebP… · tu navegador las reduce, las convierte y les quita los datos de ubicación antes de subirlas')
-            : t('JPG, HEIC, PNG, WebP… · hasta 100 MB cada una · se optimizan en tu navegador antes de subir')}
+            ? t('JPG, HEIC, PNG, WebP… · your browser shrinks and converts them and removes location data before uploading')
+            : t('JPG, HEIC, PNG, WebP… · up to 100 MB each · optimized in your browser before uploading')}
         </span>
       </div>
       {maxTotal != null && photos !== null && <QuotaBar used={total} max={maxTotal} count={photos.length} maxCount={maxCount} />}
@@ -478,21 +478,21 @@ export function PhotosSection({ cfg, set }: SectionProps) {
       {queue && <div ref={queueRef}><UploadQueue queue={queue} onClose={clearQueue} /></div>}
 
       <Card
-        title={t('Fotos')}
+        title={t('Photos')}
         icon="photos"
-        desc={photos ? t('{n} fotos · {size}', { n: photos.length, size: formatBytes(total) }) : undefined}
+        desc={photos ? t('{n} photos · {size}', { n: photos.length, size: formatBytes(total) }) : undefined}
         actions={
           <Button size="sm" variant="ghost" icon="refresh" onClick={load}>
-            {t('Recargar')}
+            {t('Reload')}
           </Button>
         }
       >
         {photos && photos.length > 0 && shownCount === 0 && (
           <Callout kind="warn">
-            <strong>{t('Todas las fotos están ocultas.')}</strong>{' '}
+            <strong>{t('All photos are hidden.')}</strong>{' '}
             {cfg.background.source === 'stock'
-              ? t('Ninguna foto de la galería está en rotación.')
-              : t('La pantalla usará fotos de stock hasta que vuelvas a mostrar alguna.')}
+              ? t('No gallery photo is in rotation.')
+              : t('The screen will use stock photos until you show some again.')}
           </Callout>
         )}
         {pending > 0 && !busy && (
@@ -501,11 +501,11 @@ export function PhotosSection({ cfg, set }: SectionProps) {
               <Icon name="wand" size={18} />
             </span>
             <div class="photo-todo__text">
-              <strong>{t('{n} fotos sin optimizar ni encuadrar', { n: pending })}</strong>
-              <span class="muted small">{t('Reducirlas y encuadrarlas hace que la galería cargue rápido y que la pantalla no corte caras.')}</span>
+              <strong>{t('{n} photos not yet optimized or framed', { n: pending })}</strong>
+              <span class="muted small">{t('Shrinking and framing them makes the gallery load fast and keeps faces on screen.')}</span>
             </div>
             <Button size="sm" variant="primary" icon="wand" onClick={optimizeExisting}>
-              {t('Optimizar y encuadrar fotos existentes')}
+              {t('Optimize and frame existing photos')}
             </Button>
           </div>
         )}
@@ -516,8 +516,8 @@ export function PhotosSection({ cfg, set }: SectionProps) {
             ))}
           </div>
         ) : photos.length === 0 ? (
-          <Empty icon="photos" title={err ? t('No se pudo cargar la galería') : t('La galería está vacía')}>
-            {err || t('Mientras tanto se usan fotos de stock aleatorias.')}
+          <Empty icon="photos" title={err ? t('Could not load the gallery') : t('The gallery is empty')}>
+            {err || t('Random stock photos are used in the meantime.')}
           </Empty>
         ) : (
           <>
@@ -525,8 +525,8 @@ export function PhotosSection({ cfg, set }: SectionProps) {
               <div class="photo-bar__count" aria-live="polite">
                 <span class={`photo-bar__dot ${shownCount === 0 ? 'is-off' : ''}`} />
                 <span>
-                  <strong>{t('{shown} de {total} en rotación', { shown: shownCount, total: photos.length })}</strong>
-                  {hiddenCount > 0 && <span class="muted"> · {t('{n} ocultas', { n: hiddenCount })}</span>}
+                  <strong>{t('{shown} of {total} in rotation', { shown: shownCount, total: photos.length })}</strong>
+                  {hiddenCount > 0 && <span class="muted"> · {t('{n} hidden', { n: hiddenCount })}</span>}
                 </span>
               </div>
               <div class="photo-bar__tools">
@@ -534,45 +534,45 @@ export function PhotosSection({ cfg, set }: SectionProps) {
                   size="sm"
                   value={filter}
                   options={[
-                    { value: 'all', label: `${t('Todas')} ${photos.length}` },
-                    { value: 'shown', label: `${t('En rotación')} ${shownCount}` },
-                    { value: 'hidden', label: `${t('Ocultas')} ${hiddenCount}` },
+                    { value: 'all', label: `${t('All')} ${photos.length}` },
+                    { value: 'shown', label: `${t('In rotation')} ${shownCount}` },
+                    { value: 'hidden', label: `${t('Hidden')} ${hiddenCount}` },
                   ]}
                   onChange={(v) => setFilter(v)}
                 />
                 {!selecting && (
                   <Button size="sm" icon="checklist" onClick={() => setSelecting(true)}>
-                    {t('Seleccionar')}
+                    {t('Select')}
                   </Button>
                 )}
               </div>
             </div>
             {selecting && (
-              <div class="photo-select" role="toolbar" aria-label={t('Selección')}>
-                <span class="photo-select__n">{t('{n} seleccionadas', { n: selected.size })}</span>
+              <div class="photo-select" role="toolbar" aria-label={t('Selection')}>
+                <span class="photo-select__n">{t('{n} selected', { n: selected.size })}</span>
                 <span class="photo-select__links">
                   <button type="button" class="link-btn" disabled={allVisibleSelected} onClick={() => setSelected(new Set([...selected, ...visible.map((p) => p.file)]))}>
-                    {t('Seleccionar todo')}
+                    {t('Select all')}
                   </button>
                   <span class="muted">/</span>
                   <button type="button" class="link-btn" disabled={!selected.size} onClick={() => setSelected(new Set())}>
-                    {t('ninguna')}
+                    {t('none')}
                   </button>
                 </span>
                 <span class="photo-select__spacer" />
                 <Button size="sm" variant="primary" icon="eye" disabled={!selected.size} loading={bulkBusy} onClick={() => bulkHidden(false)}>
-                  {t('Mostrar en pantalla')}
+                  {t('Show on screen')}
                 </Button>
                 <Button size="sm" icon="eyeOff" disabled={!selected.size || bulkBusy} onClick={() => bulkHidden(true)}>
-                  {t('No mostrar')}
+                  {t('Don’t show')}
                 </Button>
                 <Button size="sm" variant="ghost" icon="x" onClick={stopSelecting}>
-                  {t('Listo')}
+                  {t('Done')}
                 </Button>
               </div>
             )}
             {visible.length === 0 ? (
-              <p class="photo-none muted">{filter === 'hidden' ? t('No hay fotos ocultas.') : t('No hay fotos en rotación.')}</p>
+              <p class="photo-none muted">{filter === 'hidden' ? t('No hidden photos.') : t('No photos in rotation.')}</p>
             ) : (
               <div class={`photo-grid ${selecting ? 'is-selecting' : ''}`}>
                 {visible.map((p) => {
@@ -585,8 +585,8 @@ export function PhotosSection({ cfg, set }: SectionProps) {
                         type="button"
                         class="photo__open"
                         onClick={() => (selecting ? toggleSelect(p.file) : setEditing(p))}
-                        title={selecting ? p.file : t('Encuadrar')}
-                        aria-label={selecting ? p.file : `${t('Encuadrar')}: ${p.file}`}
+                        title={selecting ? p.file : t('Frame')}
+                        aria-label={selecting ? p.file : `${t('Frame')}: ${p.file}`}
                         aria-pressed={selecting ? sel : undefined}
                       >
                         <img
@@ -605,7 +605,7 @@ export function PhotosSection({ cfg, set }: SectionProps) {
                         </span>
                       ) : (
                         hasFocus(p) && !p.hidden && (
-                          <span class="photo__badge" title={t('Encuadre guardado')}>
+                          <span class="photo__badge" title={t('Framing saved')}>
                             <Icon name="target" size={12} />
                           </span>
                         )
@@ -613,7 +613,7 @@ export function PhotosSection({ cfg, set }: SectionProps) {
                       {p.hidden && (
                         <span class="photo__hidden-tag">
                           <Icon name="eyeOff" size={12} />
-                          {t('Oculta')}
+                          {t('Hidden')}
                         </span>
                       )}
                       <figcaption>
@@ -631,13 +631,13 @@ export function PhotosSection({ cfg, set }: SectionProps) {
                             type="button"
                             class={`photo__act photo__eye ${p.hidden ? 'is-off' : ''}`}
                             aria-pressed={!p.hidden}
-                            aria-label={`${p.hidden ? t('Mostrar en pantalla') : t('No mostrar')}: ${p.file}`}
-                            title={p.hidden ? t('Oculta · clic para mostrarla en pantalla') : t('En rotación · clic para ocultarla')}
+                            aria-label={`${p.hidden ? t('Show on screen') : t('Don’t show')}: ${p.file}`}
+                            title={p.hidden ? t('Hidden · click to show it on screen') : t('In rotation · click to hide it')}
                             onClick={() => toggleHidden(p)}
                           >
                             <Icon name={p.hidden ? 'eyeOff' : 'eye'} size={15} />
                           </button>
-                          <button type="button" class="photo__act photo__del" aria-label={t('Eliminar')} title={t('Eliminar')} onClick={() => remove(p)}>
+                          <button type="button" class="photo__act photo__del" aria-label={t('Delete')} title={t('Delete')} onClick={() => remove(p)}>
                             <Icon name="trash" size={15} />
                           </button>
                         </div>
@@ -658,7 +658,7 @@ export function PhotosSection({ cfg, set }: SectionProps) {
             const f = pickFrame(cfg, displays);
             return { frame: f.frame, panelNote: f.note };
           })()}
-          panelLabel={t('Panel de fotos de la pantalla')}
+          panelLabel={t('Photo panel of the screen')}
           onClose={() => setEditing(null)}
           onSaved={(np) => {
             setEditing(null);
@@ -678,23 +678,23 @@ function QuotaBar({ used, max, count, maxCount }: { used: number; max: number; c
   return (
     <div class={`photo-quota ${full ? 'is-full' : low ? 'is-low' : ''}`}>
       <div class="photo-quota__head">
-        <strong>{t('Espacio de la galería')}</strong>
+        <strong>{t('Gallery storage')}</strong>
         <span class="muted small">
-          {t('{used} de {max} · {n} fotos', { used: formatBytes(used), max: formatBytes(max), n: count })}
-          {!full && ` · ${t('quedan {free} libres', { free: formatBytes(max - used) })}`}
+          {t('{used} of {max} · {n} photos', { used: formatBytes(used), max: formatBytes(max), n: count })}
+          {!full && ` · ${t('{free} free', { free: formatBytes(max - used) })}`}
         </span>
       </div>
-      <div class="progress photo-quota__bar" role="progressbar" aria-label={t('Espacio de la galería')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(frac * 100)}>
+      <div class="progress photo-quota__bar" role="progressbar" aria-label={t('Gallery storage')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(frac * 100)}>
         <span style={{ transform: `scaleX(${frac})` }} />
       </div>
       {full ? (
         <p class="photo-quota__note small">
           {maxCount != null && count >= maxCount
-            ? t('Has llegado al máximo de {n} fotos. Borra alguna para subir más.', { n: maxCount })
-            : t('La galería está llena ({max}). Borra alguna foto para subir más.', { max: formatBytes(max) })}
+            ? t('You have reached the maximum of {n} photos. Delete some to upload more.', { n: maxCount })
+            : t('The gallery is full ({max}). Delete a photo to upload more.', { max: formatBytes(max) })}
         </p>
       ) : (
-        low && <p class="photo-quota__note small">{t('Queda poco espacio. Borra las fotos que ya no uses para subir más.')}</p>
+        low && <p class="photo-quota__note small">{t('Space is running low. Delete photos you no longer use to upload more.')}</p>
       )}
     </div>
   );
@@ -703,19 +703,19 @@ function QuotaBar({ used, max, count, maxCount }: { used: number; max: number; c
 function statusText(i: QueueItem): string {
   switch (i.status) {
     case 'waiting':
-      return t('En cola');
+      return t('Queued');
     case 'heic':
-      return t('Convirtiendo HEIC…');
+      return t('Converting HEIC…');
     case 'optimizing':
-      return t('Optimizando…');
+      return t('Optimizing…');
     case 'uploading':
-      return t('Subiendo… {pct}%', { pct: Math.round(((i.pct - 0.4) / 0.6) * 100) });
+      return t('Uploading… {pct}%', { pct: Math.round(((i.pct - 0.4) / 0.6) * 100) });
     case 'skipped':
-      return i.note || t('Omitida');
+      return i.note || t('Skipped');
     case 'error':
       return i.error || t('Error');
     case 'done': {
-      const sizes = i.before && i.after ? `${formatBytes(i.before)} → ${formatBytes(i.after)}` : t('Lista');
+      const sizes = i.before && i.after ? `${formatBytes(i.before)} → ${formatBytes(i.after)}` : t('Done');
       return i.note ? `${sizes} · ${i.note}` : sizes;
     }
   }
@@ -729,7 +729,7 @@ function UploadQueue({ queue, onClose }: { queue: Queue; onClose: () => void }) 
   const before = ok.reduce((s, i) => s + (i.before || 0), 0);
   const after = ok.reduce((s, i) => s + (i.after || 0), 0);
   const errors = queue.items.filter((i) => i.status === 'error').length;
-  const title = queue.kind === 'existing' ? t('Optimizando fotos existentes') : t('Subida de fotos');
+  const title = queue.kind === 'existing' ? t('Optimizing existing photos') : t('Photo upload');
   return (
     <Card
       class="upload-queue"
@@ -737,11 +737,11 @@ function UploadQueue({ queue, onClose }: { queue: Queue; onClose: () => void }) 
       icon={queue.kind === 'existing' ? 'wand' : 'upload'}
       desc={
         queue.running
-          ? t('{done} de {total} · no cierres esta página', { done: finished, total: n })
+          ? t('{done} of {total} · keep this page open', { done: finished, total: n })
           : [
-              t('{done} de {total} listas', { done: ok.length, total: n }),
-              ok.length && before > after ? t('ahorro {size}', { size: formatBytes(before - after) }) : '',
-              errors ? t('{n} con errores', { n: errors }) : '',
+              t('{done} of {total} done', { done: ok.length, total: n }),
+              ok.length && before > after ? t('{size} saved', { size: formatBytes(before - after) }) : '',
+              errors ? t('{n} with errors', { n: errors }) : '',
             ]
               .filter(Boolean)
               .join(' · ')
@@ -749,7 +749,7 @@ function UploadQueue({ queue, onClose }: { queue: Queue; onClose: () => void }) 
       actions={
         !queue.running && (
           <Button size="sm" variant="ghost" icon="x" onClick={onClose}>
-            {t('Cerrar')}
+            {t('Close')}
           </Button>
         )
       }

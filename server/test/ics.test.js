@@ -102,7 +102,7 @@ test('sorting: per day, all-day first then by start; hash stable', async () => {
 test('airbnb feed normalisation', async () => {
   const src = { id: 'c_al', name: 'AL', color: '#2ec4b6', emoji: '🏠', kind: 'airbnb' };
   const ev = await eventsFor('airbnb.ics', '2026-10-01', '2026-10-31', src);
-  assert.deepEqual(ev.map((e) => e.title), ['Reserva', 'No disponible', 'Reserva · John Smith']);
+  assert.deepEqual(ev.map((e) => e.title), ['Reservation', 'Not available', 'Reservation · John Smith']);
   assert.ok(ev.every((e) => e.kind === 'airbnb' && e.allDay && e.multiDay));
   assert.equal(ev[0].emoji, '🏠');
   assert.equal(ev[0].start, '2026-10-10');

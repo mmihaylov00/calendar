@@ -8,7 +8,7 @@ import type { SectionProps } from './common';
 
 
 /** The display's own date line for `d` in time zone `tz`, so the preview matches the screen. */
-export function formatDate(d: Date, fmt: DateFormat, lang: 'es' | 'en' | 'pt', tz: string, custom = '') {
+export function formatDate(d: Date, fmt: DateFormat, lang: 'en', tz: string, custom = '') {
   let key: string;
   try {
     key = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: tz }).format(d);
@@ -20,8 +20,8 @@ export function formatDate(d: Date, fmt: DateFormat, lang: 'es' | 'en' | 'pt', t
 
 /** Small tag next to the numeric formats, so day/month order is clear even on days like 10/10. */
 const FORMAT_TAG: Partial<Record<DateFormat, string>> = {
-  weekday_mdy: 'mm/dd/aaaa',
-  weekday_dmy: 'dd/mm/aaaa',
+  weekday_mdy: 'mm/dd/yyyy',
+  weekday_dmy: 'dd/mm/yyyy',
   weekday_iso: 'ISO 8601',
 };
 
@@ -93,28 +93,28 @@ export function DateTimeSection({ cfg, set, errors }: SectionProps) {
   const lang = cfg.screen.language;
   return (
     <>
-      <PageHeader scope="screen" title={t('Fecha y hora')} desc={t('Reloj con segundos, formato de fecha y zona horaria.')} />
+      <PageHeader scope="screen" title={t('Date & time')} desc={t('Clock with seconds, date format and time zone.')} />
       <Card>
         <div class="clock-preview">
           {d.clock === 'analog' ? <Analog now={now} tz={d.timezone} /> : <div class="clock-preview__time">{time}</div>}
           <div class="clock-preview__date">{formatDate(now, d.dateFormat, lang, d.timezone, d.dateCustom)}</div>
         </div>
-        <ToggleRow label={t('Mostrar fecha y hora')} checked={d.enabled} onChange={(v) => set((c) => void (c.datetime.enabled = v))} />
+        <ToggleRow label={t('Show date & time')} checked={d.enabled} onChange={(v) => set((c) => void (c.datetime.enabled = v))} />
       </Card>
-      <Card id="dt-clock" scope="screen" title={t('Reloj')} icon="clock" muted={!d.enabled}>
+      <Card id="dt-clock" scope="screen" title={t('Clock')} icon="clock" muted={!d.enabled}>
         <div class="grid grid--2">
-          <Field label={t('Estilo')}>
+          <Field label={t('Style')}>
             <Segmented
               full
               value={d.clock}
               options={[
                 { value: 'digital', label: t('Digital') },
-                { value: 'analog', label: t('Analógico') },
+                { value: 'analog', label: t('Analog') },
               ]}
               onChange={(v) => set((c) => void (c.datetime.clock = v))}
             />
           </Field>
-          <Field label={t('Formato')}>
+          <Field label={t('Format')}>
             <Segmented
               full
               value={d.format24 ? 24 : 12}
@@ -126,9 +126,9 @@ export function DateTimeSection({ cfg, set, errors }: SectionProps) {
             />
           </Field>
         </div>
-        <ToggleRow label={t('Mostrar segundos')} checked={d.showSeconds} onChange={(v) => set((c) => void (c.datetime.showSeconds = v))} />
-        <ToggleRow label={t('Mostrar AM/PM')} hint={d.format24 ? t('Solo con formato de 12 horas') : undefined} disabled={d.format24} checked={d.showAmPm} onChange={(v) => set((c) => void (c.datetime.showAmPm = v))} />
-        <Field label={<>{t('Zona horaria')} <ScopeBadge scope="global" /></>} error={errors['datetime.timezone']}>
+        <ToggleRow label={t('Show seconds')} checked={d.showSeconds} onChange={(v) => set((c) => void (c.datetime.showSeconds = v))} />
+        <ToggleRow label={t('Show AM/PM')} hint={d.format24 ? t('Only with 12-hour format') : undefined} disabled={d.format24} checked={d.showAmPm} onChange={(v) => set((c) => void (c.datetime.showAmPm = v))} />
+        <Field label={<>{t('Time zone')} <ScopeBadge scope="global" /></>} error={errors['datetime.timezone']}>
           <TextInput value={d.timezone} list="tz-list" error={!!errors['datetime.timezone']} onValue={(v) => set((c) => void (c.datetime.timezone = v))} prefix={<span>🌍</span>} />
           {zones && (
             <datalist id="tz-list">
@@ -139,13 +139,13 @@ export function DateTimeSection({ cfg, set, errors }: SectionProps) {
           )}
         </Field>
       </Card>
-      <Card id="dt-format" scope="screen" title={t('Formato de fecha')} icon="calendar" muted={!d.enabled}>
+      <Card id="dt-format" scope="screen" title={t('Date format')} icon="calendar" muted={!d.enabled}>
         <div class="radio-list radio-list--grid">
           {DATE_FORMATS.map((f) => (
             <label class={`radio-card ${d.dateFormat === f ? 'is-active' : ''}`}>
               <input type="radio" name="datefmt" checked={d.dateFormat === f} onChange={() => set((c) => void (c.datetime.dateFormat = f))} />
               <span class="radio-dot" />
-              <span>{f === 'custom' ? t('Personalizado') : formatDate(now, f, lang, d.timezone)}</span>
+              <span>{f === 'custom' ? t('Custom') : formatDate(now, f, lang, d.timezone)}</span>
               {FORMAT_TAG[f] && <span class="badge badge--soft mono small">{t(FORMAT_TAG[f]!)}</span>}
             </label>
           ))}
@@ -157,22 +157,22 @@ export function DateTimeSection({ cfg, set, errors }: SectionProps) {
 }
 
 const TOKENS: [string, string][] = [
-  ['dddd', 'día de la semana'], ['ddd', 'día abreviado'], ['d', 'día'], ['dd', 'día con cero'],
-  ['mmmm', 'mes'], ['mmm', 'mes abreviado'], ['m', 'mes en número'], ['mm', 'mes con cero'],
-  ['yyyy', 'año'], ['yy', 'año corto'],
+  ['dddd', 'weekday'], ['ddd', 'short weekday'], ['d', 'day'], ['dd', 'day with zero'],
+  ['mmmm', 'month'], ['mmm', 'short month'], ['m', 'month number'], ['mm', 'month with zero'],
+  ['yyyy', 'year'], ['yy', 'short year'],
 ];
 
 /** Pattern input for the custom date line: clickable variables and a live preview. */
-function CustomDate({ d, now, lang, set }: { d: { dateCustom?: string; timezone: string }; now: Date; lang: 'es' | 'en' | 'pt'; set: SectionProps['set'] }) {
+function CustomDate({ d, now, lang, set }: { d: { dateCustom?: string; timezone: string }; now: Date; lang: 'en'; set: SectionProps['set'] }) {
   const value = d.dateCustom ?? '';
   const insert = (tok: string) => set((c) => void (c.datetime.dateCustom = `${c.datetime.dateCustom ?? ''}{${tok}}`.slice(0, 60)));
   return (
     <div class="date-custom">
-      <Field label={t('Tu formato')} hint={t('Escribe el texto que quieras y añade variables entre llaves.')}>
+      <Field label={t('Your format')} hint={t('Type any text and add variables in braces.')}>
         <TextInput mono value={value} maxLength={60} placeholder="{dddd}, {d} {mmmm} {yyyy}" onValue={(v) => set((c) => void (c.datetime.dateCustom = v.replace(/[<>]/g, '')))} />
       </Field>
       <div class="date-custom__preview">
-        <span class="muted small">{t('Así se verá')}</span>
+        <span class="muted small">{t('Preview')}</span>
         <strong>{value.trim() ? formatDate(now, 'custom', lang, d.timezone, value) : '·'}</strong>
       </div>
       <div class="date-custom__tokens">

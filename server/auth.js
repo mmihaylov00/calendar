@@ -115,7 +115,7 @@ export function sessionValid(req) {
 
 /**
  * Family photos (/media/*): LAN clients (the displays) or a signed-in admin only. Behind a reverse proxy that lets
- * /media/* through (deploy/Caddyfile.example), Internet clients without a session get 404.
+ * /media/* through your reverse proxy, Internet clients without a session get 404.
  */
 export function lanOrSession(req, res, next) {
   if (isLanClient(req) || sessionValid(req)) return next();

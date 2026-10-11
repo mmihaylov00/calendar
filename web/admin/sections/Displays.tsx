@@ -15,12 +15,12 @@ import { PrivacyMenu, usePrivacy } from '../components/Privacy';
 
 function NightMenu({ value, onPick, busy }: { value: NightCommand | null; onPick: (m: NightCommand) => void; busy?: boolean }) {
   const opts: { v: NightCommand; icon: 'moon' | 'sun' | 'clock'; label: string }[] = [
-    { v: 'on', icon: 'moon', label: t('Noche') },
-    { v: 'off', icon: 'sun', label: t('Día') },
+    { v: 'on', icon: 'moon', label: t('Night') },
+    { v: 'off', icon: 'sun', label: t('Day') },
     { v: 'auto', icon: 'clock', label: t('Auto') },
   ];
   return (
-    <div class={`seg seg--sm night-seg ${busy ? 'is-disabled' : ''}`} role="radiogroup" aria-label={t('Modo noche')} style={{ '--seg-n': 3, '--seg-i': Math.max(0, opts.findIndex((o) => o.v === (value ?? 'auto'))) } as any}>
+    <div class={`seg seg--sm night-seg ${busy ? 'is-disabled' : ''}`} role="radiogroup" aria-label={t('Night mode')} style={{ '--seg-n': 3, '--seg-i': Math.max(0, opts.findIndex((o) => o.v === (value ?? 'auto'))) } as any}>
       <span class="seg__thumb" aria-hidden="true" />
       {opts.map((o) => (
         <button type="button" role="radio" aria-checked={(value ?? 'auto') === o.v} class={(value ?? 'auto') === o.v ? 'is-active' : ''} title={o.label} onClick={() => onPick(o.v)}>
@@ -48,56 +48,56 @@ function DisplayCard({ d, serverVersion, onCmd, onForget, busy }: { d: DisplayIn
           </span>
         </div>
         <AccessBadge d={d} />
-        <span class={`badge ${d.connected ? 'badge--ok' : 'badge--soft'}`}>{d.connected ? t('En línea') : t('Desconectada')}</span>
+        <span class={`badge ${d.connected ? 'badge--ok' : 'badge--soft'}`}>{d.connected ? t('Online') : t('Offline')}</span>
       </header>
       <dl class="disp__facts">
         <div>
-          <dt>{t('Navegador')}</dt>
+          <dt>{t('Browser')}</dt>
           <dd title={d.userAgent}>{d.uaShort || '–'}</dd>
         </div>
         <div>
-          <dt>{t('Resolución')}</dt>
+          <dt>{t('Resolution')}</dt>
           <dd>
             {res}
             {d.dpr != null && <span class="muted"> @{Math.round(d.dpr * 100) / 100}x</span>}
-            {vp && vp !== res && <span class="muted small"> · {t('ventana')} {vp}</span>}
+            {vp && vp !== res && <span class="muted small"> · {t('window')} {vp}</span>}
           </dd>
         </div>
         <div>
           <dt>WebGL</dt>
-          <dd>{d.webgl == null ? '–' : d.webgl ? <span class="ok-text">{t('Activo')}</span> : <span class="muted">{d.lite ? t('Modo ligero') : t('Desactivado')}</span>}</dd>
+          <dd>{d.webgl == null ? '–' : d.webgl ? <span class="ok-text">{t('Enabled')}</span> : <span class="muted">{d.lite ? t('Lite mode') : t('Disabled')}</span>}</dd>
         </div>
         <div>
-          <dt>{t('Versión')}</dt>
+          <dt>{t('Version')}</dt>
           <dd>
             {d.version ?? '–'}
             {d.outdated && (
-              <span class="badge badge--warn" title={t('El servidor ejecuta la versión {v}', { v: serverVersion })}>
-                {t('antigua')}
+              <span class="badge badge--warn" title={t('The server runs version {v}', { v: serverVersion })}>
+                {t('outdated')}
               </span>
             )}
           </dd>
         </div>
         <div>
-          <dt>{d.connected ? t('Conectada desde') : t('Última vez')}</dt>
+          <dt>{d.connected ? t('Connected since') : t('Last seen')}</dt>
           <dd title={d.connected ? d.connectedAt ?? '' : d.lastSeen}>{d.connected ? fmtDateTime(d.connectedAt) : relTime(d.lastSeen)}</dd>
         </div>
         <div>
-          <dt>{t('Último latido')}</dt>
+          <dt>{t('Last heartbeat')}</dt>
           <dd title={d.lastSeen}>
             {relTime(d.lastSeen)}
-            {d.uptimeSec != null && d.connected && <span class="muted small"> · {t('arriba {d}', { d: formatDuration(d.uptimeSec) })}</span>}
+            {d.uptimeSec != null && d.connected && <span class="muted small"> · {t('up {d}', { d: formatDuration(d.uptimeSec) })}</span>}
           </dd>
         </div>
         <div>
-          <dt>{t('Modo noche')}</dt>
+          <dt>{t('Night mode')}</dt>
           <dd>
-            {d.night == null ? '–' : d.night ? `🌙 ${t('Atenuada')}` : `☀️ ${t('Normal')}`}
+            {d.night == null ? '–' : d.night ? `🌙 ${t('Dimmed')}` : `☀️ ${t('Normal')}`}
             {d.nightOverride && d.nightOverride !== 'auto' && <span class="muted small"> · {t('manual')}</span>}
           </dd>
         </div>
         <div>
-          <dt>{t('Visto por primera vez')}</dt>
+          <dt>{t('First seen')}</dt>
           <dd>{fmtDateTime(d.firstSeen)}</dd>
         </div>
       </dl>
@@ -110,20 +110,20 @@ function DisplayCard({ d, serverVersion, onCmd, onForget, busy }: { d: DisplayIn
         {d.connected && has('displayCommands') ? (
           <>
             <Button size="sm" icon="refresh" loading={busy === 'reload'} onClick={() => onCmd('reload')}>
-              {t('Recargar')}
+              {t('Reload')}
             </Button>
             <Button size="sm" icon="target" loading={busy === 'identify'} onClick={() => onCmd('identify')}>
-              {t('Identificar')}
+              {t('Identify')}
             </Button>
             <span class="spacer" />
             <NightMenu value={d.nightOverride} busy={busy.startsWith('night')} onPick={(m) => onCmd('night', m)} />
           </>
         ) : d.connected ? null : (
           <>
-            <span class="muted small">{t('Sin conexión: las órdenes no llegarán.')}</span>
+            <span class="muted small">{t('Offline: commands will not arrive.')}</span>
             <span class="spacer" />
             <Button size="sm" variant="ghost" icon="trash" onClick={onForget}>
-              {t('Olvidar')}
+              {t('Forget')}
             </Button>
           </>
         )}
@@ -135,10 +135,10 @@ function DisplayCard({ d, serverVersion, onCmd, onForget, busy }: { d: DisplayIn
 /** How the display got in: private link, paired device (its name), admin session or no key (open mode). */
 function AccessBadge({ d }: { d: DisplayInfo }) {
   const a = d.access ?? 'open';
-  if (a === 'key') return <span class="badge badge--access" title={t('Entra con el enlace privado de la pantalla')}>🔗 {t('Enlace privado')}</span>;
-  if (a === 'device') return <span class="badge badge--access" title={t('Dispositivo vinculado')}>🔑 {d.deviceName || t('Vinculada')}</span>;
-  if (a === 'session') return <span class="badge badge--access">{t('Sesión del panel')}</span>;
-  return <span class="badge badge--access badge--warn-soft" title={t('Entra sin clave (modo abierto)')}>{t('Sin clave')}</span>;
+  if (a === 'key') return <span class="badge badge--access" title={t('Uses the screen’s private link')}>🔗 {t('Private link')}</span>;
+  if (a === 'device') return <span class="badge badge--access" title={t('Paired device')}>🔑 {d.deviceName || t('Paired')}</span>;
+  if (a === 'session') return <span class="badge badge--access">{t('Admin session')}</span>;
+  return <span class="badge badge--access badge--warn-soft" title={t('No key (open mode)')}>{t('No key')}</span>;
 }
 
 /** "/?screen=x" → "https://host/?screen=x" (absolute URLs unchanged). */
@@ -180,10 +180,10 @@ export function DisplaysSection({ saved, go }: SectionProps) {
     }
   };
   const label = (action: string, mode?: NightCommand) =>
-    action === 'reload' ? t('Recargando') : action === 'identify' ? t('Identificando') : mode === 'on' ? t('Modo noche activado') : mode === 'off' ? t('Modo noche desactivado') : t('Modo noche automático');
+    action === 'reload' ? t('Reloading') : action === 'identify' ? t('Identifying') : mode === 'on' ? t('Night mode on') : mode === 'off' ? t('Night mode off') : t('Automatic night mode');
 
   const forget = async (d: DisplayInfo) => {
-    const ok = await confirmDialog({ title: t('¿Olvidar este dispositivo?'), body: t('Desaparecerá de la lista hasta que vuelva a conectarse.'), confirm: t('Olvidar') });
+    const ok = await confirmDialog({ title: t('Forget this device?'), body: t('It will disappear from the list until it connects again.'), confirm: t('Forget') });
     if (!ok) return;
     try {
       await api.forgetDisplay(d.clientId);
@@ -205,17 +205,17 @@ export function DisplaysSection({ saved, go }: SectionProps) {
 
   return (
     <>
-      <PageHeader title={t('Pantallas conectadas')} desc={t('Dispositivos que muestran el calendario ahora mismo. Se actualiza cada 5 s.')}>
+      <PageHeader title={t('Connected screens')} desc={t('Devices showing the calendar right now. Updates every 5 s.')}>
         <Button variant="primary" icon="link" onClick={() => openPairDialog()}>
-          {t('Vincular una pantalla')}
+          {t('Pair a screen')}
         </Button>
         {has('displayCommands') && (
           <>
             <Button icon="refresh" onClick={() => run('_all', { action: 'reload', ...target }, label('reload'))} loading={busy._all === 'reload'} disabled={!onlineHere.length}>
-              {t('Recargar todas')}
+              {t('Reload all')}
             </Button>
             <Button icon="target" onClick={() => run('_all', { action: 'identify', ...target }, label('identify'))} loading={busy._all === 'identify'} disabled={!onlineHere.length}>
-              {t('Identificar todas')}
+              {t('Identify all')}
             </Button>
           </>
         )}
@@ -225,10 +225,10 @@ export function DisplaysSection({ saved, go }: SectionProps) {
 
       {outdated.length > 0 && (
         <Callout kind="warn">
-          {t('{n} pantallas ejecutan una versión antigua (servidor {v}). Recárgalas para actualizar.', { n: outdated.length, v: data?.serverVersion ?? '' })}{' '}
+          {t('{n} screens run an old version (server {v}). Reload them to update.', { n: outdated.length, v: data?.serverVersion ?? '' })}{' '}
           {has('displayCommands') && (
             <button type="button" class="link-btn" onClick={() => run('_all', { action: 'reload', clientIds: outdated.map((d) => d.clientId) }, label('reload'))}>
-              {t('Recargar ahora')}
+              {t('Reload now')}
             </button>
           )}
         </Callout>
@@ -237,7 +237,7 @@ export function DisplaysSection({ saved, go }: SectionProps) {
       <div class="toolbar">
         <div class="target-pick">
           <button type="button" class={`pill ${!filter ? 'is-on' : ''}`} onClick={() => setFilter('')}>
-            {t('Todas')} <span class="pill__n">{data?.displays.length ?? 0}</span>
+            {t('All')} <span class="pill__n">{data?.displays.length ?? 0}</span>
           </button>
           {saved.screens.map((s) => {
             const n = data?.displays.filter((d) => d.screenId === s.id).length ?? 0;
@@ -250,15 +250,15 @@ export function DisplaysSection({ saved, go }: SectionProps) {
         </div>
         <label class="mini-toggle">
           <input type="checkbox" checked={showOffline} onChange={(e) => setShowOffline(e.currentTarget.checked)} />
-          <span>{t('Mostrar desconectadas')}</span>
+          <span>{t('Show offline')}</span>
         </label>
         <div class="toolbar__night">
-          <span class="muted small">{filter ? t('Noche en esta pantalla') : t('Noche en todas')}</span>
+          <span class="muted small">{filter ? t('Night on this screen') : t('Night on all')}</span>
           <NightMenu value={null} busy={busy._all?.startsWith('night')} onPick={(m) => run('_all', { action: 'night', mode: m, ...target }, label('night', m))} />
         </div>
         {has('privacy') && (
           <div class="toolbar__night">
-            <span class="muted small">{target.screens ? t('Privado en esta pantalla') : t('Privado en todas')}</span>
+            <span class="muted small">{target.screens ? t('Private on this screen') : t('Private on all')}</span>
             <PrivacyMenu screenId={target.screens ? filter : ''} row={privRow} tz={saved.datetime.timezone} />
           </div>
         )}
@@ -266,7 +266,7 @@ export function DisplaysSection({ saved, go }: SectionProps) {
 
       {err && !data ? (
         <Card>
-          <Empty icon="alert" title={t('No se pudo obtener la lista')}>
+          <Empty icon="alert" title={t('Could not get the list')}>
             {err}
           </Empty>
         </Card>
@@ -277,13 +277,13 @@ export function DisplaysSection({ saved, go }: SectionProps) {
         </div>
       ) : list.length === 0 ? (
         <Card>
-          <Empty icon="monitor" title={t('Ninguna pantalla conectada')}>
+          <Empty icon="monitor" title={t('No screen connected')}>
             {saved.security?.displayAccess === 'open' ? (
               <>
-                {t('Abre')} <code>{absUrl(screenHref(saved, filter || saved.defaultScreen, links))}</code> {t('en el dispositivo y aparecerá aquí.')}
+                {t('Open')} <code>{absUrl(screenHref(saved, filter || saved.defaultScreen, links))}</code> {t('on the device and it will appear here.')}
               </>
             ) : (
-              t('Abre en el dispositivo el enlace privado de la pantalla (Pantalla → Ajustes) o vincúlalo con un código y aparecerá aquí.')
+              t('Open the screen’s private link on the device (Screen → Settings) or pair it with a code and it will show up here.')
             )}
           </Empty>
         </Card>
@@ -303,7 +303,7 @@ export function DisplaysSection({ saved, go }: SectionProps) {
       )}
       <PairedDevicesCard saved={saved} onChanged={load} />
       <p class="muted small center">
-        <StatusDot state={online.length ? 'ok' : 'idle'} /> {t('{n} en línea', { n: online.length })} · {t('servidor v{v}', { v: data?.serverVersion ?? '–' })}
+        <StatusDot state={online.length ? 'ok' : 'idle'} /> {t('{n} online', { n: online.length })} · {t('server v{v}', { v: data?.serverVersion ?? '–' })}
       </p>
     </>
   );

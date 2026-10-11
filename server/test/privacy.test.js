@@ -29,6 +29,7 @@ const at = (iso) => new Date(iso);
 
 function cfgWith(mut = (c) => c) {
   const c = defaultConfig();
+  c.datetime.timezone = TZ;
   c.calendar.sources = [
     { id: 'c_work', type: 'ics', name: 'Work', url: 'https://example.com/w.ics', color: '#123456', emoji: '💼', kind: 'generic', enabled: true, refreshMin: 60 },
     { id: 'c_rent', type: 'ics', name: 'Rental', url: 'https://example.com/r.ics', color: '#ff0000', emoji: '', kind: 'airbnb', enabled: true, refreshMin: 60, privacy: 'busy' },
@@ -74,21 +75,21 @@ test('privatizeEvents: busy keeps time and calendar colour only, hide drops, kee
   ], cfg, 'es');
   assert.deepEqual(out.map((e) => e.id), ['e1', 'e3', 'e4', 'e5', 'e6', 'e7']);
   assert.deepEqual(out[0], {
-    id: 'e1', sourceId: 'c_work', title: 'Ocupado', start: '2026-10-12T12:00:00+01:00', end: '2026-10-12T13:00:00+01:00', allDay: false,
+    id: 'e1', sourceId: 'c_work', title: 'Busy', start: '2026-10-12T12:00:00+01:00', end: '2026-10-12T13:00:00+01:00', allDay: false,
     location: '', color: '#123456', emoji: '', kind: 'generic', multiDay: false, busy: true,
   });
   assert.equal(out[1].title, 'Christmas'); // holidays: keep by default
-  assert.equal(out[2].title, 'Ocupado');
+  assert.equal(out[2].title, 'Busy');
   assert.equal(out[2].description, undefined);
   assert.equal(out[2].color, cfg.localEvents.color);
   assert.equal(out[3].title, 'Ana'); // birthdays: keep by default
   assert.equal(out[3].age, 40);
-  assert.equal(out[4].title, 'Ocupado');
+  assert.equal(out[4].title, 'Busy');
   assert.equal(out[4].multiDay, true);
   assert.equal(out[5].emoji, '🚪'); // a checkout marker stays a marker, without the guest's name
-  assert.equal(out[5].title, 'Ocupado');
+  assert.equal(out[5].title, 'Busy');
   assert.equal(privatizeEvents([ev({})], cfg, 'en')[0].title, 'Busy');
-  assert.equal(privatizeEvents([ev({})], cfg, 'pt')[0].title, 'Ocupado');
+  assert.equal(privatizeEvents([ev({})], cfg, 'pt')[0].title, 'Busy');
   assert.equal(sourcePrivacyMode(cfg, 'unknown'), 'busy');
 });
 
@@ -196,6 +197,7 @@ async function withServer(fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'marco-privacy-'));
   globalThis.fetch = offlineFetch;
   const c = defaultConfig();
+  c.datetime.timezone = TZ;
   c.calendar.sources = [];
   c.news.feeds = [];
   c.security.displayAccess = 'open';

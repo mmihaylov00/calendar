@@ -67,7 +67,7 @@ const KEYWORD_RE = /\b(airbnb|reserved|reservation|reserva(?:do|da)?|booking(?:\
 const GUEST_LINE_RE = /^\s*(?:guest(?:\s*name)?|hu[eé]sped(?:es)?|h[oó]spede|name|nombre|nome|cliente)\s*[:=-]\s*(.+?)\s*$/im;
 
 /**
- * Normalise Airbnb / vacation-rental titles: "Reserved" → "Reserva", "Airbnb (Not available)" → "No disponible",
+ * Normalise Airbnb / vacation-rental titles: "Reserved" → "Reservation", "Airbnb (Not available)" → "Not available",
  * keeping the guest name when the feed provides it (in the title or a "Guest: …" description line).
  * Returns { title, blocked }.
  */
@@ -132,48 +132,4 @@ export function normalizeAirbnbTitle(title, description, lang) {
   guest = guest.replace(/https?:\/\/\S+/g, '').trim().slice(0, 60);
   const base = t('reservation', lang);
   return { title: guest && /\p{L}/u.test(guest) ? `${base} · ${guest}` : base, blocked: false, emoji };
-}
-
-// Google's public holiday ICS feeds ignore the language prefix and always return English titles.
-// Translate the common ones (Portugal + Spain + general) for holiday-kind sources.
-const HOLIDAYS = {
-  "new year's day": ['Año Nuevo', 'Ano Novo'],
-  "new year's eve": ['Nochevieja', 'Véspera de Ano Novo'],
-  'carnival': ['Carnaval', 'Carnaval'],
-  'carnival / shrove tuesday / pancake day': ['Carnaval', 'Carnaval'],
-  'shrove tuesday': ['Martes de Carnaval', 'Terça-feira de Carnaval'],
-  'good friday': ['Viernes Santo', 'Sexta-feira Santa'],
-  'maundy thursday': ['Jueves Santo', 'Quinta-feira Santa'],
-  'easter sunday': ['Domingo de Pascua', 'Domingo de Páscoa'],
-  'easter monday': ['Lunes de Pascua', 'Segunda-feira de Páscoa'],
-  'liberty day': ['Día de la Libertad', 'Dia da Liberdade'],
-  'labor day': ['Día del Trabajo', 'Dia do Trabalhador'],
-  'labour day': ['Día del Trabajo', 'Dia do Trabalhador'],
-  'portugal day': ['Día de Portugal', 'Dia de Portugal'],
-  'corpus christi': ['Corpus Christi', 'Corpo de Deus'],
-  'assumption of mary': ['Asunción de la Virgen', 'Assunção de Nossa Senhora'],
-  'assumption day': ['Asunción de la Virgen', 'Assunção de Nossa Senhora'],
-  'republic day': ['Día de la República', 'Implantação da República'],
-  "all saints' day": ['Todos los Santos', 'Dia de Todos os Santos'],
-  'restoration of independence': ['Restauración de la Independencia', 'Restauração da Independência'],
-  'feast of the immaculate conception': ['Inmaculada Concepción', 'Imaculada Conceição'],
-  'immaculate conception': ['Inmaculada Concepción', 'Imaculada Conceição'],
-  'christmas eve': ['Nochebuena', 'Véspera de Natal'],
-  'christmas day': ['Navidad', 'Natal'],
-  "st. anthony's day": ['San Antonio', 'Santo António'],
-  "st. john's day": ['San Juan', 'São João'],
-  "mother's day": ['Día de la Madre', 'Dia da Mãe'],
-  "father's day": ['Día del Padre', 'Dia do Pai'],
-  "valentine's day": ['San Valentín', 'Dia dos Namorados'],
-  'epiphany': ['Reyes', 'Dia de Reis'],
-  'daylight saving time starts': ['Cambio a horario de verano', 'Início da hora de verão'],
-  'daylight saving time ends': ['Cambio a horario de invierno', 'Fim da hora de verão'],
-  'national day of spain': ['Fiesta Nacional de España', 'Dia Nacional de Espanha'],
-  'constitution day': ['Día de la Constitución', 'Dia da Constituição'],
-};
-
-export function translateHoliday(title, lang) {
-  if (lang !== 'es' && lang !== 'pt') return title;
-  const hit = HOLIDAYS[String(title).trim().toLowerCase().replace(/\s*\(.*\)\s*$/, '')];
-  return hit ? hit[lang === 'es' ? 0 : 1] : title;
 }

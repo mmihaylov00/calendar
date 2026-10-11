@@ -10,24 +10,14 @@ Please **do not** open a public issue. Use GitHub's private vulnerability report
 (*Security → Report a vulnerability* on the repository page) and include steps to reproduce and the affected version.
 You should get an answer within a week.
 
-## Installer and updates
+## Home Assistant deployment and updates
 
-- `install.sh` downloads release packages from GitHub over HTTPS and checks each one against the `.sha256` file
-  published with it before unpacking it; Node.js builds are checked against nodejs.org's `SHASUMS256.txt`. An update
-  that does not start within 45 s is rolled back to the previous version.
-- If you do not want to pipe a script into `bash`, download `install.sh` and `install.sh.sha256` from the release
-  page, run `sha256sum -c install.sh.sha256`, read the script and run it (`--dry-run` shows every action first).
-- The installer writes `.env` and the kiosk's `kiosk.env` with mode 600 and never prints a private link in full.
-- The service runs as a normal user (yours, or a `marco` system user for a server-only install made as root), unless
-  you pass `--user root` yourself.
-- Updates started from the admin (release installs): the server only creates `<data>/update/request`. A systemd path
-  unit written by the installer (`marco-update.path`) starts `marco-update.service`, which runs
-  `marco update --requested` as root. It reads nothing from the request except that it exists, writes its progress
-  into the data folder as the service user (so a link planted there cannot make root overwrite another file) and
-  always installs the latest release, checksum checked. The files that run as root (the `marco` command, the stored
-  installer, the systemd units) come from the verified package or the installer itself, never from the install
-  folder, which belongs to the service user.
-- The daily update check is a single `GET` to the GitHub API with no identifier; `MARCO_UPDATE_CHECK=0` turns it off.
+Install and update this fork through Home Assistant's app store. The app builds from this repository;
+upstream update checks are disabled so they cannot replace it with an upstream release.
+
+The container starts as root only to prepare its private `/data/marco` directory, then drops to the
+`node` user before loading the server. App options hold OAuth credentials; calendar tokens, passwords
+and display keys are stored in `secrets.json` with mode 600. Keep app backups private.
 
 ## Deployment model (what is and is not protected)
 
@@ -77,7 +67,7 @@ used on shared networks or behind an HTTPS reverse proxy on the Internet:
   iCal test (`/api/setup/test-ics`), refuses loopback, link-local / cloud-metadata, multicast and unspecified
   destinations on every redirect hop and returns only generic errors.
 
-If you need remote access, put an HTTPS reverse proxy in front (see `deploy/Caddyfile.example`), use a strong
+If you need remote access, put an HTTPS reverse proxy in front, use a strong
 password, set `PUBLIC_URL` to your domain, and set `TRUST_PROXY` whenever the proxy does not connect from loopback
 (another host, or Docker). Expose the display routes (`/`, `/d/*`, `/pair`, `/api/display/*`, `/api/stream`…) only in
 **private** display-access mode; in open mode expose only the admin, login and setup routes.

@@ -10,7 +10,6 @@ export interface State {
   photos: PhotosResponse | null;
   countdowns: CountdownsResponse | null;
   online: boolean;
-  demo: boolean;
 }
 
 export type Topic = keyof State;
@@ -19,7 +18,7 @@ type Fn = (s: State) => void;
 const subs = new Map<Topic, Set<Fn>>();
 
 export const state: State = {
-  config: null, events: null, weather: null, news: null, photos: null, countdowns: null, online: true, demo: false,
+  config: null, events: null, weather: null, news: null, photos: null, countdowns: null, online: true,
 };
 
 export function set<K extends Topic>(k: K, v: State[K]): void {

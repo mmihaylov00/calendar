@@ -43,14 +43,14 @@ export function StatusSection({ cfg }: SectionProps) {
 
   return (
     <>
-      <PageHeader title={t('Estado')} desc={t('Salud de las fuentes y pantallas conectadas. Se actualiza cada 15 s.')}>
+      <PageHeader title={t('Status')} desc={t('Health of sources and connected screens. Updates every 15 s.')}>
         <Button icon="refresh" loading={loading} onClick={load}>
-          {t('Actualizar')}
+          {t('Refresh')}
         </Button>
       </PageHeader>
       {err && !st ? (
         <Card>
-          <Empty icon="alert" title={t('No se pudo obtener el estado')}>
+          <Empty icon="alert" title={t('Could not get status')}>
             {err}
           </Empty>
         </Card>
@@ -63,7 +63,7 @@ export function StatusSection({ cfg }: SectionProps) {
               </span>
               <div>
                 <div class="stat__value">{st ? st.displays : '–'}</div>
-                <div class="stat__label">{t('Pantallas conectadas')}</div>
+                <div class="stat__label">{t('Connected screens')}</div>
               </div>
             </div>
             <div class="stat">
@@ -74,7 +74,7 @@ export function StatusSection({ cfg }: SectionProps) {
                 <div class="stat__value">
                   {st ? `${okCount}/${st.sources.length}` : '–'}
                 </div>
-                <div class="stat__label">{t('Calendarios OK')}</div>
+                <div class="stat__label">{t('Calendars OK')}</div>
               </div>
             </div>
             <div class="stat">
@@ -85,7 +85,7 @@ export function StatusSection({ cfg }: SectionProps) {
                 <div class="stat__value stat__value--text">
                   {st ? <StatusDot state={st.weather.ok ? 'ok' : 'error'} /> : null} {st ? relTime(st.weather.updatedAt) : '–'}
                 </div>
-                <div class="stat__label">{t('Tiempo')}</div>
+                <div class="stat__label">{t('Weather')}</div>
               </div>
             </div>
             {newsOn && (
@@ -98,7 +98,7 @@ export function StatusSection({ cfg }: SectionProps) {
                     {st ? <StatusDot state={st.news.ok ? 'ok' : 'error'} /> : null} {st ? relTime(st.news.updatedAt) : '–'}
                   </div>
                   <div class="stat__label">
-                    {t('Noticias')}
+                    {t('News')}
                     {st?.news.count != null && ` · ${st.news.count}`}
                   </div>
                 </div>
@@ -111,33 +111,33 @@ export function StatusSection({ cfg }: SectionProps) {
                 </span>
                 <div>
                   <div class="stat__value">{st && st.uptime != null ? formatDuration(st.uptime) : '–'}</div>
-                  <div class="stat__label">{t('Servidor activo')}</div>
+                  <div class="stat__label">{t('Server uptime')}</div>
                 </div>
               </div>
             )}
           </div>
           {newsOn && st?.news.error && (
             <div class="test-result is-err">
-              <Icon name="alert" size={14} /> {t('Noticias')}: {fetchErrorText(st.news.error)}
+              <Icon name="alert" size={14} /> {t('News')}: {fetchErrorText(st.news.error)}
             </div>
           )}
-          <Card title={t('Fuentes de calendario')} icon="calendar">
+          <Card title={t('Calendar sources')} icon="calendar">
             {!st ? (
               <div class="skeleton-list">
                 <div class="skeleton" />
                 <div class="skeleton" />
               </div>
             ) : st.sources.length === 0 ? (
-              <Empty icon="calendar" title={t('No hay calendarios configurados')} />
+              <Empty icon="calendar" title={t('No calendars configured')} />
             ) : (
               <div class="table-wrap">
                 <table class="table">
                   <thead>
                     <tr>
-                      <th>{t('Calendario')}</th>
-                      <th>{t('Estado')}</th>
-                      <th class="num">{t('Eventos')}</th>
-                      <th>{t('Última descarga')}</th>
+                      <th>{t('Calendar')}</th>
+                      <th>{t('Status')}</th>
+                      <th class="num">{t('Events')}</th>
+                      <th>{t('Last fetch')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -155,7 +155,7 @@ export function StatusSection({ cfg }: SectionProps) {
                               </span>
                             ) : (
                               <span class="err-text" title={s.error ?? ''}>
-                                <StatusDot state={s.lastFetch ? 'error' : 'idle'} /> {fetchErrorText(s.error) || t('Pendiente')}
+                                <StatusDot state={s.lastFetch ? 'error' : 'idle'} /> {fetchErrorText(s.error) || t('Pending')}
                               </span>
                             )}
                           </td>

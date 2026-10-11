@@ -101,20 +101,20 @@ export function WelcomeCard({ me, dash, go, onShown }: { me: AuthMeResponse; das
   };
   return (
     <section class="card welcome-card" aria-labelledby="welcome-card-h">
-      <button type="button" class="icon-btn welcome-card__close" onClick={close} title={t('Cerrar')} aria-label={t('Cerrar')}>
+      <button type="button" class="icon-btn welcome-card__close" onClick={close} title={t('Close')} aria-label={t('Close')}>
         <Icon name="x" size={16} />
       </button>
-      <h2 id="welcome-card-h">{t('Tu pantalla está lista')}</h2>
-      <p>{t('Ahora ponla en la tele y añade tus calendarios.')}</p>
+      <h2 id="welcome-card-h">{t('Your screen is ready')}</h2>
+      <p>{t('Now put it on the TV and add your calendars.')}</p>
       <div class="welcome-card__actions">
         <Button variant="primary" icon="monitor" onClick={() => openPairDialog()}>
-          {t('Poner en la tele')}
+          {t('Put it on the TV')}
         </Button>
         <Button icon="calendar" onClick={() => go('calendars')}>
-          {t('Añadir calendarios')}
+          {t('Add calendars')}
         </Button>
       </div>
-      <p class="muted small">{t('Todo se puede cambiar después y puedes crear más pantallas.')}</p>
+      <p class="muted small">{t('You can change everything later and create more screens.')}</p>
     </section>
   );
 }

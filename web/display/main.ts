@@ -7,7 +7,7 @@ import './styles.css';
 import './styles-views.css';
 import './styles-modern.css';
 import type {
-  Announcement, CountdownsResponse, DisplayConfig, EventsResponse, NewsResponse, NightCommand, StreamHello, WeatherResponse,
+  CountdownsResponse, DisplayConfig, EventsResponse, NewsResponse, NightCommand, StreamHello, WeatherResponse,
 } from '../shared/types';
 import { addDays, startOfWeek } from '../shared/i18n';
 import { api, ApiError } from './api';
@@ -24,16 +24,14 @@ import type { PhotoLayer } from './gl/photoLayer';
 import type { PrecipLayer } from './gl/precipLayer';
 import type { WeatherFxLayer } from './gl/weatherFxLayer';
 import { weatherFxOf } from './icons';
-import { mockAnnouncements, mockConfig, mockCountdowns, mockEvents, mockNews, mockPhotos, mockWeather } from './mock';
 import { loadCache, on, saveCache, set, state } from './store';
 import { detectLiveMode, startConfigPoll, startPoll, type StreamHandlers } from './live';
 import { connectStream, pollUrl } from './stream';
-import { current, onTick, setClockOffset, setTimezone, startTicker, type Tick } from './time';
+import { current, onTick, setTimezone, startTicker, type Tick } from './time';
 import { Agenda } from './widgets/agenda';
 import { Announcements, IdentifyOverlay, ScheduleBanners, setServerNow } from './widgets/alerts';
 import { Countdowns } from './widgets/countdowns';
 import { DoorbellOverlay, type FrameSource } from './widgets/doorbell';
-import { mockDoorbellFrame, mockDoorbellRing } from './mockDoorbell';
 import { MonthCalendar } from './widgets/calendar';
 import { Clock } from './widgets/clock';
 import { renderMessage, renderTodo } from './widgets/extras';
@@ -49,16 +47,8 @@ import { healthOnce, loadEmojiWebFont } from './health';
 import { refreshMarquee } from './marquee';
 
 const params = ctx.params;
-const forceDemo = params.get('demo') === '1';
 const lite = ctx.lite;
 if (lite) document.documentElement.classList.add('lite');
-
-// ?now=2026-10-09T10:43 → fixed clock offset (for screenshots / testing)
-const nowParam = params.get('now');
-if (nowParam) {
-  const target = Date.parse(nowParam);
-  if (Number.isFinite(target)) setClockOffset(target - Date.now());
-}
 
 // ---------------------------------------------------------------------------------------------
 // DOM + widgets
@@ -79,10 +69,9 @@ const countdowns = new Countdowns($('#countdowns'), $('#cd-strip'));
 const schedules = new ScheduleBanners($('#sched'), $('#sched-strip'));
 const announcements = new Announcements($('#alerts'));
 const identify = new IdentifyOverlay($('#identify'));
-/** Doorbell frames: GET /api/display/doorbell/frame (a counter keeps every answer fresh), drawn ones in the demo.
+/** Doorbell frames: GET /api/display/doorbell/frame (a counter keeps every answer fresh).
  *  404 and lost access mean there is nothing more to show for this ring. */
 const doorbellFrames: FrameSource = async (n, signal) => {
-  if (state.demo) return mockDoorbellFrame(n);
   const r = await fetch(withScreen(`/api/display/doorbell/frame?n=${n}`), { headers: authHeaders(), cache: 'no-store', signal });
   if (r.status === 404 || r.status === 401 || r.status === 403) return null;
   if (!r.ok || !(r.headers.get('content-type') || '').startsWith('image/')) throw new Error(`frame: HTTP ${r.status}`);
@@ -375,7 +364,7 @@ function revealApp(cfg: DisplayConfig): void {
 
 /** Small unobtrusive notice when ?screen= did not match any screen (the default one is shown instead). */
 function renderScreenNote(raw: DisplayConfig): void {
-  const show = !!raw.screenFallback && !!screenKey && !state.demo;
+  const show = !!raw.screenFallback && !!screenKey;
   screenNote.textContent = show ? ctx.t('screenNotFound', { s: screenKey }) : '';
   screenNote.classList.toggle('show', show);
 }
@@ -611,7 +600,7 @@ function updateNight(tick: Tick): void {
 
 function setOnline(ok: boolean): void {
   set('online', ok);
-  statusDot.classList.toggle('show', !ok && !state.demo);
+  statusDot.classList.toggle('show', !ok);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -622,7 +611,7 @@ let liveStream: { close(): void; tick?(): Promise<void> } | null = null;
 
 /** Stop everything, forget cached data and show the pairing / invalid-link screen (no family data). */
 function denyAccess(status: number): void {
-  if (accessDenied || state.demo) return;
+  if (accessDenied) return;
   accessDenied = true;
   // A dead private link (kiosk URL) but this browser was paired since: use the device token instead.
   // Marco Cloud continues at /pair, where "/" is not the display (pairing.ts afterPairUrl).
@@ -661,11 +650,6 @@ function eventsRange(): [string, string] {
 }
 
 async function fetchEvents(): Promise<void> {
-  if (state.demo) {
-    const m = mockEvents(current().now);
-    if (state.events?.hash !== m.hash) set('events', m);
-    return;
-  }
   try {
     const [from, to] = eventsRange();
     const r = await api.events(from, to);
@@ -683,10 +667,6 @@ async function fetchEvents(): Promise<void> {
 }
 
 async function fetchWeather(): Promise<void> {
-  if (state.demo) {
-    const w = mockWeather(current().now, params.get('wx'));
-    return set('weather', w);
-  }
   try {
     const r = await api.weather();
     set('weather', r);
@@ -698,7 +678,6 @@ async function fetchWeather(): Promise<void> {
 }
 
 async function fetchNews(): Promise<void> {
-  if (state.demo) return set('news', mockNews());
   try {
     const r = await api.news();
     set('news', r);
@@ -710,18 +689,15 @@ async function fetchNews(): Promise<void> {
 }
 
 async function fetchPhotos(): Promise<void> {
-  if (state.demo) return set('photos', mockPhotos());
   try {
     set('photos', await api.photos(20, photos.lastGalleryFile));
   } catch (e) {
     if (deniedBy(e)) return;
     console.warn('[photos]', (e as Error).message);
-    if (!state.photos) set('photos', mockPhotos());
   }
 }
 
 async function fetchCountdowns(): Promise<void> {
-  if (state.demo) return set('countdowns', mockCountdowns(current().now));
   try {
     const r = await api.countdowns();
     if (!state.countdowns || state.countdowns.hash !== r.hash || state.countdowns.today !== r.today) {
@@ -781,7 +757,6 @@ function applyPrivacy(p: DisplayConfig['privacy']): void {
   privacyLock.title = on ? ctx.t('privateMode') : '';
   if (privacyTimer) clearTimeout(privacyTimer);
   privacyTimer = null;
-  if (state.demo) return;
   const at = [p?.next, on ? p?.until : null].map((x) => (x ? Date.parse(x) : NaN)).filter((x) => Number.isFinite(x));
   if (!at.length) return;
   // a few seconds after the boundary, at most a day ahead (setTimeout limits, clock changes)
@@ -880,47 +855,14 @@ window.addEventListener('resize', () => {
 // ---------------------------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------------------------
-function enterDemo(): void {
-  state.demo = true;
-  statusDot.classList.remove('show');
-  set('config', mockConfig());
-  void fetchEvents();
-  void fetchWeather();
-  void fetchNews();
-  void fetchPhotos();
-  void fetchCountdowns();
-  // ?demo=1&announce=1|info|success|warning|urgent|all → sample announcements; &identify=1 → identify overlay
-  const an = params.get('announce');
-  if (an) setTimeout(() => mockAnnouncements(an).forEach((a: Announcement) => announcements.show(a)), 900);
-  if (params.get('identify') === '1') {
-    setTimeout(() => identify.show({ durationSec: 600 }, { name: ctx.cfg.screen.name, slug: ctx.cfg.slug || 'living-room', clientId }), 900);
-  }
-  // &doorbell=1 → doorbell ring with a drawn camera picture; &doorbell=nocam → a ring without a picture
-  const db = params.get('doorbell');
-  if (db) setTimeout(() => doorbell.show(mockDoorbellRing(db)), 900);
-}
-
 async function boot(): Promise<void> {
   startTicker();
   void healthOnce().then((h) => loadEmojiWebFont(h));
-  // ?demo=1&pair=1|invalid (&pairLen=6|8) → preview of the pairing / invalid-link screen with a sample code
-  const demoPair = forceDemo ? params.get('pair') : null;
-  if (demoPair) {
-    heartbeat.stop();
-    showPairing(demoPair === 'invalid' ? 'invalid' : 'pair', pairingLang(params), { length: Number(params.get('pairLen')) || 6 });
-    return;
-  }
-  if (forceDemo) {
-    enterDemo();
-    startPolling();
-    return;
-  }
   // Fresh install: welcome screen with the admin URL + QR until the setup wizard is completed.
   const setup = await checkSetup();
   if (setup) {
-    const pl = params.get('lang');
     heartbeat.stop();
-    showWelcome(setup, pl === 'es' || pl === 'en' || pl === 'pt' ? pl : setup.suggestedLanguage);
+    showWelcome(setup, 'en');
     waitForSetup();
     return;
   }
@@ -956,24 +898,7 @@ async function boot(): Promise<void> {
   const ok = await fetchConfig();
   if (accessDenied) return;
   if (!ok && !cached) {
-    if (import.meta.env.DEV) {
-      console.info('[display] /api unreachable, running with the built-in demo dataset');
-      enterDemo();
-      startPolling();
-      // keep probing the real API; switch over without a reload when it appears
-      const probe = setInterval(async () => {
-        try {
-          const c = await api.config();
-          clearInterval(probe);
-          state.demo = false;
-          set('config', c);
-          state.events = null;
-          void goLive();
-        } catch { /* still down */ }
-      }, 30_000);
-      return;
-    }
-    // Production without any data yet: defaults + keep retrying.
+    // Without any data yet: defaults + keep retrying.
     set('config', normalizeConfig({}) as DisplayConfig);
     const retry = setInterval(async () => {
       if (accessDenied) return clearInterval(retry);
@@ -1121,7 +1046,6 @@ const heartbeat = new Heartbeat(
     lite: () => lite,
     night: () => nightNow,
     nightOverride: () => nightOverride,
-    demo: () => state.demo,
     photoFrame: () => photos.frame,
   },
   (now) => setServerNow(now),
@@ -1133,7 +1057,7 @@ photos.onFrameChange = () => heartbeat.soon(3000);
 // long-running kiosks. Only when the server answers, so an offline display never reloads into a blank page.
 const bootAt = Date.now();
 setInterval(async () => {
-  if (state.demo || Date.now() - bootAt < 12 * 3600_000) return;
+  if (Date.now() - bootAt < 12 * 3600_000) return;
   const t = current();
   if (t.parts.hour !== 4 || t.parts.minute > 10) return;
   try {

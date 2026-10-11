@@ -2,26 +2,26 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { matchRule, decorate as decorateFull, keywordMatches, normalizeAirbnbTitle, petsToEmoji, tidyTitle } from '../rules.js';
 import { fold } from '../lib/text.js';
-import { RULES } from './helpers.js';
+import { DEFAULT_ICON_RULES as RULES } from '../core/defaults.js';
 
 const emojiOf = (title, desc = '') => matchRule(RULES, title, desc)?.emoji ?? null;
 
 test('accent/case-insensitive matching', () => {
-  assert.equal(emojiOf('CUMPLEAÑOS de Marta'), '🎂');
-  assert.equal(emojiOf('Aniversario Joao'), '🎂');
-  assert.equal(emojiOf('aniversário da avó'), '🎂');
-  assert.equal(emojiOf('Medico de cabecera'), '🩺'); // rule has "médico"
-  assert.equal(emojiOf('Reunion de equipo'), '💼');
-  assert.equal(emojiOf('Reunião semanal'), '💼');
-  assert.equal(emojiOf('FUTBOL niños'), '🏃');
-  assert.equal(emojiOf('Inspecao do carro'), '🚗');
+  assert.equal(emojiOf('BIRTHDAY of Marta'), '🎂');
+  assert.equal(emojiOf('Joao birthday'), '🎂');
+  assert.equal(emojiOf('Grandmother birthday'), '🎂');
+  assert.equal(emojiOf('Doctor appointment'), '🩺'); // English default rules
+  assert.equal(emojiOf('Team meeting'), '💼');
+  assert.equal(emojiOf('Weekly meeting'), '💼');
+  assert.equal(emojiOf('FOOTBALL children'), '🏃');
+  assert.equal(emojiOf('Car inspection'), '🚗');
 });
 
 test('description is matched too; order matters', () => {
   assert.equal(emojiOf('Implantação da República', 'Public holiday'), '🎉');
   assert.equal(emojiOf('Check-out huésped'), '🧳');
   assert.equal(emojiOf('Check-in huésped'), '🏠');
-  assert.equal(emojiOf('Vuelo Lisboa', ''), '✈️');
+  assert.equal(emojiOf('Flight Lisbon', ''), '✈️');
 });
 
 test('short keywords match whole words only', () => {
@@ -44,13 +44,13 @@ test('decorate priority: rule > source.emoji > kind default; color rule > source
 });
 
 test('airbnb title normalisation', () => {
-  assert.deepEqual(normalizeAirbnbTitle('Reserved', '', 'es'), { title: 'Reserva', blocked: false, emoji: '' });
-  assert.deepEqual(normalizeAirbnbTitle('Airbnb (Not available)', '', 'es'), { title: 'No disponible', blocked: true, emoji: '' });
-  assert.equal(normalizeAirbnbTitle('CLOSED - Not available', '', 'pt').title, 'Indisponível');
-  assert.equal(normalizeAirbnbTitle('Reserved - Maria Lopes', '', 'es').title, 'Reserva · Maria Lopes');
-  assert.equal(normalizeAirbnbTitle('Reserved', 'Guest: Ana Silva\nPhone: 1234', 'es').title, 'Reserva · Ana Silva');
+  assert.deepEqual(normalizeAirbnbTitle('Reserved', '', 'es'), { title: 'Reservation', blocked: false, emoji: '' });
+  assert.deepEqual(normalizeAirbnbTitle('Airbnb (Not available)', '', 'es'), { title: 'Not available', blocked: true, emoji: '' });
+  assert.equal(normalizeAirbnbTitle('CLOSED - Not available', '', 'pt').title, 'Not available');
+  assert.equal(normalizeAirbnbTitle('Reserved - Maria Lopes', '', 'es').title, 'Reservation · Maria Lopes');
+  assert.equal(normalizeAirbnbTitle('Reserved', 'Guest: Ana Silva\nPhone: 1234', 'es').title, 'Reservation · Ana Silva');
   assert.equal(normalizeAirbnbTitle('Peter Parker (HMAB12CD34)', '', 'en').title, 'Reservation · Peter Parker');
-  assert.equal(normalizeAirbnbTitle('Airbnb', 'Reservation URL: https://www.airbnb.com/x', 'es').title, 'Reserva');
+  assert.equal(normalizeAirbnbTitle('Airbnb', 'Reservation URL: https://www.airbnb.com/x', 'es').title, 'Reservation');
 });
 
 test('google holiday boilerplate does not trigger the vacation rule', () => {
@@ -59,12 +59,13 @@ test('google holiday boilerplate does not trigger the vacation rule', () => {
   assert.equal(emojiOf('Republic Day', 'Public holiday'), '🎉');
 });
 
-test('holiday titles from Google feeds are translated', async () => {
-  const { translateHoliday } = await import('../rules.js');
-  assert.equal(translateHoliday('Republic Day', 'es'), 'Día de la República');
-  assert.equal(translateHoliday("All Saints' Day", 'pt'), 'Dia de Todos os Santos');
-  assert.equal(translateHoliday('Republic Day', 'en'), 'Republic Day');
-  assert.equal(translateHoliday('Some local feast', 'es'), 'Some local feast');
+test('holiday calendar titles remain exactly as supplied', async () => {
+  const { buildSourceEvents } = await import('../calendars.js');
+  const source = { id: 'c_holidays', name: 'Holidays', kind: 'holidays', color: '#123456', emoji: '🎉' };
+  const titles = ['Republic Day', 'Dia da República', 'Ден на независимостта'];
+  const events = buildSourceEvents(titles.map((title) => ({ uid: title, title, allDay: true, start: '2026-10-11', end: '2026-10-12' })), source,
+    { rules: RULES, from: '2026-10-11', to: '2026-10-11', tz: 'Europe/Sofia', lang: 'en' });
+  assert.deepEqual(events.map((e) => e.title), titles);
 });
 
 test('property-manager style titles keep guest name + leading emoji; pets become dogs', () => {
@@ -76,7 +77,7 @@ test('property-manager style titles keep guest name + leading emoji; pets become
   assert.equal(petsToEmoji('X · 2p + 5m'), 'X · 🧑🏻🧑🏻 🐶×5');
   assert.equal(petsToEmoji('Bob · 3p'), 'Bob · 🧑🏻🧑🏻🧑🏻');
   // a numeric "Huéspedes: 2" line is not a guest name
-  assert.equal(normalizeAirbnbTitle('Reserved', 'Huéspedes: 2', 'es').title, 'Reserva');
+  assert.equal(normalizeAirbnbTitle('Reserved', 'Huéspedes: 2', 'es').title, 'Reservation');
 });
 
 test('tidyTitle: un-shout and strip redundant birthday words', () => {
@@ -105,13 +106,13 @@ test('short keywords never match inside names (car ≠ Carmen/Oscar/Carlos), sha
   assert.equal(km(foldText('Revisión del carro'), 'carro'), true);
   assert.equal(km(foldText('Dentista Lucía'), 'dentist'), true);
   // the admin preview uses findKeyword: same answers as the server
-  assert.equal(findKeyword(RULES, 'Cena con Carmen')?.rule.id, 'r_dinner');
+  assert.equal(findKeyword(RULES, 'Dinner with Carmen')?.rule.id, 'r_dinner');
   assert.equal(findKeyword(RULES, 'Oscar'), null);
   assert.equal(findKeyword(RULES, 'Taller: car')?.rule.id, 'r_car');
-  assert.equal(findKeyword(RULES, 'Inspeção do carro')?.keyword, 'inspeção');
+  assert.equal(findKeyword(RULES, 'Inspection of car')?.keyword, 'car');
 });
 
-test('expanded multilingual icon rules', () => {
+test('English icon rules', () => {
   const em = (t) => matchRule(RULES, t)?.emoji ?? null;
   assert.equal(em('Dentist appointment'), '🩺');
   assert.equal(em('Swimming lesson'), '🏊');

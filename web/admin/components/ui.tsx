@@ -3,7 +3,7 @@ import { createPortal } from 'preact/compat';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { EMOJI_CATEGORIES } from '../emoji-data';
 import { buildEmojiIndex, emojiName, looksLikeEmoji, searchEmoji, type EmojiEntry, type EmojiIndex } from '../emojiSearch';
-import { getLang, t } from '../i18n';
+import { t } from '../i18n';
 import { EMOJI_GRID, HEX_RE, SWATCHES } from '../util';
 import { confirmDialog } from './feedback';
 import { Icon, type IconName } from './icons';
@@ -356,8 +356,8 @@ export function ColorPicker(props: { value: string | null; onChange: (v: string 
         type="button"
         class={`swatch-btn ${props.error ? 'is-invalid' : ''} ${props.compact ? 'swatch-btn--compact' : ''}`}
         onClick={() => setOpen(!open)}
-        aria-label={t('Color')}
-        title={v ?? t('Sin color')}
+        aria-label={t('Colour')}
+        title={v ?? t('No colour')}
       >
         <span class={`swatch ${v ? '' : 'swatch--none'}`} style={v ? { background: v } : undefined} />
         {!props.compact && <span class="swatch-btn__hex">{v ?? t('Auto')}</span>}
@@ -402,7 +402,7 @@ export function ColorPicker(props: { value: string | null; onChange: (v: string 
                   setOpen(false);
                 }}
               >
-                {t('Ninguno')}
+                {t('None')}
               </button>
             )}
           </div>
@@ -414,7 +414,7 @@ export function ColorPicker(props: { value: string | null; onChange: (v: string 
 
 let emojiIdx: EmojiIndex | null = null;
 const emojiIndex = () =>
-  (emojiIdx ??= buildEmojiIndex(EMOJI_CATEGORIES, { id: 'frequent', icon: '⭐', title: 'Frecuentes', emojis: EMOJI_GRID }));
+  (emojiIdx ??= buildEmojiIndex(EMOJI_CATEGORIES, { id: 'frequent', icon: '⭐', title: 'Common', emojis: EMOJI_GRID }));
 
 type PanelPos = { left: number; width: number; maxHeight: number; top?: number; bottom?: number; up: boolean };
 
@@ -496,10 +496,10 @@ export function EmojiPicker(props: { value: string; onChange: (v: string) => voi
         ref={btnRef}
         class={`emoji-btn ${props.size === 'lg' ? 'emoji-btn--lg' : ''} ${props.error ? 'is-invalid' : ''} ${props.value ? '' : 'is-empty'}`}
         onClick={() => setOpen(!open)}
-        aria-label={t('Elegir emoji')}
+        aria-label={t('Pick emoji')}
         aria-haspopup="dialog"
         aria-expanded={open}
-        title={t('Elegir emoji')}
+        title={t('Pick emoji')}
       >
         {props.value || <Icon name="plus" size={14} />}
       </button>
@@ -516,7 +516,6 @@ function EmojiPanel(props: {
   onPick: (v: string) => void;
 }) {
   const idx = emojiIndex();
-  const lang = getLang();
   const [q, setQ] = useState('');
   const [custom, setCustom] = useState('');
   const [pos, setPos] = useState<PanelPos | null>(null);
@@ -555,8 +554,8 @@ function EmojiPanel(props: {
   }, [placed]);
 
   const query = q.trim();
-  const results = query ? searchEmoji(idx, query, lang) : null;
-  const name = (e: EmojiEntry) => emojiName(e, lang) || e.e;
+  const results = query ? searchEmoji(idx, query) : null;
+  const name = (e: EmojiEntry) => emojiName(e) || e.e;
   const buttons = () => [...(bodyRef.current?.querySelectorAll<HTMLElement>('.emoji-grid button') ?? [])];
 
   const onGridKey = (ev: KeyboardEvent) => {
@@ -625,7 +624,7 @@ function EmojiPanel(props: {
       class={`pop__panel pop__panel--emoji pop__panel--fixed ${pos?.up ? 'is-up' : ''}`}
       style={style}
       role="dialog"
-      aria-label={t('Elegir emoji')}
+      aria-label={t('Pick emoji')}
     >
       <div class="emoji-search search-input">
         <Icon name="search" size={15} />
@@ -633,8 +632,8 @@ function EmojiPanel(props: {
           ref={searchRef}
           class="input input--sm"
           value={q}
-          placeholder={t('Buscar emoji…')}
-          aria-label={t('Buscar emoji…')}
+          placeholder={t('Search emoji…')}
+          aria-label={t('Search emoji…')}
           autocomplete="off"
           spellcheck={false}
           enterKeyHint="search"
@@ -649,14 +648,14 @@ function EmojiPanel(props: {
               setQ('');
               searchRef.current?.focus();
             }}
-            aria-label={t('Borrar')}
+            aria-label={t('Clear')}
           >
             <Icon name="x" size={13} />
           </button>
         )}
       </div>
       {!results && (
-        <div class="emoji-tabs" aria-label={t('Categorías de emoji')}>
+        <div class="emoji-tabs" aria-label={t('Emoji categories')}>
           {idx.sections.map((s) => (
             <button type="button" tabIndex={-1} class={s.id === cat ? 'is-active' : ''} aria-label={t(s.title)} title={t(s.title)} onClick={() => jump(s.id)}>
               {s.icon}
@@ -670,13 +669,13 @@ function EmojiPanel(props: {
             grid(results, 'results')
           ) : (
             <div class="emoji-empty">
-              <p>{t('Sin resultados para “{q}”', { q: query })}</p>
+              <p>{t('No results for “{q}”', { q: query })}</p>
               {looksLikeEmoji(query) ? (
                 <button type="button" class="btn btn--sm" onClick={() => props.onPick(query)}>
-                  {t('Usar {emoji}', { emoji: query })}
+                  {t('Use {emoji}', { emoji: query })}
                 </button>
               ) : (
-                <p class="emoji-empty__hint">{t('Prueba con otra palabra, en español, inglés o portugués.')}</p>
+                <p class="emoji-empty__hint">{t('Try another word in English.')}</p>
               )}
             </div>
           )
@@ -701,8 +700,8 @@ function EmojiPanel(props: {
       >
         <input
           class="input input--sm"
-          placeholder={t('Otro: pega o escribe un emoji')}
-          aria-label={t('Otro: pega o escribe un emoji')}
+          placeholder={t('Other: paste or type an emoji')}
+          aria-label={t('Other: paste or type an emoji')}
           value={custom}
           maxLength={16}
           onInput={(e) => setCustom(e.currentTarget.value)}
@@ -712,7 +711,7 @@ function EmojiPanel(props: {
         </button>
         {props.allowNone && (
           <button type="button" class="btn btn--ghost btn--sm" onClick={() => props.onPick('')}>
-            {t('Ninguno')}
+            {t('None')}
           </button>
         )}
       </form>
@@ -736,7 +735,7 @@ export function Chips(props: { values: string[]; onChange: (v: string[]) => void
       {props.values.map((v, i) => (
         <span class={`chip ${props.validate && !props.validate(v) ? 'chip--bad' : ''}`}>
           {v}
-          <button type="button" aria-label={t('Quitar')} onClick={() => props.onChange(props.values.filter((_, j) => j !== i))}>
+          <button type="button" aria-label={t('Remove')} onClick={() => props.onChange(props.values.filter((_, j) => j !== i))}>
             <Icon name="x" size={12} />
           </button>
         </span>
@@ -859,10 +858,10 @@ export function useReorder(onMove: (from: number, to: number) => void) {
 export function ReorderButtons({ index, count, onMove }: { index: number; count: number; onMove: (from: number, to: number) => void }) {
   return (
     <div class="reorder">
-      <button type="button" class="icon-btn" disabled={index === 0} onClick={() => onMove(index, index - 1)} aria-label={t('Subir')} title={t('Subir')}>
+      <button type="button" class="icon-btn" disabled={index === 0} onClick={() => onMove(index, index - 1)} aria-label={t('Move up')} title={t('Move up')}>
         <Icon name="up" size={14} />
       </button>
-      <button type="button" class="icon-btn" disabled={index === count - 1} onClick={() => onMove(index, index + 1)} aria-label={t('Bajar')} title={t('Bajar')}>
+      <button type="button" class="icon-btn" disabled={index === count - 1} onClick={() => onMove(index, index + 1)} aria-label={t('Move down')} title={t('Move down')}>
         <Icon name="down" size={14} />
       </button>
     </div>
@@ -877,14 +876,14 @@ export const setScopeScreenName = (n: string) => void (scopeScreenName = n);
 
 export function ScopeBadge({ scope }: { scope: 'screen' | 'global' }) {
   return scope === 'screen' ? (
-    <span class="scope scope--screen" title={t('Este ajuste solo afecta a la pantalla que estás editando')}>
+    <span class="scope scope--screen" title={t('This setting only affects the screen you are editing')}>
       <Icon name="monitor" size={11} />
-      {scopeScreenName ? t('Solo {name}', { name: scopeScreenName }) : t('Solo esta pantalla')}
+      {scopeScreenName ? t('{name} only', { name: scopeScreenName }) : t('This screen only')}
     </span>
   ) : (
-    <span class="scope scope--global" title={t('Compartido por todas las pantallas')}>
+    <span class="scope scope--global" title={t('Shared by all screens')}>
       <Icon name="globe" size={11} />
-      {t('Todas las pantallas')}
+      {t('All screens')}
     </span>
   );
 }
@@ -913,7 +912,7 @@ export function Modal(props: {
     if (asking.current) return;
     if (live.current.dirty) {
       asking.current = true;
-      const ok = await confirmDialog({ title: t('¿Descartar los cambios?'), body: t('Lo que has escrito en este formulario se perderá.'), confirm: t('Descartar'), danger: true });
+      const ok = await confirmDialog({ title: t('Discard changes?'), body: t('What you typed in this form will be lost.'), confirm: t('Discard'), danger: true });
       asking.current = false;
       if (!ok) return;
     }
@@ -945,7 +944,7 @@ export function Modal(props: {
             </span>
           )}
           <h3>{props.title}</h3>
-          <button type="button" class="icon-btn" onClick={() => void requestClose()} aria-label={t('Cerrar')}>
+          <button type="button" class="icon-btn" onClick={() => void requestClose()} aria-label={t('Close')}>
             <Icon name="x" size={16} />
           </button>
         </header>
@@ -994,7 +993,7 @@ export function SearchInput({ value, onValue, placeholder }: { value: string; on
       <Icon name="search" size={15} />
       <input class="input input--sm" value={value} placeholder={placeholder} onInput={(e) => onValue(e.currentTarget.value)} />
       {value && (
-        <button type="button" class="icon-btn" onClick={() => onValue('')} aria-label={t('Borrar')}>
+        <button type="button" class="icon-btn" onClick={() => onValue('')} aria-label={t('Clear')}>
           <Icon name="x" size={13} />
         </button>
       )}

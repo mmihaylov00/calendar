@@ -1,74 +1,10 @@
-// i18n + date helpers shared by the display and the admin panel (es default, en, pt).
+// English text + date helpers shared by the display and the admin panel.
 import type { DateFormat, Lang } from './types';
 
-export const LANGS: Lang[] = ['es', 'en', 'pt'];
-export const LOCALES: Record<Lang, string> = { es: 'es-ES', en: 'en-GB', pt: 'pt-PT' };
+export const LANGS: Lang[] = ['en'];
+export const LOCALES: Record<Lang, string> = { en: 'en-GB' };
 
 type Dict = Record<string, string>;
-
-const es: Dict = {
-  // layouts with their own view (web/display/widgets/views.ts)
-  upNext: 'A continuación',
-  nothingMoreToday: 'Nada más por hoy',
-  firstTomorrow: 'Mañana',
-  everyone: 'Todos',
-  birthdays: 'Cumpleaños',
-  agenda: 'Agenda',
-  allDone: 'Todo hecho',
-  noPeople: 'Elige los calendarios de cada persona en Diseño',
-  nothingPlanned: 'Nada previsto',
-  daysWord: 'días',
-  today: 'Hoy',
-  tomorrow: 'Mañana',
-  yesterday: 'Ayer',
-  now: 'Ahora',
-  allDay: 'Todo el día',
-  more: '+{n} más',
-  dayXofY: 'Día {x} de {y}',
-  checkIn: 'Entrada',
-  checkOut: 'Salida',
-  privateMode: 'Modo privado',
-  inMinutes: 'En {n} min',
-  inHours: 'En {n} h',
-  inHoursMinutes: 'En {h} h {m} min',
-  inDays: 'En {n} días',
-  happeningNow: 'Ahora',
-  untilTime: 'hasta las {t}',
-  next: 'Próximo',
-  noEvents: 'Sin eventos',
-  noUpcoming: 'Nada en la agenda',
-  feelsLike: 'Sensación',
-  hiShort: 'Máx.',
-  loShort: 'Mín.',
-  humidity: 'Humedad',
-  wind: 'Viento',
-  sunrise: 'Amanecer',
-  sunset: 'Atardecer',
-  precip: 'Lluvia',
-  indoor: 'Casa',
-  uv: 'UV',
-  pressure: 'Presión',
-  news: 'Noticias',
-  todo: 'Tareas',
-  offline: 'Sin conexión',
-  photoBy: 'Foto: {a}',
-  week: 'Semana',
-  todayEvents: 'Hoy',
-  upcoming: 'Próximos días',
-  loading: 'Cargando…',
-  countdowns: 'Cuentas atrás',
-  cdDays: 'Faltan {n} días',
-  cdTomorrow: '¡Mañana!',
-  cdToday: '¡Hoy!',
-  screenNotFound: 'Pantalla «{s}» no encontrada',
-  identifyScreen: 'Pantalla',
-  identifyDevice: 'Dispositivo',
-  doorbell: 'Puerta',
-  doorbellRinging: 'Llaman a la puerta',
-  doorbellNoPicture: 'Cámara no disponible',
-  until: 'hasta las {t}',
-  nightOn: 'Modo noche',
-};
 
 const en: Dict = {
   // layouts with their own view (web/display/widgets/views.ts)
@@ -134,78 +70,14 @@ const en: Dict = {
   nightOn: 'Night mode',
 };
 
-const pt: Dict = {
-  // layouts with their own view (web/display/widgets/views.ts)
-  upNext: 'A seguir',
-  nothingMoreToday: 'Mais nada hoje',
-  firstTomorrow: 'Amanhã',
-  everyone: 'Todos',
-  birthdays: 'Aniversários',
-  agenda: 'Agenda',
-  allDone: 'Tudo feito',
-  noPeople: 'Escolha os calendários de cada pessoa em Disposição',
-  nothingPlanned: 'Nada previsto',
-  daysWord: 'dias',
-  today: 'Hoje',
-  tomorrow: 'Amanhã',
-  yesterday: 'Ontem',
-  now: 'Agora',
-  allDay: 'Todo o dia',
-  more: '+{n} mais',
-  dayXofY: 'Dia {x} de {y}',
-  checkIn: 'Entrada',
-  checkOut: 'Saída',
-  privateMode: 'Modo privado',
-  inMinutes: 'Daqui a {n} min',
-  inHours: 'Daqui a {n} h',
-  inHoursMinutes: 'Daqui a {h} h {m} min',
-  inDays: 'Daqui a {n} dias',
-  happeningNow: 'Agora',
-  untilTime: 'até às {t}',
-  next: 'Próximo',
-  noEvents: 'Sem eventos',
-  noUpcoming: 'Nada agendado',
-  feelsLike: 'Sensação',
-  hiShort: 'Máx.',
-  loShort: 'Mín.',
-  humidity: 'Humidade',
-  wind: 'Vento',
-  sunrise: 'Nascer do sol',
-  sunset: 'Pôr do sol',
-  precip: 'Chuva',
-  indoor: 'Casa',
-  uv: 'UV',
-  pressure: 'Pressão',
-  news: 'Notícias',
-  todo: 'Tarefas',
-  offline: 'Sem ligação',
-  photoBy: 'Foto: {a}',
-  week: 'Semana',
-  todayEvents: 'Hoje',
-  upcoming: 'Próximos dias',
-  loading: 'A carregar…',
-  countdowns: 'Contagens',
-  cdDays: 'Faltam {n} dias',
-  cdTomorrow: 'Amanhã!',
-  cdToday: 'Hoje!',
-  screenNotFound: 'Ecrã «{s}» não encontrado',
-  identifyScreen: 'Ecrã',
-  identifyDevice: 'Dispositivo',
-  doorbell: 'Porta',
-  doorbellRinging: 'Está alguém à porta',
-  doorbellNoPicture: 'Câmara indisponível',
-  until: 'até às {t}',
-  nightOn: 'Modo noite',
-};
-
-export const DICTS: Record<Lang, Dict> = { es, en, pt };
+export const DICTS: Record<Lang, Dict> = { en };
 
 export function normLang(l: string | undefined | null): Lang {
-  return l === 'es' || l === 'pt' ? l : 'en';
+  return 'en';
 }
 
 export function t(lang: Lang, key: string, vars?: Record<string, string | number>): string {
-  const s = DICTS[lang]?.[key] ?? DICTS.es[key] ?? key;
+  const s = DICTS[lang]?.[key] ?? DICTS.en[key] ?? key;
   if (!vars) return s;
   return s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? String(vars[k]) : `{${k}}`));
 }
@@ -312,7 +184,7 @@ function fmt(lang: Lang, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat 
   const k = lang + JSON.stringify(opts);
   let f = fmtCache.get(k);
   if (!f) {
-    f = new Intl.DateTimeFormat(LOCALES[lang], opts);
+    f = new Intl.DateTimeFormat(LOCALES.en, opts);
     fmtCache.set(k, f);
   }
   return f;
@@ -322,8 +194,6 @@ function fmt(lang: Lang, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat 
 export function weekdayName(lang: Lang, key: string, style: 'long' | 'short' | 'narrow' = 'short'): string {
   let s = fmt(lang, { weekday: style, timeZone: 'UTC' }).format(keyToUTC(key));
   s = s.replace(/\.$/, '');
-  // some locales (pt-PT) return full names for "short" ("segunda"); keep labels compact
-  if (style === 'short' && s.length > 4) s = s.replace(/-feira$/, '').slice(0, 3);
   return capitalize(s);
 }
 
@@ -341,7 +211,6 @@ export function monthName(lang: Lang, month1: number, style: 'long' | 'short' = 
   return capitalize(s);
 }
 
-/** Localized long date line, e.g. es weekday_d_month → "viernes, 9 de octubre". */
 /** Tokens of the custom date pattern, longest first so {dddd} wins over {ddd} and {d}. */
 export const DATE_TOKENS = ['dddd', 'ddd', 'dd', 'd', 'mmmm', 'mmm', 'mm', 'm', 'yyyy', 'yy'] as const;
 
@@ -353,8 +222,8 @@ export function formatDatePattern(lang: Lang, key: string, pattern: string): str
     ddd: () => capitalize(fmt(lang, { weekday: 'short', timeZone: 'UTC' }).format(d).replace(/\.$/, '')),
     d: () => String(d.getUTCDate()),
     dd: () => key.slice(8, 10),
-    mmmm: () => { const m = fmt(lang, { month: 'long', timeZone: 'UTC' }).format(d); return lang === 'en' ? capitalize(m) : m; },
-    mmm: () => { const m = fmt(lang, { month: 'short', timeZone: 'UTC' }).format(d).replace(/\.$/, ''); return lang === 'en' ? capitalize(m) : m; },
+    mmmm: () => { const m = fmt(lang, { month: 'long', timeZone: 'UTC' }).format(d); return capitalize(m); },
+    mmm: () => { const m = fmt(lang, { month: 'short', timeZone: 'UTC' }).format(d).replace(/\.$/, ''); return capitalize(m); },
     m: () => String(d.getUTCMonth() + 1),
     mm: () => key.slice(5, 7),
     yyyy: () => key.slice(0, 4),
@@ -372,11 +241,11 @@ export function formatDateLine(lang: Lang, key: string, format: DateFormat = 'we
   const W = capitalize(wd);
   switch (format) {
     case 'weekday_month_d':
-      return lang === 'en' ? `${W}, ${capitalize(mo)} ${day}` : `${W}, ${mo} ${day}`;
+      return `${W}, ${capitalize(mo)} ${day}`;
     case 'weekday_d_dot_month':
-      return `${W} ${day}. ${lang === 'en' ? capitalize(mo) : mo}`;
+      return `${W} ${day}. ${capitalize(mo)}`;
     case 'weekday_month_d_y':
-      return `${W}, ${lang === 'en' ? capitalize(mo) : mo} ${day}, ${d.getUTCFullYear()}`;
+      return `${W}, ${capitalize(mo)} ${day}, ${d.getUTCFullYear()}`;
     case 'weekday_mdy':
       return `${W}, ${key.slice(5, 7)}/${key.slice(8, 10)}/${key.slice(0, 4)}`;
     case 'weekday_dmy':
@@ -385,12 +254,11 @@ export function formatDateLine(lang: Lang, key: string, format: DateFormat = 'we
       return `${W}, ${key.slice(0, 10)}`;
     case 'weekday_d_month':
     default:
-      if (lang === 'en') return `${W}, ${day} ${capitalize(mo)}`;
-      return `${W}, ${day} de ${mo}`;
+      return `${W}, ${day} ${capitalize(mo)}`;
   }
 }
 
-/** Short day label e.g. "Hoy", "Mañana", "Sáb 11". */
+/** Short day label e.g. "Today", "Tomorrow", "Sat 11". */
 export function relativeDayLabel(lang: Lang, key: string, todayKey: string, withNumber = true): string {
   const dd = diffDays(todayKey, key);
   if (dd === 0) return t(lang, 'today');
@@ -412,7 +280,7 @@ export function formatHM(h: number, m: number, format24 = true, showAmPm = false
   return `${h12}:${pad2(m)}${showAmPm ? (h < 12 ? ' AM' : ' PM') : ''}`;
 }
 
-/** "En 2 h", "En 25 min", "En 3 días". */
+/** "In 2 h", "In 25 min", "In 3 days". */
 export function formatCountdown(lang: Lang, ms: number): string {
   const min = Math.max(0, Math.round(ms / 60000));
   if (min < 1) return t(lang, 'now');

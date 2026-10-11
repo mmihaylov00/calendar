@@ -1,18 +1,17 @@
 // birthdays CSV paste parser ("María;15/03/1990"). Pure; unit-tested in events-csv.test.js.
-// See docs/API.md and docs/ARCHITECTURE.md. (POST /api/admin/birthdays/parse-csv). Error messages are Spanish codes that the
-// admin translates (i18n-dict keyed by the Spanish string).
+// See docs/API.md and docs/ARCHITECTURE.md. POST /api/admin/birthdays/parse-csv returns English errors.
 import { fold, randomId } from './lib/text.js';
 
 export const MAX_CSV_BYTES = 100 * 1024;
 export const MAX_BIRTHDAYS = 500;
 
 export const CSV_ERRORS = {
-  noDate: 'falta la fecha',
-  badDate: 'fecha no válida',
-  badYear: 'año no válido',
-  noName: 'falta el nombre',
-  longName: 'nombre demasiado largo',
-  limit: 'límite de 500 cumpleaños alcanzado',
+  noDate: 'date is missing',
+  badDate: 'invalid date',
+  badYear: 'invalid year',
+  noName: 'name is missing',
+  longName: 'name is too long',
+  limit: 'limit of 500 birthdays reached',
 };
 
 const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];

@@ -9,9 +9,9 @@ import { Button, EmojiPicker, Field, Select, Textarea, TextInput, Toggle } from 
 
 export const ALERT_STYLES: { value: AlertStyle; label: string; emoji: string }[] = [
   { value: 'info', label: 'Info', emoji: '💬' },
-  { value: 'success', label: 'Éxito', emoji: '✅' },
-  { value: 'warning', label: 'Atención', emoji: '⚠️' },
-  { value: 'urgent', label: 'Urgente', emoji: '🚨' },
+  { value: 'success', label: 'Success', emoji: '✅' },
+  { value: 'warning', label: 'Warning', emoji: '⚠️' },
+  { value: 'urgent', label: 'Urgent', emoji: '🚨' },
 ];
 
 export const DURATIONS = [
@@ -28,12 +28,12 @@ export const DURATIONS = [
 ];
 
 const TEMPLATES: { emoji: string; title: string; style: AlertStyle; duration: number }[] = [
-  { emoji: '🧺', title: 'La lavadora ha terminado', style: 'success', duration: 300 },
-  { emoji: '🍽️', title: '¡A comer!', style: 'info', duration: 300 },
-  { emoji: '🚗', title: 'Salimos en 10 minutos', style: 'warning', duration: 600 },
-  { emoji: '📦', title: 'Ha llegado un paquete', style: 'info', duration: 900 },
-  { emoji: '🌙', title: 'Hora de dormir', style: 'info', duration: 900 },
-  { emoji: '🚪', title: 'Hay alguien en la puerta', style: 'urgent', duration: 60 },
+  { emoji: '🧺', title: 'The washing machine is done', style: 'success', duration: 300 },
+  { emoji: '🍽️', title: 'Dinner’s ready!', style: 'info', duration: 300 },
+  { emoji: '🚗', title: 'Leaving in 10 minutes', style: 'warning', duration: 600 },
+  { emoji: '📦', title: 'A parcel has arrived', style: 'info', duration: 900 },
+  { emoji: '🌙', title: 'Bedtime', style: 'info', duration: 900 },
+  { emoji: '🚪', title: 'Someone is at the door', style: 'urgent', duration: 60 },
 ];
 
 export function AlertCardPreview({ emoji, title, body, style }: { emoji: string; title: string; body: string; style: AlertStyle }) {
@@ -41,7 +41,7 @@ export function AlertCardPreview({ emoji, title, body, style }: { emoji: string;
     <div class={`alert-prev alert-prev--${style}`}>
       <span class="alert-prev__emoji">{emoji || ALERT_STYLES.find((s) => s.value === style)?.emoji}</span>
       <div class="alert-prev__text">
-        <strong>{title || (body ? '' : t('Título del aviso'))}</strong>
+        <strong>{title || (body ? '' : t('Alert title'))}</strong>
         {body && <p>{body}</p>}
       </div>
       <span class="alert-prev__bar" />
@@ -64,12 +64,12 @@ export function StylePicker({ value, onChange }: { value: AlertStyle; onChange: 
 
 /** Screen targeting: "Todas" or a subset. value [] = all. */
 export function ScreenTargets({ screens, value, onChange }: { screens: Pick<ScreenProfile, 'id' | 'name' | 'screen'>[]; value: string[]; onChange: (v: string[]) => void }) {
-  if (screens.length <= 1) return <span class="muted small">{t('Todas las pantallas')}</span>;
+  if (screens.length <= 1) return <span class="muted small">{t('All screens')}</span>;
   const all = value.length === 0;
   return (
     <div class="target-pick">
       <button type="button" class={`pill ${all ? 'is-on' : ''}`} onClick={() => onChange([])}>
-        {t('Todas')}
+        {t('All')}
       </button>
       {screens.map((s) => {
         const on = value.includes(s.id);
@@ -104,18 +104,18 @@ export function AnnounceForm({ screens, compact, onSent }: { screens: ScreenProf
   const send = async (e?: Event) => {
     e?.preventDefault();
     if (!title.trim() && !body.trim()) {
-      toast(t('Escribe un título o un texto'), 'error');
+      toast(t('Write a title or a text'), 'error');
       return;
     }
     setBusy(true);
     try {
       const r = await api.announce({ title: title.trim(), body: body.trim(), emoji, style, durationSec: duration, sound, screens: targets });
-      toast(r.delivered ? withPollNote(t('Aviso enviado a {n} pantallas', { n: r.delivered })) : t('Aviso guardado: se mostrará cuando se conecte una pantalla'), r.delivered ? 'ok' : 'info');
+      toast(r.delivered ? withPollNote(t('Alert sent to {n} screens', { n: r.delivered })) : t('Alert saved: it will show when a screen connects'), r.delivered ? 'ok' : 'info');
       setTitle('');
       setBody('');
       onSent?.(r);
     } catch (err) {
-      toast(`${t('No se pudo enviar')}: ${(err as ApiError).message}`, 'error');
+      toast(`${t('Could not send')}: ${(err as ApiError).message}`, 'error');
     } finally {
       setBusy(false);
     }
@@ -125,10 +125,10 @@ export function AnnounceForm({ screens, compact, onSent }: { screens: ScreenProf
     <form class={`announce ${compact ? 'announce--compact' : ''}`} onSubmit={send}>
       <div class="announce__row">
         <EmojiPicker size="lg" value={emoji} allowNone onChange={setEmoji} />
-        <TextInput class="announce__title" value={title} onValue={setTitle} placeholder={t('Ej.: La lavadora ha terminado')} maxLength={120} />
+        <TextInput class="announce__title" value={title} onValue={setTitle} placeholder={t('E.g. The washing machine is done')} maxLength={120} />
         {compact && (
           <Button type="submit" variant="primary" icon="megaphone" loading={busy}>
-            {t('Enviar')}
+            {t('Send')}
           </Button>
         )}
       </div>
@@ -149,32 +149,32 @@ export function AnnounceForm({ screens, compact, onSent }: { screens: ScreenProf
         ))}
       </div>
       {showBody ? (
-        <Field label={t('Texto (opcional)')}>
-          <Textarea value={body} onValue={setBody} rows={2} maxLength={500} placeholder={t('Detalles del aviso…')} />
+        <Field label={t('Text (optional)')}>
+          <Textarea value={body} onValue={setBody} rows={2} maxLength={500} placeholder={t('Alert details…')} />
         </Field>
       ) : (
         <button type="button" class="link-btn small" onClick={() => setShowBody(true)}>
-          <Icon name="plus" size={12} /> {t('Añadir texto y opciones')}
+          <Icon name="plus" size={12} /> {t('Add text and options')}
         </button>
       )}
       {showBody && (
         <>
           <div class={`grid announce__opts ${compact ? 'grid--2' : 'grid--3'}`}>
-            <Field label={t('Estilo')}>
+            <Field label={t('Style')}>
               <StylePicker value={style} onChange={setStyle} />
             </Field>
-            <Field label={t('Duración')}>
+            <Field label={t('Duration')}>
               <Select value={duration} options={DURATIONS} onChange={setDuration} />
             </Field>
-            <Field label={t('Sonido')}>
+            <Field label={t('Sound')}>
               <label class="mini-toggle">
                 <Toggle checked={sound} onChange={setSound} />
-                <span>{sound ? t('Con aviso sonoro') : t('Silencioso')}</span>
+                <span>{sound ? t('With sound') : t('Silent')}</span>
               </label>
             </Field>
           </div>
           {screens.length > 1 && (
-            <Field label={t('Pantallas')}>
+            <Field label={t('Screens')}>
               <ScreenTargets screens={screens} value={targets} onChange={setTargets} />
             </Field>
           )}
@@ -184,7 +184,7 @@ export function AnnounceForm({ screens, compact, onSent }: { screens: ScreenProf
         <div class="announce__foot">
           <AlertCardPreview emoji={emoji} title={title} body={body} style={style} />
           <Button type="submit" variant="primary" icon="megaphone" loading={busy}>
-            {t('Enviar aviso')}
+            {t('Send alert')}
           </Button>
         </div>
       )}

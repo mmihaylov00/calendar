@@ -1,5 +1,5 @@
 // Default icon rules (server/core/iconRules.js, also read by server/core/defaults.js) + client-side resolver
-// (used by the mock dataset and the admin preview).
+// (used by the admin preview).
 import type { IconRule, SourceKind } from './types';
 import RULES from '../../server/core/iconRules.js';
 

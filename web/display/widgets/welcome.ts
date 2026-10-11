@@ -15,26 +15,7 @@ const TEXT: Record<Lang, Record<string, string>> = {
     local: 'On another device, replace “localhost” with this computer’s address.',
     scan: 'Scan to set up',
   },
-  es: {
-    hello: 'Bienvenido',
-    ready: 'Esta pantalla está lista. Termina la configuración desde el móvil o el ordenador:',
-    s1: 'Escanea el código o abre la dirección',
-    s2: 'Crea la contraseña del panel y elige tus calendarios',
-    s3: 'Esta pantalla se actualiza sola',
-    code: '¿Te pide un código de configuración? Está en el registro del servidor.',
-    local: 'En otro dispositivo, cambia «localhost» por la dirección de este ordenador.',
-    scan: 'Escanea para configurar',
-  },
-  pt: {
-    hello: 'Bem-vindo',
-    ready: 'Este ecrã está pronto. Termina a configuração no telemóvel ou no computador:',
-    s1: 'Lê o código ou abre o endereço',
-    s2: 'Cria a palavra-passe do painel e escolhe os teus calendários',
-    s3: 'Este ecrã atualiza-se sozinho',
-    code: 'Pede um código de configuração? Está no registo do servidor.',
-    local: 'Noutro dispositivo, troca «localhost» pelo endereço deste computador.',
-    scan: 'Lê para configurar',
-  },
+
 };
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
@@ -87,7 +68,7 @@ export function showWelcome(status: SetupStatus, lang: Lang): void {
       ${qr ? `<div class="wl-qr"><div class="wl-qr__img">${qr}</div><span>${esc(T.scan)}</span></div>` : ''}
     </div>
     <div class="wl-clock" aria-hidden="true"></div>`;
-  const loc = lang === 'en' ? 'en-GB' : lang === 'pt' ? 'pt-PT' : 'es-ES';
+  const loc = 'en-GB';
   const clock = el.querySelector('.wl-clock') as HTMLElement;
   const tick = () => {
     clock.textContent = new Date().toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });

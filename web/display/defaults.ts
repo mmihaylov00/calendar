@@ -21,12 +21,12 @@ export const DEFAULT_CONFIG: DisplayConfig = {
     showLegend: true, hidePast: false, maxEventsPerDay: 4, marquee: true, rotateBusyDays: true, compactBusyDays: false, sources: [], iconRules: DEFAULT_ICON_RULES,
   },
   datetime: {
-    enabled: true, timezone: 'Europe/Lisbon', clock: 'digital', format24: true, showSeconds: true, showAmPm: false,
+    enabled: true, timezone: 'Europe/Sofia', clock: 'digital', format24: true, showSeconds: true, showAmPm: false,
     dateFormat: 'weekday_d_month',
     dateCustom: '{dddd}, {d} {mmmm} {yyyy}',
   },
   weather: {
-    enabled: true, provider: 'open-meteo', model: 'best_match', locationName: 'Lisbon, Portugal', lat: 38.7223, lon: -9.1393, units: 'metric',
+    enabled: true, provider: 'open-meteo', model: 'best_match', locationName: 'Sofia, Bulgaria', lat: 42.6977, lon: 23.3219, units: 'metric',
     forecastDays: 5, showHourly: true, showPrecipChance: true, haWeatherEntity: '', haIndoorTempEntity: '',
     haIndoorHumidityEntity: '',
   },
@@ -61,6 +61,7 @@ export function deepMerge<T>(base: T, src: unknown): T {
 
 export function normalizeConfig(raw: unknown): DisplayConfig {
   const c = deepMerge(DEFAULT_CONFIG, raw);
+  c.screen.language = 'en';
   c.calendar.weeks = clampInt(c.calendar.weeks, 1, 8, 5);
   c.calendar.maxEventsPerDay = clampInt(c.calendar.maxEventsPerDay, 1, 12, 4);
   c.calendar.weekStart = clampInt(c.calendar.weekStart, 0, 6, 1);

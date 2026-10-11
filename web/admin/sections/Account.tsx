@@ -30,10 +30,10 @@ export function AccountSection({ me, updateMe }: SectionProps) {
       const next = r?.household?.name ? r.household : { ...household!, name: clean };
       if (me.account) updateMe?.({ ...me, account: { ...me.account, household: next } });
       setName(next.name);
-      toast(t('Nombre del hogar guardado'));
+      toast(t('Household name saved'));
     } catch (err) {
       const ae = err as ApiError;
-      if (ae.status !== 401) toast(`${t('No se pudo guardar')}: ${ae.message === 'network' ? t('servidor no disponible') : ae.message}`, 'error');
+      if (ae.status !== 401) toast(`${t('Could not save')}: ${ae.message === 'network' ? t('server unavailable') : ae.message}`, 'error');
     } finally {
       setBusy(false);
     }
@@ -41,7 +41,7 @@ export function AccountSection({ me, updateMe }: SectionProps) {
 
   return (
     <>
-      <PageHeader title={t('Cuenta')} desc={t('Tu cuenta y el hogar que gestionas desde este panel.')} />
+      <PageHeader title={t('Account')} desc={t('Your account and the household you manage from this panel.')} />
       {user && (
         <Card>
           <div class="who">
@@ -49,46 +49,46 @@ export function AccountSection({ me, updateMe }: SectionProps) {
             <div>
               <strong>{user.name || user.email}</strong>
               <div class="muted small">
-                {user.email} · {t('sesión con tu cuenta')}
+                {user.email} · {t('signed in with your account')}
               </div>
             </div>
           </div>
         </Card>
       )}
-      {!household && <Callout kind="warn">{t('No se pudieron cargar los datos de la cuenta. Recarga la página.')}</Callout>}
+      {!household && <Callout kind="warn">{t('Could not load the account details. Reload the page.')}</Callout>}
       {household && (
-        <Card id="acc-household" title={t('Hogar')} icon="home" desc={owner ? t('El nombre aparece en tu cuenta y en los correos.') : t('Solo el propietario puede cambiar el nombre.')}>
+        <Card id="acc-household" title={t('Household')} icon="home" desc={owner ? t('The name shows on your account and in emails.') : t('Only the owner can change the name.')}>
           <form class="account-rename" onSubmit={rename}>
-            <Field label={t('Nombre del hogar')} htmlFor="acc-household-name" hint={`${t('Tu rol')}: ${roleLabel(household.role)}`} error={owner && name && !clean ? t('Escribe un nombre') : undefined}>
+            <Field label={t('Household name')} htmlFor="acc-household-name" hint={`${t('Your role')}: ${roleLabel(household.role)}`} error={owner && name && !clean ? t('Enter a name') : undefined}>
               <TextInput id="acc-household-name" value={name} onValue={setName} maxLength={HOUSEHOLD_NAME_MAX} disabled={!owner || busy} autocomplete="off" />
             </Field>
             {owner && (
               <Button type="submit" variant="primary" icon="check" loading={busy} disabled={!clean || !changed}>
-                {t('Guardar nombre')}
+                {t('Save name')}
               </Button>
             )}
           </form>
         </Card>
       )}
       {links && (
-        <Card id="acc-links" title={t('Cuenta y sesiones')} icon="user" desc={t('Se abren en las páginas de tu cuenta.')}>
+        <Card id="acc-links" title={t('Account and sessions')} icon="user" desc={t('These open on your account pages.')}>
           <div class="account-links">
             {links.account && (
               <a class="btn btn--default" href={links.account}>
                 <Icon name="user" size={17} />
-                <span>{t('Gestionar cuenta')}</span>
+                <span>{t('Manage account')}</span>
               </a>
             )}
             {links.sessions && (
               <a class="btn btn--default" href={links.sessions}>
                 <Icon name="shield" size={17} />
-                <span>{t('Sesiones abiertas')}</span>
+                <span>{t('Open sessions')}</span>
               </a>
             )}
             {links.remove && (
               <a class="btn btn--danger" href={links.remove}>
                 <Icon name="trash" size={17} />
-                <span>{t('Eliminar cuenta')}</span>
+                <span>{t('Delete account')}</span>
               </a>
             )}
           </div>
@@ -99,5 +99,5 @@ export function AccountSection({ me, updateMe }: SectionProps) {
 }
 
 function roleLabel(role: string): string {
-  return role === 'owner' ? t('Propietario') : t('Miembro');
+  return role === 'owner' ? t('Owner') : t('Member');
 }

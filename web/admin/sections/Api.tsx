@@ -36,7 +36,7 @@ async function copyText(text: string) {
     document.execCommand('copy');
     ta.remove();
   }
-  toast(t('Copiado'), 'ok', 1500);
+  toast(t('Copied'), 'ok', 1500);
 }
 
 function CodeBlock({ code, lang }: { code: string; lang?: string }) {
@@ -46,7 +46,7 @@ function CodeBlock({ code, lang }: { code: string; lang?: string }) {
         <span class="mono small muted">{lang}</span>
         <button type="button" class="btn btn--ghost btn--sm" onClick={() => copyText(code)}>
           <Icon name="copy" size={14} />
-          <span>{t('Copiar')}</span>
+          <span>{t('Copy')}</span>
         </button>
       </div>
       <pre>
@@ -70,29 +70,29 @@ function NewTokenDialog({ onClose, onCreated }: { onClose: () => void; onCreated
       onCreated(c);
     } catch (err) {
       const ae = err as ApiError;
-      toast(ae.status === 409 ? t('Has llegado al máximo de 20 tokens. Revoca alguno.') : ae.message, 'error');
+      toast(ae.status === 409 ? t('You reached the maximum of 20 tokens. Revoke one.') : ae.message, 'error');
     } finally {
       setBusy(false);
     }
   };
   return (
     <Modal
-      title={created ? t('Token creado') : t('Nuevo token de API')}
+      title={created ? t('Token created') : t('New API token')}
       icon="key"
       onClose={onClose}
       size="sm"
       footer={
         created ? (
           <Button variant="primary" icon="check" onClick={onClose}>
-            {t('Ya lo he copiado')}
+            {t('I have copied it')}
           </Button>
         ) : (
           <>
             <Button variant="ghost" onClick={onClose}>
-              {t('Cancelar')}
+              {t('Cancel')}
             </Button>
             <Button variant="primary" icon="key" loading={busy} disabled={!name.trim()} onClick={create}>
-              {t('Crear token')}
+              {t('Create token')}
             </Button>
           </>
         )
@@ -100,19 +100,19 @@ function NewTokenDialog({ onClose, onCreated }: { onClose: () => void; onCreated
     >
       {created ? (
         <div class="stack">
-          <Callout kind="warn">{t('Cópialo ahora: por seguridad no se volverá a mostrar.')}</Callout>
+          <Callout kind="warn">{t('Copy it now: for security it will not be shown again.')}</Callout>
           <div class="token-reveal">
             <code>{created.token}</code>
             <button type="button" class="btn btn--primary btn--sm" onClick={() => copyText(created.token)}>
               <Icon name="copy" size={14} />
-              <span>{t('Copiar')}</span>
+              <span>{t('Copy')}</span>
             </button>
           </div>
-          <p class="muted small">{t('Úsalo en la cabecera Authorization: Bearer <token>. Los ejemplos de abajo ya lo incluyen mientras esta página esté abierta.')}</p>
+          <p class="muted small">{t('Use it in the header Authorization: Bearer <token>. The examples below include it while this page is open.')}</p>
         </div>
       ) : (
         <form class="stack" onSubmit={create}>
-          <Field label={t('Nombre')} hint={t('Para reconocerlo en la lista y en el registro de actividad.')}>
+          <Field label={t('Name')} hint={t('To recognise it in the list and the activity log.')}>
             <TextInput value={name} onValue={setName} maxLength={60} placeholder="Home Assistant" />
           </Field>
         </form>
@@ -147,34 +147,34 @@ export function ApiSection(props: SectionProps) {
 
   const revoke = async (tk: ApiTokenInfo) => {
     const ok = await confirmDialog({
-      title: t('Revocar “{name}”', { name: tk.name }),
-      body: t('Las automatizaciones que lo usen dejarán de funcionar inmediatamente.'),
-      confirm: t('Revocar'),
+      title: t('Revoke “{name}”', { name: tk.name }),
+      body: t('Automations using it will stop working immediately.'),
+      confirm: t('Revoke'),
       danger: true,
     });
     if (!ok) return;
     try {
       await api.revokeToken(tk.id);
-      toast(t('Token revocado'));
+      toast(t('Token revoked'));
       load();
     } catch (e) {
       toast((e as ApiError).message, 'error');
     }
   };
 
-  // Caddy (deploy/Caddyfile.example) blocks /api/hooks/* from outside the LAN, and Home Assistant should
+  // A reverse proxy can restrict /api/hooks/* to the LAN, and Home Assistant should
   // call the Pi directly: when the panel is opened through a public domain, show a LAN placeholder instead.
   // On Workers (Marco Cloud) the hooks live on the panel's own public origin.
   const workers = runtime() === 'workers';
   const lanPanel = workers || isLanHost(location.hostname);
-  const base = lanPanel ? location.origin : `http://${t('<ip-de-la-pi>')}:3000`;
+  const base = lanPanel ? location.origin : `http://${t('<pi-ip>')}:3000`;
   const token = fresh || 'cs_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
   const slugs = full.screens.map((s) => s.slug);
-  const washer = t('La lavadora ha terminado');
+  const washer = t('The washing machine is done');
   const priv = has('privacy');
   // servers without a live camera (Marco Cloud): the ring carries a snapshot, and the doorbell card lives here
   const snapshotBell = hooksOn && has('doorbell') && !has('doorbellLive');
-  const yaml = `# ${t('configuration.yaml de Home Assistant')}
+  const yaml = `# ${t('Home Assistant configuration.yaml')}
 rest_command:
   marco_alert:
     url: "${base}/api/hooks/announce"
@@ -195,7 +195,7 @@ rest_command:
     payload: '{"mode": "{{ mode }}"}'` : ''}
 
 automation:
-  - alias: "${t('Aviso: lavadora terminada')}"
+  - alias: "${t('Alert: washing machine done')}"
     triggers:
       - trigger: state
         entity_id: sensor.washing_machine_status
@@ -207,7 +207,7 @@ automation:
           emoji: "🧺"
           style: "success"
           duration: 300${priv ? `
-  - alias: "${t('Modo privado con invitados')}"
+  - alias: "${t('Private mode while there are guests')}"
     triggers:
       - trigger: state
         entity_id: input_boolean.guests
@@ -215,41 +215,41 @@ automation:
       - action: rest_command.marco_privacy
         data:
           mode: "{{ 'on' if trigger.to_state.state == 'on' else 'off' }}"` : ''}`;
-  const curl = `# ${t('Comprobar el token')}
+  const curl = `# ${t('Check the token')}
 curl -H "Authorization: Bearer ${token}" ${base}/api/hooks/ping
 
-# ${slugs.length > 1 ? t('Aviso en la pantalla «{slug}»', { slug: slugs[0] }) : t('Aviso en todas las pantallas')}
+# ${slugs.length > 1 ? t('Alert on screen “{slug}”', { slug: slugs[0] }) : t('Alert on all screens')}
 curl -X POST ${base}/api/hooks/announce \\
   -H "Authorization: Bearer ${token}" \\
   -H "Content-Type: application/json" \\
   -d '{"title":${JSON.stringify(washer).replace(/'/g, "'\\''")},"emoji":"🧺","style":"success","durationSec":300,"sound":true${slugs.length > 1 ? `,"screens":["${slugs[0]}"]` : ''}}'
 
-# ${t('Recargar todas las pantallas')}
+# ${t('Reload all screens')}
 curl -X POST ${base}/api/hooks/reload \\
   -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d '{}'
 
-# ${t('Modo noche')}: on | off | auto
+# ${t('Night mode')}: on | off | auto
 curl -X POST ${base}/api/hooks/night \\
   -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" \\
   -d '{"mode":"on"}'${priv ? `
 
-# ${t('Modo privado 3 horas')}: on | off | toggle
+# ${t('Private mode for 3 hours')}: on | off | toggle
 curl -X POST ${base}/api/hooks/privacy \\
   -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" \\
   -d '{"mode":"on","hours":3}'` : ''}${snapshotBell ? `
 
-# ${t('Timbre con la foto de la cámara')} (JPEG, PNG, WebP; 2 MB)
+# ${t('Doorbell with the camera picture')} (JPEG, PNG, WebP; 2 MB)
 curl -X POST ${base}/api/hooks/doorbell \\
   -H "Authorization: Bearer ${token}" \\
   -F image=@doorbell.jpg -F action=ring -F seconds=60
 
-# ${t('Quitar el timbre de las pantallas')}
+# ${t('Take the doorbell off the screens')}
 curl -X POST ${base}/api/hooks/doorbell \\
   -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" \\
   -d '{"action":"dismiss"}'` : ''}`;
   // Home Assistant takes a snapshot of the camera and sends it with the ring; the file is removed right after, since
   // Home Assistant serves www/ at /local/ without a sign in.
-  const bellYaml = `# ${t('configuration.yaml de Home Assistant')}
+  const bellYaml = `# ${t('Home Assistant configuration.yaml')}
 shell_command:
   marco_doorbell: >-
     curl -s -X POST -H "Authorization: Bearer ${token}"
@@ -258,7 +258,7 @@ shell_command:
   marco_doorbell_clean: rm -f /config/www/doorbell.jpg
 
 automation:
-  - alias: "${t('Timbre en las pantallas de Marco')}"
+  - alias: "${t('Doorbell on the Marco screens')}"
     triggers:
       - trigger: state
         entity_id: binary_sensor.front_door_doorbell
@@ -275,16 +275,16 @@ automation:
 
   return (
     <>
-      <PageHeader title={t('API y webhooks')} desc={t('Permite que Home Assistant u otros sistemas envíen avisos, recarguen las pantallas o activen el modo noche.')}>
+      <PageHeader title={t('API & webhooks')} desc={t('Lets Home Assistant or other systems send alerts, reload screens or turn on night mode.')}>
         {tokensOn && (
           <Button variant="primary" icon="plus" disabled={tokensFull} onClick={() => setCreating(true)}>
-            {t('Nuevo token')}
+            {t('New token')}
           </Button>
         )}
       </PageHeader>
 
       {tokensOn && (
-        <Card title={t('Tokens de API')} icon="key" id="api-tokens" desc={t('Se guardan cifrados (hash): solo se ven una vez al crearlos.')}>
+        <Card title={t('API tokens')} icon="key" id="api-tokens" desc={t('Stored hashed: shown only once when created.')}>
           {err && <Callout kind="error">{err}</Callout>}
           <LimitNote name="apiTokens" count={tokens?.length ?? 0} />
           {tokens === null ? (
@@ -292,19 +292,19 @@ automation:
               <div class="skeleton" />
             </div>
           ) : tokens.length === 0 ? (
-            <Empty icon="key" title={t('Ningún token todavía')}>
-              {t('Crea uno para Home Assistant y pégalo en el ejemplo de abajo.')}
+            <Empty icon="key" title={t('No tokens yet')}>
+              {t('Create one for Home Assistant and paste it into the example below.')}
             </Empty>
           ) : (
             <div class="table-wrap">
               <table class="table tokens">
                 <thead>
                   <tr>
-                    <th>{t('Nombre')}</th>
+                    <th>{t('Name')}</th>
                     <th>{t('Token')}</th>
-                    <th>{t('Creado')}</th>
-                    <th>{t('Último uso')}</th>
-                    <th class="num">{t('Usos')}</th>
+                    <th>{t('Created')}</th>
+                    <th>{t('Last used')}</th>
+                    <th class="num">{t('Uses')}</th>
                     <th />
                   </tr>
                 </thead>
@@ -327,13 +327,13 @@ automation:
                             {tk.lastUsedIp && <span class="small"> · {tk.lastUsedIp}</span>}
                           </>
                         ) : (
-                          t('Nunca')
+                          t('Never')
                         )}
                       </td>
                       <td class="num">{tk.useCount}</td>
                       <td class="num">
                         <Button size="sm" variant="ghost" icon="trash" onClick={() => revoke(tk)}>
-                          {t('Revocar')}
+                          {t('Revoke')}
                         </Button>
                       </td>
                     </tr>
@@ -346,11 +346,11 @@ automation:
       )}
 
       {hooksOn && (
-        <Card title={t('Ejemplos')} icon="code" id="api-examples" actions={<Segmented size="sm" value={ex} options={[{ value: 'ha', label: 'Home Assistant' }, { value: 'curl', label: 'curl' }]} onChange={setEx} />}>
-          {!fresh && <p class="muted small">{t('Sustituye cs_XXXX… por tu token (o crea uno nuevo y se rellenará solo).')}</p>}
+        <Card title={t('Examples')} icon="code" id="api-examples" actions={<Segmented size="sm" value={ex} options={[{ value: 'ha', label: 'Home Assistant' }, { value: 'curl', label: 'curl' }]} onChange={setEx} />}>
+          {!fresh && <p class="muted small">{t('Replace cs_XXXX… with your token (or create a new one and it fills in).')}</p>}
           {!workers && !lanPanel && (
             <Callout kind="info">
-              {t('Estás usando el panel desde fuera de la red local. Home Assistant debe llamar a la Pi directamente por la red local (por ejemplo http://192.168.1.50:3000): desde Internet /api/hooks está bloqueado. Sustituye <ip-de-la-pi> por su IP.')}
+              {t('You are using the panel from outside the local network. Home Assistant must call the Pi directly on the local network (e.g. http://192.168.1.50:3000): /api/hooks is blocked from the Internet. Replace <pi-ip> with its IP.')}
             </Callout>
           )}
           {ex === 'ha' ? <CodeBlock lang="yaml" code={yaml} /> : <CodeBlock lang="bash" code={curl} />}
@@ -358,7 +358,7 @@ automation:
             <h4>{t('Endpoints')}</h4>
             <ul>
               <li>
-                <code>GET /api/hooks/ping</code>: {t('comprueba el token')}
+                <code>GET /api/hooks/ping</code>: {t('checks the token')}
               </li>
               <li>
                 <code>POST /api/hooks/announce</code>: <code>{'{ title, body, emoji, style: info|success|warning|urgent, durationSec, sound, screens: [slug] }'}</code>
@@ -379,7 +379,7 @@ automation:
                   <code>POST /api/hooks/doorbell</code>:{' '}
                   {snapshotBell ? (
                     <>
-                      <code>{'{ action: ring|dismiss, seconds?: 10..300, screens?: [slug], sound? }'}</code> · {t('la foto como campo image (multipart) o como cuerpo image/jpeg con los campos en la URL')}
+                      <code>{'{ action: ring|dismiss, seconds?: 10..300, screens?: [slug], sound? }'}</code> · {t('the picture as an image field (multipart) or as an image/jpeg body with the fields in the URL')}
                     </>
                   ) : (
                     <code>{'{ action: ring|dismiss, seconds?: 10..300, screens?: [slug], camera?: camera.x }'}</code>
@@ -388,8 +388,8 @@ automation:
               )}
             </ul>
             <p class="muted small">
-              {t('Pantallas disponibles')}: {slugs.map((s) => <code class="slug-code">{s}</code>)} · {t('Límite: 30 peticiones por minuto y token.')}
-              {limit('hookCommandsPerDay') != null && <> {t('Como mucho {n} avisos y órdenes al día entre todos los tokens.', { n: limit('hookCommandsPerDay') ?? 0 })}</>}
+              {t('Available screens')}: {slugs.map((s) => <code class="slug-code">{s}</code>)} · {t('Limit: 30 requests per minute per token.')}
+              {limit('hookCommandsPerDay') != null && <> {t('At most {n} alerts and commands a day across all tokens.', { n: limit('hookCommandsPerDay') ?? 0 })}</>}
             </p>
           </div>
         </Card>

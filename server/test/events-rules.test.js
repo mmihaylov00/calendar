@@ -70,10 +70,10 @@ test('precedence vs icon rules inside the pipeline: style > icon rule > source; 
   const opts = (eventRules) => ({ rules: RULES, eventRules, from: '2026-10-01', to: '2026-10-31', tz: TZ, lang: 'es', detail: true });
   const raw = (title, start = '2026-10-10', extra = {}) => ({ uid: title, title, description: '', location: '', allDay: true, start, end: '2026-10-11', ...extra });
 
-  // Airbnb "Not available" is normalised to "No disponible" before rules → a hide rule on the Spanish text works.
-  const hide = rule({ id: 'h', action: 'hide', match: 'No disponible', matchMode: 'exact', sourceIds: ['c_al'] });
+  // Airbnb titles are normalised before event rules run.
+  const hide = rule({ id: 'h', action: 'hide', match: 'Not available', matchMode: 'exact', sourceIds: ['c_al'] });
   const al = buildSourceEvents([raw('Airbnb (Not available)'), raw('Reserved', '2026-10-12')], src, opts([hide]));
-  assert.deepEqual(al.map((e) => [e.title, e.hidden]), [['No disponible', true], ['Reserva', false]]);
+  assert.deepEqual(al.map((e) => [e.title, e.hidden]), [['Not available', true], ['Reservation', false]]);
   assert.equal(buildSourceEvents([raw('Airbnb (Not available)')], src, { ...opts([hide]), detail: false }).length, 0);
 
   // Icon rule (dentista 🩺) alone
@@ -117,13 +117,13 @@ test('previewEvents keeps hidden events, uses draft rules and counts rule hits; 
   const cfg = structuredClone(store.getConfig());
   cfg.calendar.sources = [];
   cfg.localEvents.items = [
-    { id: 'l_a', title: 'No disponible', allDay: true, date: '2026-10-10', endDate: '2026-10-10' },
+    { id: 'l_a', title: 'Not available', allDay: true, date: '2026-10-10', endDate: '2026-10-10' },
     { id: 'l_b', title: 'Mercado semanal', allDay: true, date: '2026-10-11', endDate: '2026-10-11' },
   ];
   assert.equal(store.saveConfig(cfg).ok, true);
 
   const draft = [
-    rule({ id: 'f_hide', action: 'hide', match: 'no disponible' }),
+    rule({ id: 'f_hide', action: 'hide', match: 'not available' }),
     rule({ id: 'f_ren', action: 'rename', match: 'mercado', replaceWith: 'Mercadona' }),
     rule({ id: 'f_unused', action: 'hide', match: 'zzz' }),
   ];
@@ -131,14 +131,14 @@ test('previewEvents keeps hidden events, uses draft rules and counts rule hits; 
   assert.deepEqual(errors, []);
   const p = await previewEvents({ from: '2026-10-09', to: '2026-10-22', overrides });
   assert.deepEqual(p.events.map((e) => [e.title, e.hidden, e.originalTitle, e.sourceName]), [
-    ['No disponible', true, 'No disponible', 'Family'],
+    ['Not available', true, 'Not available', 'Family'],
     ['Mercadona semanal', false, 'Mercado semanal', 'Family'],
   ]);
   assert.deepEqual(p.ruleHits, { f_hide: 1, f_ren: 1, f_unused: 0 });
   assert.deepEqual(p.events[1].applied, [{ ruleId: 'f_ren', action: 'rename' }]);
   // saved config untouched → public events still show both, unrenamed
   const pub = await getEvents({ from: '2026-10-09', to: '2026-10-22' });
-  assert.deepEqual(pub.events.map((e) => e.title), ['No disponible', 'Mercado semanal']);
+  assert.deepEqual(pub.events.map((e) => e.title), ['Not available', 'Mercado semanal']);
 
   const bad = sanitizeDraft(store.getConfig(), { eventRules: [{ action: 'style', match: 'x' }], birthdays: { items: [{ name: '', month: 2, day: 30 }] } });
   assert.deepEqual(bad.errors.map((e) => e.path).sort(), ['birthdays.items[0].day', 'birthdays.items[0].name', 'eventRules.items[0].emoji']);

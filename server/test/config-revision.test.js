@@ -16,8 +16,6 @@ import { _resetDisplays } from '../displays.js';
 import { _resetDisplayAccess, syncDisplayKeys } from '../displayAccess.js';
 import { loadWebModules } from './webModules.js';
 
-// i18n.setLang() sets <html lang>
-globalThis.document ??= { documentElement: {} };
 const [merge, errs, i18n] = await loadWebModules('/web/admin/configMerge.ts', '/web/admin/apiErrors.ts', '/web/admin/i18n.ts');
 
 const realFetch = globalThis.fetch;
@@ -296,45 +294,44 @@ test('mergeOverwrite: lists with ids merge item by item (screens, countdowns)', 
   assert.deepEqual(merge.mergeOverwrite(base, moved, theirs2).screens.map((x) => x.id), ['scr-b', s0.id, 'scr-c']);
 });
 
-test('admin error map: every code has a message in es, en and pt', () => {
+test('admin error map: every code has an English message', () => {
   const codes = ['rate_limited', 'screen_limit', 'limit_exceeded', 'feature_unavailable', 'conflict', 'photo_quota', 'readonly'];
   assert.deepEqual(Object.keys(errs.API_ERROR_MESSAGES).sort(), [...codes].sort());
-  try {
-    for (const lang of ['es', 'en', 'pt']) {
-      i18n.setLang(lang);
-      const seen = new Set();
-      for (const code of codes) {
-        const m = errs.apiErrorMessage(409, { error: code });
-        assert.ok(m && !m.includes(code), `${lang} ${code}: ${m}`);
-        assert.ok(!/[—]/.test(m), 'no em dash');
-        seen.add(m);
-        // `code` wins over `error` (servers send both)
-        assert.equal(errs.apiErrorMessage(400, { error: 'some text', code }), m);
-        assert.equal(errs.apiErrorCode({ error: 'x', code }), code);
-        if (lang === 'es') assert.equal(m, errs.API_ERROR_MESSAGES[code]);
-        else assert.notEqual(m, errs.API_ERROR_MESSAGES[code], `${lang} ${code} not translated`);
-      }
-      assert.equal(seen.size, codes.length);
-    }
-    i18n.setLang('en');
-    // details: a detail message that is a code is translated too
-    assert.equal(
-      errs.apiErrorMessage(400, { error: 'invalid config', details: [{ path: 'weather.source', message: 'feature_unavailable' }] }),
-      'invalid config: weather.source: This feature is not available on this server.'
-    );
-    assert.equal(
-      errs.apiErrorMessage(400, { error: 'limit_exceeded', details: [{ path: 'screens', message: 'max 6' }] }),
-      'Over the allowed maximum: screens: max 6'
-    );
-    // unknown codes and plain errors keep the server text, as before
-    assert.equal(errs.apiErrorMessage(404, { error: 'not found' }), 'not found');
-    assert.equal(errs.apiErrorMessage(502, null), 'HTTP 502');
-    assert.equal(errs.apiErrorMessage(500, 'Bad gateway'), 'Bad gateway');
-    assert.equal(errs.apiErrorCode({ error: 'toString' }), '');
-    assert.equal(errs.apiErrorCode(null), '');
-  } finally {
-    i18n.setLang('es');
+  const seen = new Set();
+  for (const code of codes) {
+    const message = errs.apiErrorMessage(409, { error: code });
+    assert.ok(message && !message.includes(code), `${code}: ${message}`);
+    assert.ok(!/[—]/.test(message), 'no em dash');
+    seen.add(message);
+    assert.equal(errs.apiErrorMessage(400, { error: 'some text', code }), message);
+    assert.equal(errs.apiErrorCode({ error: 'x', code }), code);
+    assert.equal(message, errs.API_ERROR_MESSAGES[code]);
   }
+  assert.equal(seen.size, codes.length);
+  assert.equal(
+    errs.apiErrorMessage(400, { error: 'invalid config', details: [{ path: 'weather.source', message: 'feature_unavailable' }] }),
+    'invalid config: weather.source: This feature is not available on this server.'
+  );
+  assert.equal(
+    errs.apiErrorMessage(400, { error: 'limit_exceeded', details: [{ path: 'screens', message: 'max 6' }] }),
+    'Over the allowed maximum: screens: max 6'
+  );
+  assert.equal(errs.apiErrorMessage(404, { error: 'not found' }), 'not found');
+  assert.equal(errs.apiErrorMessage(502, null), 'HTTP 502');
+  assert.equal(errs.apiErrorMessage(500, 'Bad gateway'), 'Bad gateway');
+  assert.equal(errs.apiErrorCode({ error: 'toString' }), '');
+  assert.equal(errs.apiErrorCode(null), '');
+});
+
+test('admin text stays English and retains count and placeholder formatting', () => {
+  assert.equal(i18n.getLang(), 'en');
+  assert.equal(i18n.locale(), 'en-GB');
+  assert.equal(i18n.t('Add {n} birthdays', { n: 1 }), 'Add 1 birthday');
+  assert.equal(i18n.t('Add {n} birthdays', { n: 2 }), 'Add 2 birthdays');
+  assert.equal(i18n.t('Every {n} years on {date}', { n: 1, date: 'March 7' }), 'Every year on March 7');
+  assert.equal(i18n.t('Hello {name} at {time}', { name: 'Mira' }), 'Hello Mira at {time}');
+  assert.equal(i18n.nScreens(1), '1 screen');
+  assert.equal(i18n.nScreens(3), '3 screens');
 });
 
 test('GET /api/admin/countdowns needs a session; /api/countdowns still takes the cookie', async () => {

@@ -1,17 +1,17 @@
 // First-run setup wizard (shown instead of the login while the server has no admin password).
-// Steps: welcome + language → admin password → location → calendars → look → done (display URL + QR).
+// Steps: welcome → admin password → location → calendars → look → done (display URL + QR).
 // Server side: server/setup.js (POST /api/setup/complete creates the password + settings and logs in).
 import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { passwordProblem, passwordScore, MIN_PASSWORD } from '../shared/password';
 import { BrandMark } from './components/BrandMark';
 import { CopyField, Qr } from './components/share';
-import { kioskInstallCommand, REPO_URL } from '../shared/project';
-import type { GeocodeResult, Lang, LayoutPreset, SetupRequest, SetupStatus, TestIcsResponse } from '../shared/types';
+import { REPO_URL } from '../shared/project';
+import type { GeocodeResult, LayoutPreset, SetupRequest, SetupStatus, TestIcsResponse } from '../shared/types';
 import { api, ApiError } from './api';
 import { Icon, type IconName } from './components/icons';
 import { Button, Callout, Field, Segmented, TextInput } from './components/ui';
-import { getLang, setLang, t } from './i18n';
+import { t } from './i18n';
 import { PRESETS, Schematic } from './sections/Layout';
 import { HOLIDAY_PRESETS, isHttpUrl, SWATCHES } from './util';
 
@@ -59,18 +59,12 @@ interface Cal {
 }
 
 const STEPS: { id: string; label: string; icon: IconName }[] = [
-  { id: 'welcome', label: 'Bienvenida', icon: 'sparkles' },
-  { id: 'password', label: 'Contraseña', icon: 'key' },
-  { id: 'location', label: 'Ubicación', icon: 'globe' },
-  { id: 'calendars', label: 'Calendarios', icon: 'calendar' },
-  { id: 'look', label: 'Aspecto', icon: 'palette' },
-  { id: 'done', label: 'Listo', icon: 'check' },
-];
-
-const LANG_CARDS: { value: Lang; name: string; hello: string }[] = [
-  { value: 'en', name: 'English', hello: 'Hello' },
-  { value: 'es', name: 'Español', hello: 'Hola' },
-  { value: 'pt', name: 'Português', hello: 'Olá' },
+  { id: 'welcome', label: 'Welcome', icon: 'sparkles' },
+  { id: 'password', label: 'Password', icon: 'key' },
+  { id: 'location', label: 'Location', icon: 'globe' },
+  { id: 'calendars', label: 'Calendars', icon: 'calendar' },
+  { id: 'look', label: 'Look', icon: 'palette' },
+  { id: 'done', label: 'Done', icon: 'check' },
 ];
 
 const browserTz = () => {
@@ -119,10 +113,10 @@ function onAccent(hex: string): string {
   return l > 0.45 ? '#111' : '#fff';
 }
 
-/** "Portugal", "Estados Unidos"… in the UI language. */
-function regionName(cc: string, lang: Lang): string {
+/** Country names in English. */
+function regionName(cc: string): string {
   try {
-    return new Intl.DisplayNames([lang], { type: 'region' }).of(cc) ?? '';
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(cc) ?? '';
   } catch {
     return '';
   }
@@ -130,7 +124,7 @@ function regionName(cc: string, lang: Lang): string {
 
 function StrengthMeter({ pw }: { pw: string }) {
   const score = passwordScore(pw);
-  const labels = ['', t('Débil'), t('Aceptable'), t('Buena'), t('Muy buena')];
+  const labels = ['', t('Weak'), t('Fair'), t('Good'), t('Strong')];
   return (
     <div class={`strength strength--${score}`} aria-live="polite">
       <div class="strength__bars" aria-hidden="true">
@@ -138,7 +132,7 @@ function StrengthMeter({ pw }: { pw: string }) {
           <span class={i <= score ? 'is-on' : ''} />
         ))}
       </div>
-      <span class="strength__label">{pw ? labels[score] : t('Escribe una contraseña')}</span>
+      <span class="strength__label">{pw ? labels[score] : t('Type a password')}</span>
     </div>
   );
 }
@@ -151,10 +145,9 @@ function Rule({ ok, children }: { ok: boolean; children: ComponentChildren }) {
   );
 }
 
-export function SetupWizard({ status: initial, onDone, onLang }: { status: SetupStatus; onDone: () => void; onLang: (l: Lang) => void }) {
+export function SetupWizard({ status: initial, onDone }: { status: SetupStatus; onDone: () => void }) {
   const [status, setStatus] = useState(initial);
   const [step, setStep] = useState(0);
-  const [lang, setLangState] = useState<Lang>(getLang());
   const [token, setToken] = useState(() => takeSetupToken());
   const [tokenErr, setTokenErr] = useState('');
   const [checking, setChecking] = useState(false);
@@ -201,14 +194,8 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
   const bodyRef = useRef<HTMLDivElement>(null);
 
   const needToken = !!status.tokenRequired && status.tokenValid !== true;
-  const defaultName = t('Salón');
+  const defaultName = t('Living room');
   const effectiveName = nameTouched ? screenName : screenName || defaultName;
-
-  const changeLang = (l: Lang) => {
-    setLang(l);
-    setLangState(l);
-    onLang(l);
-  };
 
   // Focus the first field (or the step title) whenever the step changes, for keyboard and screen-reader users.
   useEffect(() => {
@@ -242,13 +229,13 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
     if (busy || checking) return;
     if (step === 0) {
       if (needToken) {
-        if (!token.trim()) return setTokenErr(t('Escribe el código de configuración'));
+        if (!token.trim()) return setTokenErr(t('Enter the setup code'));
         setChecking(true);
         try {
           const s = await api.setupStatus(token.trim());
           setStatus(s);
           if (!s.needsSetup) return location.reload();
-          if (s.tokenValid !== true) return setTokenErr(t('Código de configuración incorrecto'));
+          if (s.tokenValid !== true) return setTokenErr(t('Wrong setup code'));
           try {
             sessionStorage.setItem(TOKEN_KEY, token.trim());
           } catch {
@@ -256,7 +243,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
           }
           setTokenErr('');
         } catch (err) {
-          return setTokenErr((err as ApiError).message === 'network' ? t('No se puede conectar con el servidor') : (err as ApiError).message);
+          return setTokenErr((err as ApiError).message === 'network' ? t('Cannot reach the server') : (err as ApiError).message);
         } finally {
           setChecking(false);
         }
@@ -300,11 +287,11 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
     setSearchErr('');
     try {
       // Through this server (GET /api/admin/geocode): the wizard has no session yet, so it sends its setup token.
-      const j = await api.geocode(q.trim(), lang, token.trim() || undefined);
+      const j = await api.geocode(q.trim(), 'en', token.trim() || undefined);
       setResults(j.results ?? []);
     } catch (e) {
       setResults(null);
-      setSearchErr((e as ApiError).status === 429 ? t('Demasiadas búsquedas seguidas. Espera unos minutos.') : t('No se pudo buscar (¿sin conexión a Internet?). Inténtalo de nuevo.'));
+      setSearchErr((e as ApiError).status === 429 ? t('Too many searches in a row. Wait a few minutes.') : t('Search failed (no Internet connection?). Try again.'));
     } finally {
       setSearching(false);
     }
@@ -334,11 +321,11 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
   const addIcs = (): boolean => {
     const url = icsUrl.trim();
     if (!isHttpUrl(url, true)) {
-      setIcsErr(t('URL no válida: debe empezar por https://, http:// o webcal://'));
+      setIcsErr(t('Invalid URL: it must start with https://, http:// or webcal://'));
       return false;
     }
     if (cals.some((c) => c.url === url)) {
-      setIcsErr(t('Este calendario ya está en la lista'));
+      setIcsErr(t('This calendar is already in the list'));
       return false;
     }
     if (cals.length >= 20) return false;
@@ -346,7 +333,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
       try {
         return new URL(url.replace(/^webcals?:/, 'https:')).hostname.replace(/^www\./, '');
       } catch {
-        return t('Calendario');
+        return t('Calendar');
       }
     })();
     setCals((cs) => [...cs, { name: icsName.trim() || fallback, url, kind: 'generic' }]);
@@ -358,7 +345,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
   const testIcs = async () => {
     const url = icsUrl.trim();
     if (!isHttpUrl(url, true)) {
-      setIcsErr(t('URL no válida: debe empezar por https://, http:// o webcal://'));
+      setIcsErr(t('Invalid URL: it must start with https://, http:// or webcal://'));
       return;
     }
     setTesting(true);
@@ -381,7 +368,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
       token: token.trim() || undefined,
       password: pw,
       passwordConfirm: pw2,
-      language: lang,
+      language: 'en',
       screenName: effectiveName.trim(),
       location: place && !skipLoc ? { name: place.name, lat: place.lat, lon: place.lon, timezone: tz } : undefined,
       timezone: tzOk ? tz : undefined,
@@ -404,20 +391,20 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
     } catch (err) {
       const ae = err as ApiError;
       if (ae.status === 409) {
-        setSubmitErr(t('Esta instalación ya está configurada. Recarga la página para entrar.'));
+        setSubmitErr(t('This installation is already set up. Reload the page to sign in.'));
       } else if (ae.status === 403 || ae.status === 429) {
         setStatus((s) => ({ ...s, tokenRequired: true, tokenValid: false }));
-        setTokenErr(ae.status === 429 ? t('Demasiados intentos. Espera un momento.') : t('Código de configuración incorrecto'));
+        setTokenErr(ae.status === 429 ? t('Too many attempts. Please wait a moment.') : t('Wrong setup code'));
         setStep(0);
       } else if (ae.status === 400) {
         const details = ((ae.body as any)?.details ?? []) as { path: string; message: string }[];
         const first = details[0]?.path ?? '';
-        setSubmitErr(`${t('Revisa este paso')}: ${details.map((d) => d.message).join('; ') || ae.message}`);
+        setSubmitErr(`${t('Check this step')}: ${details.map((d) => d.message).join('; ') || ae.message}`);
         if (first.startsWith('password')) setStep(1);
         else if (first.startsWith('location')) setStep(2);
         else if (first.startsWith('calendars')) setStep(3);
       } else {
-        setSubmitErr(ae.message === 'network' ? t('No se puede conectar con el servidor') : ae.message);
+        setSubmitErr(ae.message === 'network' ? t('Cannot reach the server') : ae.message);
       }
     } finally {
       setBusy(false);
@@ -434,11 +421,10 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
   const displayUrl = done?.displayPath ? `${origin}${done.displayPath}` : `${origin}/`;
   const privateLink = !!done?.displayPath;
   const adminUrl = `${origin}/admin/`;
-  const kioskCmd = kioskInstallCommand(displayUrl);
   const now = new Date();
   const timePreview = (() => {
     try {
-      return new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : lang === 'pt' ? 'pt-PT' : 'es-ES', {
+      return new Intl.DateTimeFormat('en-GB', {
         hour: 'numeric', minute: '2-digit', hour12: !h24, timeZone: tzOk ? tz : undefined,
       }).format(now);
     } catch {
@@ -449,7 +435,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
   const rootStyle = { '--accent': accent, '--on-accent': onAccent(accent) } as any;
 
   const progress = (
-    <ol class="wz-progress" aria-label={t('Progreso')}>
+    <ol class="wz-progress" aria-label={t('Progress')}>
       {STEPS.map((s, i) => (
         <li class={`${i < step ? 'is-done' : ''} ${i === step ? 'is-current' : ''}`} aria-current={i === step ? 'step' : undefined}>
           <span class="wz-progress__dot">{i < step ? <Icon name="check" size={13} /> : i + 1}</span>
@@ -464,8 +450,8 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
   let lead = '';
 
   if (step === 0) {
-    title = t('Bienvenido a Marco');
-    lead = t('Un calendario familiar de pared inspirado en DAKboard que funciona en tu propio servidor: tus calendarios, fotos y ajustes se quedan en casa.');
+    title = t('Welcome to Marco');
+    lead = t('A family wall calendar inspired by DAKboard that runs on your own server: your calendars, photos and settings stay at home.');
     content = (
       <>
         <ul class="wz-features">
@@ -474,8 +460,8 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
               <Icon name="calendar" size={18} />
             </span>
             <div>
-              <strong>{t('Calendarios')}</strong>
-              <span>{t('Google, iCal, festivos, cumpleaños y reservas en un solo vistazo.')}</span>
+              <strong>{t('Calendars')}</strong>
+              <span>{t('Google, iCal, holidays, birthdays and bookings at a glance.')}</span>
             </div>
           </li>
           <li>
@@ -483,8 +469,8 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
               <Icon name="cloud" size={18} />
             </span>
             <div>
-              <strong>{t('Tiempo y fotos')}</strong>
-              <span>{t('Previsión sin clave de API y tus fotos como fondo.')}</span>
+              <strong>{t('Weather & photos')}</strong>
+              <span>{t('Forecast without an API key and your photos as background.')}</span>
             </div>
           </li>
           <li>
@@ -492,33 +478,16 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
               <Icon name="shield" size={18} />
             </span>
             <div>
-              <strong>{t('Privado')}</strong>
-              <span>{t('Sin cuentas ni nube: solo tu red local.')}</span>
+              <strong>{t('Private')}</strong>
+              <span>{t('No accounts, no cloud: just your home network.')}</span>
             </div>
           </li>
         </ul>
-        <Field label={t('Idioma')}>
-          <div class="wz-langs" role="radiogroup" aria-label={t('Idioma')}>
-            {LANG_CARDS.map((l, i) => (
-              <button
-                type="button"
-                role="radio"
-                aria-checked={lang === l.value}
-                class={`wz-lang ${lang === l.value ? 'is-active' : ''}`}
-                onClick={() => changeLang(l.value)}
-                {...(i === 0 && !needToken ? { 'data-autofocus': true } : {})}
-              >
-                <span class="wz-lang__hello">{l.hello}</span>
-                <span class="wz-lang__name">{l.name}</span>
-              </button>
-            ))}
-          </div>
-        </Field>
         {needToken && (
           <Field
-            label={t('Código de configuración')}
+            label={t('Setup code')}
             error={tokenErr || undefined}
-            hint={t('Este servidor pide un código para configurarse. Está en el registro del servidor, en la línea «Open …/admin/?setup=…» (o en SETUP_TOKEN).')}
+            hint={t('This server asks for a code before it can be set up. Find it in the server log, on the line “Open …/admin/?setup=…” (or in SETUP_TOKEN).')}
           >
             <TextInput value={token} onValue={(v) => setToken(v)} error={!!tokenErr} mono autocomplete="off" prefix={<Icon name="key" size={14} />} data-autofocus />
           </Field>
@@ -526,13 +495,13 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
       </>
     );
   } else if (step === 1) {
-    title = t('Crea la contraseña del panel');
-    lead = t('Protege la configuración. La pantalla se ve sin contraseña; el panel no.');
+    title = t('Create the admin password');
+    lead = t('It protects the settings. The display needs no password; this panel does.');
     const showErr = pwTried || pw.length >= MIN_PASSWORD;
     content = (
       <>
         <input type="text" name="username" autocomplete="username" value="admin" hidden readOnly />
-        <Field label={t('Contraseña')} error={showErr && pwProblem ? (pwProblem === 'too_common' ? t('Demasiado común o sencilla') : pwProblem === 'too_long' ? t('Máximo 200 caracteres') : t('Mínimo {n} caracteres', { n: MIN_PASSWORD })) : undefined}>
+        <Field label={t('Password')} error={showErr && pwProblem ? (pwProblem === 'too_common' ? t('Too common or too simple') : pwProblem === 'too_long' ? t('At most 200 characters') : t('At least {n} characters', { n: MIN_PASSWORD })) : undefined}>
           <div class={`input-group input-group--lg ${showErr && pwProblem ? 'is-invalid' : ''}`}>
             <span class="input-group__addon">
               <Icon name="key" size={16} />
@@ -546,7 +515,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
               aria-describedby="wz-strength"
               onInput={(e) => setPw(e.currentTarget.value)}
             />
-            <button type="button" class="input-group__btn" onClick={() => setShowPw(!showPw)} aria-label={showPw ? t('Ocultar') : t('Mostrar')} aria-pressed={showPw}>
+            <button type="button" class="input-group__btn" onClick={() => setShowPw(!showPw)} aria-label={showPw ? t('Hide') : t('Show')} aria-pressed={showPw}>
               <Icon name={showPw ? 'eyeOff' : 'eye'} size={16} />
             </button>
           </div>
@@ -554,7 +523,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
         <div id="wz-strength">
           <StrengthMeter pw={pw} />
         </div>
-        <Field label={t('Repite la contraseña')} error={(pwTried || pw2.length >= pw.length) && pwMismatch ? t('Las contraseñas no coinciden') : pwTried && !pw2 ? t('Repite la contraseña') : undefined}>
+        <Field label={t('Repeat the password')} error={(pwTried || pw2.length >= pw.length) && pwMismatch ? t('Passwords do not match') : pwTried && !pw2 ? t('Repeat the password') : undefined}>
           <div class={`input-group input-group--lg ${pwMismatch ? 'is-invalid' : ''}`}>
             <span class="input-group__addon">
               <Icon name="check" size={16} />
@@ -563,24 +532,24 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
           </div>
         </Field>
         <ul class="wz-rules">
-          <Rule ok={[...pw].length >= MIN_PASSWORD}>{t('Al menos {n} caracteres', { n: MIN_PASSWORD })}</Rule>
-          <Rule ok={!!pw && pwProblem !== 'too_common' && pwProblem !== 'too_short'}>{t('Nada obvio (password, 1234567890, qwerty…)')}</Rule>
-          <Rule ok={!!pw2 && pw === pw2}>{t('Las dos coinciden')}</Rule>
+          <Rule ok={[...pw].length >= MIN_PASSWORD}>{t('At least {n} characters', { n: MIN_PASSWORD })}</Rule>
+          <Rule ok={!!pw && pwProblem !== 'too_common' && pwProblem !== 'too_short'}>{t('Nothing obvious (password, 1234567890, qwerty…)')}</Rule>
+          <Rule ok={!!pw2 && pw === pw2}>{t('Both match')}</Rule>
         </ul>
-        <p class="muted small">{t('Consejo: tres o cuatro palabras al azar son fáciles de recordar y difíciles de adivinar.')}</p>
+        <p class="muted small">{t('Tip: three or four random words are easy to remember and hard to guess.')}</p>
       </>
     );
   } else if (step === 2) {
-    title = t('¿Dónde está la pantalla?');
-    lead = t('Para el tiempo, la zona horaria y los festivos de tu país.');
+    title = t('Where is the display?');
+    lead = t('For the weather, the time zone and your country’s public holidays.');
     content = (
       <>
-        <Field label={t('Ciudad')} error={locTried && !place && !manualLoc && !skipLoc ? t('Busca y elige tu ciudad') : undefined} hint={searchErr ? undefined : t('Búsqueda con Open-Meteo (gratis, sin clave).')}>
+        <Field label={t('City')} error={locTried && !place && !manualLoc && !skipLoc ? t('Search for and pick your city') : undefined} hint={searchErr ? undefined : t('Search by Open-Meteo (free, no key).')}>
           <div class="search-row">
             <TextInput
               value={q}
               onValue={setQ}
-              placeholder={t('Buscar ciudad…')}
+              placeholder={t('Search city…')}
               prefix={<Icon name="search" size={14} />}
               data-autofocus
               onKeyDown={(e: KeyboardEvent) => {
@@ -591,13 +560,13 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
               }}
             />
             <Button onClick={() => search()} loading={searching}>
-              {t('Buscar')}
+              {t('Search')}
             </Button>
           </div>
           {searchErr && <div class="field__error">{searchErr}</div>}
           {results && (
-            <div class="geo-results" role="listbox" aria-label={t('Resultados')}>
-              {results.length === 0 && <div class="muted small">{t('Sin resultados')}</div>}
+            <div class="geo-results" role="listbox" aria-label={t('Results')}>
+              {results.length === 0 && <div class="muted small">{t('No results')}</div>}
               {results.map((r) => (
                 <button type="button" class="geo-result" onClick={() => pick(r)}>
                   <Icon name="pin" size={14} />
@@ -614,21 +583,21 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
         {!place && (
           <div class="wz-localt">
             <button type="button" class="link-btn" aria-expanded={manualLoc} onClick={() => { setManualLoc(!manualLoc); setSkipLoc(false); }}>
-              {t('Escribir las coordenadas')}
+              {t('Enter coordinates')}
             </button>
             <span class="muted" aria-hidden="true">·</span>
             <button type="button" class="link-btn" aria-pressed={skipLoc} onClick={() => { setSkipLoc(!skipLoc); setManualLoc(false); }}>
-              {skipLoc ? t('Elegir una ubicación') : t('Omitir (configurarla más tarde)')}
+              {skipLoc ? t('Choose a location') : t('Skip (set it later)')}
             </button>
           </div>
         )}
-        {skipLoc && !place && <Callout kind="info">{t('Sin ubicación no hay previsión del tiempo; añádela cuando quieras en Tiempo. La zona horaria de abajo se guarda igualmente.')}</Callout>}
+        {skipLoc && !place && <Callout kind="info">{t('Without a location there is no weather forecast; add it any time in Weather. The time zone below is saved anyway.')}</Callout>}
         {manualLoc && !place && (
           <div class="grid grid--2">
-            <Field label={t('Latitud')} error={locTried && !manualOk ? t('Entre -90 y 90') : undefined}>
+            <Field label={t('Latitude')} error={locTried && !manualOk ? t('Between -90 and 90') : undefined}>
               <TextInput value={latText} onValue={setLatText} mono placeholder="38.7223" inputMode="decimal" />
             </Field>
-            <Field label={t('Longitud')} error={locTried && !manualOk ? t('Entre -180 y 180') : undefined}>
+            <Field label={t('Longitude')} error={locTried && !manualOk ? t('Between -180 and 180') : undefined}>
               <TextInput value={lonText} onValue={setLonText} mono placeholder="-9.1393" inputMode="decimal" />
             </Field>
           </div>
@@ -647,15 +616,15 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
           </div>
         )}
         <div class="grid grid--2">
-          <Field label={t('Zona horaria')} error={!tzOk ? t('Zona horaria no válida') : undefined} hint={t('Detectada automáticamente; cámbiala si hace falta.')}>
+          <Field label={t('Time zone')} error={!tzOk ? t('Invalid time zone') : undefined} hint={t('Detected automatically; change it if needed.')}>
             <TextInput value={tz} onValue={setTz} mono prefix={<span>🌍</span>} error={!tzOk} />
           </Field>
-          <Field label={t('Hora en la pantalla')}>
+          <Field label={t('Time on the display')}>
             <div class="wz-timeprev">{timePreview}</div>
           </Field>
         </div>
         <div class="grid grid--2">
-          <Field label={t('Temperatura')}>
+          <Field label={t('Temperature')}>
             <Segmented
               full
               value={units}
@@ -666,7 +635,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
               onChange={setUnits}
             />
           </Field>
-          <Field label={t('Formato de hora')}>
+          <Field label={t('Time format')}>
             <Segmented
               full
               value={h24 ? '24' : '12'}
@@ -681,13 +650,13 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
       </>
     );
   } else if (step === 3) {
-    title = t('Tus calendarios');
-    lead = t('Empieza con los festivos y los calendarios que ya tengas. Podrás añadir más cuando quieras.');
+    title = t('Your calendars');
+    lead = t('Start with public holidays and the calendars you already have. You can add more any time.');
     const holidayUrls = new Set(cals.filter((c) => c.kind === 'holidays').map((c) => c.url));
     const others = cals.filter((c) => !HOLIDAY_PRESETS.some((h) => h.url === c.url));
     content = (
       <>
-        <Field label={t('Festivos')} hint={t('Calendarios públicos de Google, por país.')}>
+        <Field label={t('Holidays')} hint={t('Google’s public calendars, by country.')}>
           <div class="wz-chips">
             {HOLIDAY_PRESETS.map((h, i) => (
               <button
@@ -697,15 +666,15 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
                 onClick={() => toggleHoliday(h.url, t(h.name))}
                 {...(i === 0 ? { 'data-autofocus': true } : {})}
               >
-                <span aria-hidden="true">{h.flag}</span> {regionName(h.cc, lang) || t(h.name)}
+                <span aria-hidden="true">{h.flag}</span> {regionName(h.cc) || t(h.name)}
                 {holidayUrls.has(h.url) && <Icon name="check" size={13} />}
               </button>
             ))}
           </div>
         </Field>
-        <Field label={t('Añadir un calendario iCal (.ics)')} error={icsErr || undefined} hint={icsErr ? undefined : t('Dirección secreta de Google Calendar, Outlook, iCloud, el colegio, Airbnb…')}>
+        <Field label={t('Add an iCal calendar (.ics)')} error={icsErr || undefined} hint={icsErr ? undefined : t('Secret address from Google Calendar, Outlook, iCloud, school, Airbnb…')}>
           <div class="wz-ics">
-            <TextInput value={icsName} onValue={setIcsName} placeholder={t('Nombre (opcional)')} maxLength={80} />
+            <TextInput value={icsName} onValue={setIcsName} placeholder={t('Name (optional)')} maxLength={80} />
             <TextInput
               value={icsUrl}
               onValue={(v) => {
@@ -724,10 +693,10 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
             />
             <div class="wz-ics__btns">
               <Button icon="zap" onClick={testIcs} loading={testing} disabled={!icsUrl.trim()}>
-                {t('Probar')}
+                {t('Test')}
               </Button>
               <Button icon="plus" variant="primary" onClick={() => addIcs()} disabled={!icsUrl.trim()}>
-                {t('Añadir')}
+                {t('Add')}
               </Button>
             </div>
           </div>
@@ -736,12 +705,12 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
               <Icon name={icsTest.ok ? 'check' : 'alert'} size={14} />
               {icsTest.ok ? (
                 <span>
-                  {t('Funciona: {n} eventos en los próximos meses', { n: icsTest.count ?? 0 })}
+                  {t('Works: {n} events in the coming months', { n: icsTest.count ?? 0 })}
                   {icsTest.sample?.length ? <span class="muted"> · {icsTest.sample.slice(0, 3).join(' · ')}</span> : null}
                 </span>
               ) : (
                 <span>
-                  {t('No se pudo leer')}: {icsTest.error}
+                  {t('Could not read it')}: {icsTest.error}
                 </span>
               )}
             </div>
@@ -759,7 +728,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
                 <button
                   type="button"
                   class="btn btn--ghost btn--icon btn--sm"
-                  aria-label={t('Quitar {name}', { name: c.name })}
+                  aria-label={t('Remove {name}', { name: c.name })}
                   onClick={() => {
                     if (c.kind === 'holidays') setHolidaysTouched(true);
                     setCals((cs) => cs.filter((x) => x.url !== c.url));
@@ -771,22 +740,22 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
             ))}
           </ul>
         )}
-        {others.length === 0 && cals.length === 0 && <p class="muted small">{t('Sin calendarios por ahora: también puedes añadirlos después.')}</p>}
+        {others.length === 0 && cals.length === 0 && <p class="muted small">{t('No calendars for now: you can also add them later.')}</p>}
         <div class="wz-google">
           <Icon name="google" size={18} />
           {status.googleConfigured ? (
             <div>
               <strong>{t('Google Calendar')}</strong>
-              <p>{t('Google está configurado en este servidor: vincula tu cuenta después, en Calendarios → Google, y elige qué calendarios mostrar.')}</p>
+              <p>{t('Google is configured on this server: link your account after setup, in Calendars → Google, and pick which calendars to show.')}</p>
             </div>
           ) : (
             <div>
               <strong>{t('Google Calendar')}</strong>
-              <p>{t('Lo más rápido: en Google Calendar abre Configuración → tu calendario → «Dirección secreta en formato iCal» y pégala arriba.')}</p>
+              <p>{t('Quickest: in Google Calendar open Settings → your calendar → “Secret address in iCal format” and paste it above.')}</p>
               <p>
-                {t('Para vincular la cuenta (y entrar con Google) hace falta un cliente OAuth propio: GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en el .env.')}{' '}
+                {t('Linking the account (and signing in with Google) needs your own OAuth client: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.')}{' '}
                 <a href={GOOGLE_GUIDE_URL} target="_blank" rel="noopener noreferrer">
-                  {t('Guía paso a paso')} <Icon name="external" size={12} />
+                  {t('Step-by-step guide')} <Icon name="external" size={12} />
                 </a>
               </p>
             </div>
@@ -795,11 +764,11 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
       </>
     );
   } else if (step === 4) {
-    title = t('Dale tu estilo');
-    lead = t('Todo se puede cambiar después en el panel.');
+    title = t('Make it yours');
+    lead = t('Everything can be changed later in the panel.');
     content = (
       <>
-        <Field label={t('Nombre de la pantalla')} hint={t('Por ejemplo: Salón, Cocina, Entrada.')} error={nameTouched && !screenName.trim() ? t('Escribe un nombre') : undefined}>
+        <Field label={t('Screen name')} hint={t('For example: Living room, Kitchen, Hallway.')} error={nameTouched && !screenName.trim() ? t('Enter a name') : undefined}>
           <TextInput
             value={nameTouched ? screenName : screenName || defaultName}
             onValue={(v) => {
@@ -811,8 +780,8 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
             data-autofocus
           />
         </Field>
-        <Field label={t('Diseño')}>
-          <div class="wz-presets" role="radiogroup" aria-label={t('Diseño')}>
+        <Field label={t('Layout')}>
+          <div class="wz-presets" role="radiogroup" aria-label={t('Layout')}>
             {PRESETS.filter((p) => p.wizard).map((p) => (
               <button type="button" role="radio" aria-checked={preset === p.id} class={`preset ${preset === p.id ? 'is-active' : ''}`} onClick={() => setPreset(p.id)} title={t(p.desc)}>
                 <Schematic id={p.id} side="left" />
@@ -827,44 +796,44 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
           </div>
         </Field>
         <div class="grid grid--2">
-          <Field label={t('Color de acento')}>
-            <div class="wz-swatches" role="radiogroup" aria-label={t('Color de acento')}>
+          <Field label={t('Accent colour')}>
+            <div class="wz-swatches" role="radiogroup" aria-label={t('Accent colour')}>
               {SWATCHES.slice(0, 10).map((c) => (
                 <button type="button" role="radio" aria-checked={accent === c} aria-label={c} class={`swatch swatch--lg ${accent === c ? 'is-active' : ''}`} style={{ background: c }} onClick={() => setAccent(c)} />
               ))}
             </div>
           </Field>
-          <Field label={t('Tema')}>
+          <Field label={t('Theme')}>
             <Segmented
               full
               value={theme}
               options={[
-                { value: 'dark', label: t('Oscuro'), icon: 'moon' },
-                { value: 'light', label: t('Claro'), icon: 'sun' },
+                { value: 'dark', label: t('Dark'), icon: 'moon' },
+                { value: 'light', label: t('Light'), icon: 'sun' },
               ]}
               onChange={setTheme}
             />
           </Field>
         </div>
-        <Field label={t('Fotos de fondo')} hint={photos === 'stock' ? t('Fotos de paisajes de stock, listas desde el primer minuto.') : t('Sube tus fotos después en Galería (también desde el móvil).')}>
+        <Field label={t('Background photos')} hint={photos === 'stock' ? t('Stock landscape photos, ready from minute one.') : t('Upload your photos later in Gallery (from your phone too).')}>
           <Segmented
             full
             value={photos}
             options={[
               { value: 'stock', label: t('Stock'), icon: 'globe' },
-              { value: 'gallery', label: t('Mi galería'), icon: 'photos' },
-              { value: 'mixed', label: t('Mezcla'), icon: 'sparkles' },
+              { value: 'gallery', label: t('My gallery'), icon: 'photos' },
+              { value: 'mixed', label: t('Mixed'), icon: 'sparkles' },
             ]}
             onChange={setPhotos}
           />
         </Field>
-        <Field label={t('Efecto ambiental')}>
+        <Field label={t('Ambient effect')}>
           <div class="fx-grid">
             {(
               [
-                { v: 'aurora', name: t('Aurora'), desc: t('Velos de color suaves que se mueven lentamente.') },
-                { v: 'particles', name: t('Partículas'), desc: t('Polvo de luz flotando con profundidad.') },
-                { v: 'none', name: t('Ninguno'), desc: t('Máximo rendimiento, sin WebGL.') },
+                { v: 'aurora', name: t('Aurora'), desc: t('Soft colour veils drifting slowly.') },
+                { v: 'particles', name: t('Particles'), desc: t('Floating light dust with depth.') },
+                { v: 'none', name: t('None'), desc: t('Maximum performance, no WebGL.') },
               ] as const
             ).map((o) => (
               <button type="button" aria-pressed={ambient === o.v} class={`fx ${ambient === o.v ? 'is-active' : ''}`} onClick={() => setAmbient(o.v)}>
@@ -879,33 +848,33 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
       </>
     );
   } else if (done) {
-    title = t('¡Todo listo!');
+    title = t('All set!');
     lead = privateLink
-      ? t('Abre este enlace privado en la tele, la Raspberry Pi o una tablet: es la llave de esta pantalla, no lo publiques. Los cambios del panel aparecen en la pantalla al instante.')
-      : t('Abre esta dirección en la tele, la Raspberry Pi o una tablet. Los cambios del panel aparecen en la pantalla al instante.');
+      ? t('Open this private link on the TV, the Raspberry Pi or a tablet: it is this screen’s key, do not publish it. Changes in the admin show up on the screen instantly.')
+      : t('Open this address on the TV, the Raspberry Pi or a tablet. Changes made in the panel show up on the display instantly.');
     const sumRows: [IconName, string, string][] = [
-      ['monitor', t('Pantalla'), done.name],
-      ['globe', t('Ubicación'), place && !skipLoc ? `${place.name} · ${tz}` : tz],
-      ['calendar', t('Calendarios'), cals.length ? cals.map((c) => c.name).join(', ') : t('Ninguno (añádelos en Calendarios)')],
-      ['layout', t('Diseño'), t(PRESETS.find((p) => p.id === preset)?.name ?? preset)],
-      ['photos', t('Fotos de fondo'), photos === 'stock' ? t('Stock') : photos === 'gallery' ? t('Mi galería') : t('Mezcla')],
+      ['monitor', t('Screen'), done.name],
+      ['globe', t('Location'), place && !skipLoc ? `${place.name} · ${tz}` : tz],
+      ['calendar', t('Calendars'), cals.length ? cals.map((c) => c.name).join(', ') : t('None (add them in Calendars)')],
+      ['layout', t('Layout'), t(PRESETS.find((p) => p.id === preset)?.name ?? preset)],
+      ['photos', t('Background photos'), photos === 'stock' ? t('Stock') : photos === 'gallery' ? t('My gallery') : t('Mixed')],
     ];
     content = (
       <>
         <div class="wz-done">
           <div class="wz-done__qr">
-            <Qr text={displayUrl} label={privateLink ? t('Código QR del enlace privado') : t('Código QR de la dirección de la pantalla')} />
-            <span class="muted small">{t('Escanéalo con el móvil')}</span>
+            <Qr text={displayUrl} label={privateLink ? t('QR code of the private link') : t('QR code of the display address')} />
+            <span class="muted small">{t('Scan it with your phone')}</span>
           </div>
           <div class="wz-done__main">
             <Field
-              label={privateLink ? t('Enlace privado de la pantalla') : t('Dirección de la pantalla')}
-              hint={privateLink ? t('¿Otra pantalla? Abre {url} en ella y vincúlala con el código que muestra (Pantallas conectadas → Vincular).', { url: `${origin}/` }) : undefined}
+              label={privateLink ? t('Screen’s private link') : t('Display address')}
+              hint={privateLink ? t('Another screen? Open {url} on it and pair it with the code it shows (Connected screens → Pair).', { url: `${origin}/` }) : undefined}
             >
               <CopyField value={displayUrl} />
             </Field>
-            {isLocalhost && !lanIp && <Callout kind="warn">{t('Estás en «localhost»: en otros dispositivos usa la IP de este ordenador (p. ej. {url}).', { url: `http://192.168.1.50${portPart}/` })}</Callout>}
-            <Field label={t('Panel de administración')}>
+            {isLocalhost && !lanIp && <Callout kind="warn">{t('You are on “localhost”: on other devices use this computer’s IP address (e.g. {url}).', { url: `http://192.168.1.50${portPart}/` })}</Callout>}
+            <Field label={t('Admin panel')}>
               <CopyField value={adminUrl} />
             </Field>
           </div>
@@ -920,31 +889,24 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
           ))}
         </ul>
         <div class="wz-tips">
-          <h3>{t('Consejos')}</h3>
+          <h3>{t('Tips')}</h3>
           <ul>
             <li>
               <Icon name="zap" size={14} />
               <span>
-                {t('¿Raspberry Pi 3 o una tablet antigua? Añade')} <code>?lite=1</code> {t('a la dirección (sin efectos WebGL).')}
+                {t('Raspberry Pi 3 or an old tablet? Add')} <code>?lite=1</code> {t('to the address (no WebGL effects).')}
               </span>
-            </li>
-            <li>
-              <Icon name="monitor" size={14} />
-              <div>
-                {t('Raspberry Pi solo como pantalla (el servidor está en otro equipo):')}
-                <CopyField value={kioskCmd} />
-              </div>
             </li>
             {photos !== 'stock' && (
               <li>
                 <Icon name="photos" size={14} />
-                <span>{t('Sube tus fotos en Galería.')}</span>
+                <span>{t('Upload your photos in Gallery.')}</span>
               </li>
             )}
             {status.googleConfigured && (
               <li>
                 <Icon name="google" size={14} />
-                <span>{t('Vincula Google Calendar en Calendarios → Google.')}</span>
+                <span>{t('Link Google Calendar in Calendars → Google.')}</span>
               </li>
             )}
           </ul>
@@ -965,12 +927,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
           <BrandMark size={36} />
           <span>Marco</span>
         </div>
-        <span class="wz-top__step">{t('Paso {n} de {total}', { n: step + 1, total: STEPS.length })}</span>
-        {step > 0 && step < 5 && (
-          <div class="wz-top__lang">
-            <Segmented size="sm" value={lang} options={LANG_CARDS.map((l) => ({ value: l.value, label: l.value.toUpperCase(), title: l.name }))} onChange={changeLang} />
-          </div>
-        )}
+        <span class="wz-top__step">{t('Step {n} of {total}', { n: step + 1, total: STEPS.length })}</span>
       </header>
       {progress}
       <form class="wz-card" onSubmit={next} noValidate key={step}>
@@ -989,36 +946,36 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
         <footer class="wz-nav">
           {step > 0 && step < 5 ? (
             <Button icon="up" class="wz-back" onClick={back} disabled={busy}>
-              {t('Atrás')}
+              {t('Back')}
             </Button>
           ) : (
             <span />
           )}
           {step < 4 && (
             <Button type="submit" variant="primary" loading={checking}>
-              {t('Siguiente')}
+              {t('Next')}
             </Button>
           )}
           {step === 4 && (
             <Button type="submit" variant="primary" icon="check" loading={busy}>
-              {t('Terminar')}
+              {t('Finish setup')}
             </Button>
           )}
           {step === 5 && (
             <div class="wz-nav__end">
               <a class="btn btn--default" href={displayUrl} target="_blank" rel="noopener">
                 <Icon name="external" size={16} />
-                <span>{t('Abrir la pantalla')}</span>
+                <span>{t('Open the display')}</span>
               </a>
               <Button variant="primary" icon="settings" onClick={onDone}>
-                {t('Ir al panel')}
+                {t('Go to the panel')}
               </Button>
             </div>
           )}
         </footer>
       </form>
       <p class="wz-foot muted small">
-        {t('Marco v{v} · código abierto (MIT) · inspirado en DAKboard, sin relación con él', { v: status.version })}
+        {t('Marco v{v} · open source (MIT) · inspired by DAKboard, not affiliated with it', { v: status.version })}
       </p>
     </div>
   );

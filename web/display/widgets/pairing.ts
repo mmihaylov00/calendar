@@ -26,56 +26,15 @@ const TEXT: Record<Lang, Record<string, string>> = {
     offline: 'Cannot reach the server. Retrying…',
     paired: 'Paired! Starting…',
     scan: 'Scan with the phone where you use the admin',
-    kiosk: 'Raspberry Pi kiosk? It forgets a pairing when it restarts: put the screen’s private link in KIOSK_URL (~/.config/marco/kiosk.env) instead.',
+    kiosk: 'Dedicated kiosk? Use the screen’s private link to keep it connected when the browser clears its saved pairing.',
   },
-  es: {
-    pairTitle: 'Vincula esta pantalla',
-    pairLead: 'Esta pantalla es privada. Vincúlala a tu Marco desde el móvil o el ordenador:',
-    invalidTitle: 'Este enlace ya no es válido',
-    invalidLead: 'Su enlace privado se ha cambiado o este dispositivo se ha quitado. Abre el panel para obtener el enlace nuevo o vuelve a vincular esta pantalla:',
-    s1: 'Abre el panel → Pantallas conectadas → Vincular una pantalla',
-    s1At: 'Abre {where} → Pantallas conectadas → Vincular una pantalla',
-    s2: 'Escribe este código o escanea el QR',
-    s3: 'Esta pantalla arranca sola',
-    expires: 'El código cambia en {t}',
-    renewing: 'Pidiendo un código nuevo…',
-    busy: 'Demasiadas solicitudes de vinculación. Se reintenta en un minuto…',
-    offline: 'No se puede conectar con el servidor. Reintentando…',
-    paired: '¡Vinculada! Arrancando…',
-    scan: 'Escanéalo con el móvil donde usas el panel',
-    kiosk: '¿Kiosco Raspberry Pi? Olvida la vinculación al reiniciarse: pon el enlace privado de la pantalla en KIOSK_URL (~/.config/marco/kiosk.env).',
-  },
-  pt: {
-    pairTitle: 'Emparelha este ecrã',
-    pairLead: 'Este ecrã é privado. Liga-o ao teu Marco a partir do telemóvel ou do computador:',
-    invalidTitle: 'Esta ligação já não é válida',
-    invalidLead: 'A ligação privada foi substituída ou este dispositivo foi removido. Abre o painel para obter a nova ligação ou volta a emparelhar este ecrã:',
-    s1: 'Abre o painel → Ecrãs ligados → Emparelhar um ecrã',
-    s1At: 'Abre {where} → Ecrãs ligados → Emparelhar um ecrã',
-    s2: 'Escreve este código ou lê o QR',
-    s3: 'Este ecrã arranca sozinho',
-    expires: 'O código muda em {t}',
-    renewing: 'A pedir um código novo…',
-    busy: 'Demasiados pedidos de emparelhamento. Nova tentativa dentro de um minuto…',
-    offline: 'Não é possível ligar ao servidor. A tentar de novo…',
-    paired: 'Emparelhado! A arrancar…',
-    scan: 'Lê com o telemóvel onde usas o painel',
-    kiosk: 'Quiosque Raspberry Pi? Esquece o emparelhamento ao reiniciar: põe a ligação privada do ecrã em KIOSK_URL (~/.config/marco/kiosk.env).',
-  },
+
 };
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
 
-/** Language for a screen that has no config yet: ?lang=, else the browser's, else English. */
+/** Unconfigured screens also use English. */
 export function pairingLang(params = new URLSearchParams(location.search)): Lang {
-  const pl = params.get('lang');
-  if (pl === 'es' || pl === 'en' || pl === 'pt') return pl;
-  try {
-    for (const l of navigator.languages ?? [navigator.language]) {
-      const b = String(l).slice(0, 2).toLowerCase();
-      if (b === 'es' || b === 'en' || b === 'pt') return b;
-    }
-  } catch { /* ignore */ }
   return 'en';
 }
 
@@ -100,10 +59,7 @@ async function post<T>(url: string, body: unknown): Promise<{ status: number; js
   }
 }
 
-/**
- * Started by deploy/kiosk.sh (it adds ?client=<hostname>; Chromium runs --incognito there, so a device token is
- * lost on every restart): the pairing screen says to use the private link in KIOSK_URL instead.
- */
+/** A dedicated kiosk identified by ?client=<hostname> gets a reminder to save its private screen link. */
 const kioskHint = () => new URLSearchParams(location.search).has('client');
 
 /**
@@ -179,14 +135,11 @@ function setCode(el: HTMLElement, text: string): void {
   (el.parentElement ?? el).style.setProperty('--chars', String(Math.max(4, text.length)));
 }
 
-/** Code shown by the preview (?demo=1&pair=1|invalid&pairLen=6|8): no server, no polling. */
-const DEMO_CODE = 'K7M3QXWD';
-
 /**
  * Full-screen pairing / invalid-link screen. Returns to the dashboard by reloading: once paired, or (keyless
- * pairing screen) when display access is open again. `demo` = a static preview with a sample code.
+ * pairing screen) when display access is open again.
  */
-export function showPairing(kind: 'pair' | 'invalid', lang: Lang, demo?: { length: number }): void {
+export function showPairing(kind: 'pair' | 'invalid', lang: Lang): void {
   const T = TEXT[lang] ?? TEXT.en;
   clearCaches();
   document.documentElement.classList.add('needs-setup', 'needs-pairing');
@@ -216,7 +169,7 @@ export function showPairing(kind: 'pair' | 'invalid', lang: Lang, demo?: { lengt
       <div class="wl-qr"><div class="wl-qr__img"></div><span>${esc(T.scan)}</span></div>
     </div>
     <div class="wl-clock" aria-hidden="true"></div>`;
-  const loc = lang === 'en' ? 'en-GB' : lang === 'pt' ? 'pt-PT' : 'es-ES';
+  const loc = 'en-GB';
   const clock = root.querySelector('.wl-clock') as HTMLElement;
   const tick = () => {
     clock.textContent = new Date().toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
@@ -224,16 +177,6 @@ export function showPairing(kind: 'pair' | 'invalid', lang: Lang, demo?: { lengt
   tick();
   setInterval(tick, 10_000);
   const codeEl = root.querySelector('.wl-code__txt') as HTMLElement;
-  if (demo) {
-    const code = DEMO_CODE.slice(0, Math.min(DEMO_CODE.length, Math.max(4, demo.length || 6)));
-    setCode(codeEl, fmtCode(code));
-    const url = `${location.origin}/admin/#pair=${code}`;
-    try {
-      (root.querySelector('.wl-qr__img') as HTMLElement).innerHTML = qrSvg(url, { dark: '#0b0d11', light: '#ffffff', title: url });
-    } catch { /* no QR */ }
-    (root.querySelector('.wl-status') as HTMLElement).textContent = T.expires.replace('{t}', '9:41');
-    return;
-  }
   setCode(codeEl, codeEl.textContent || '');
   void pairHealth().then((h) => {
     if (/^[· ]+$/.test(codeEl.textContent || '')) setCode(codeEl, codePlaceholder(Number(h.pairCodeLength) || 6));

@@ -19,8 +19,8 @@ export function sourceCredit(w: WeatherResponse | null): string {
   return [s.name, s.modelName, s.also].filter(Boolean).join(' · ');
 }
 
-const r1 = (n: number | null | undefined, lang: string) =>
-  n === null || n === undefined || Number.isNaN(n) ? '–' : (Math.round(n * 10) / 10).toLocaleString(lang === 'en' ? 'en-GB' : 'es-ES');
+const r1 = (n: number | null | undefined) =>
+  n === null || n === undefined || Number.isNaN(n) ? '–' : (Math.round(n * 10) / 10).toLocaleString('en-GB');
 
 export class Weather {
   constructor(private root: HTMLElement, private opts: { hourly?: boolean; days?: boolean; compact?: boolean } = {}) {
@@ -58,7 +58,7 @@ export class Weather {
     }
     if (w.indoor && (w.indoor.temp !== null || w.indoor.humidity !== null)) {
       meta.push(
-        `<span class="m indoor">${ICON.home}<b>${w.indoor.temp !== null ? r1(w.indoor.temp, lang) + '°' : ''}</b>${w.indoor.humidity !== null ? `<em>${r(w.indoor.humidity)}%</em>` : ''}</span>`,
+        `<span class="m indoor">${ICON.home}<b>${w.indoor.temp !== null ? r1(w.indoor.temp) + '°' : ''}</b>${w.indoor.humidity !== null ? `<em>${r(w.indoor.humidity)}%</em>` : ''}</span>`,
       );
     }
 

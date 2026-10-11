@@ -1,6 +1,6 @@
 # Marco for Home Assistant
 
-This fork runs Marco as a Home Assistant app (formerly called an add-on) on 64-bit Raspberry Pi and x86 systems.
+This fork runs Marco as a Home Assistant app (formerly called an add-on) on 64-bit Raspberry Pi and x86 systems. The interface is English-only. New installs start without sample calendars, news feeds or demo data.
 
 ## Install
 

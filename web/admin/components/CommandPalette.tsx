@@ -87,13 +87,13 @@ export function CommandPalette({ items, onClose }: { items: PaletteItem[]; onClo
   let lastGroup = '';
   return (
     <div class="cmdk-backdrop" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div class="cmdk" role="dialog" aria-modal="true" aria-label={t('Buscar')}>
+      <div class="cmdk" role="dialog" aria-modal="true" aria-label={t('Search')}>
         <div class="cmdk__search">
           <Icon name="search" size={18} />
           <input
             ref={input}
             value={q}
-            placeholder={t('Buscar ajustes, páginas, pantallas o acciones…')}
+            placeholder={t('Search settings, pages, screens or actions…')}
             onInput={(e) => setQ(e.currentTarget.value)}
             onKeyDown={onKey}
             aria-controls="cmdk-list"
@@ -102,7 +102,7 @@ export function CommandPalette({ items, onClose }: { items: PaletteItem[]; onClo
           <kbd>Esc</kbd>
         </div>
         <div class="cmdk__list" id="cmdk-list" role="listbox" ref={list}>
-          {results.length === 0 && <div class="cmdk__empty">{t('Sin resultados para “{q}”', { q })}</div>}
+          {results.length === 0 && <div class="cmdk__empty">{t('No results for “{q}”', { q })}</div>}
           {results.map((it, i) => {
             const head = !q && it.group !== lastGroup ? it.group : null;
             lastGroup = it.group;
@@ -131,14 +131,14 @@ export function CommandPalette({ items, onClose }: { items: PaletteItem[]; onClo
         <div class="cmdk__foot">
           <span>
             <kbd>↑</kbd>
-            <kbd>↓</kbd> {t('navegar')}
+            <kbd>↓</kbd> {t('navigate')}
           </span>
           <span>
-            <kbd>↵</kbd> {t('abrir')}
+            <kbd>↵</kbd> {t('open')}
           </span>
           <span>
             <kbd>Ctrl</kbd>
-            <kbd>K</kbd> {t('abrir/cerrar')}
+            <kbd>K</kbd> {t('open/close')}
           </span>
         </div>
       </div>

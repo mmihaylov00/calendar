@@ -123,8 +123,7 @@ export const api = {
   logout: () => request<unknown>('POST', '/api/auth/logout', {}, { silent401: true }),
   logoutAll: () => request<unknown>('POST', '/api/auth/logout-all', {}, { silent401: true }),
 
-  // Marco Cloud account (features.accountMenu): the language follows the account, the household can be renamed.
-  accountLang: (lang: string) => request<{ ok: true }>('POST', '/api/account/lang', { lang }),
+  // Marco Cloud account (features.accountMenu): the household can be renamed.
   renameHousehold: (name: string) => request<{ ok: true; household: HouseholdInfo }>('PATCH', '/api/admin/household', { name }),
   // Marco Cloud only (features.feedback): help and feedback form, mailed to the team with the signed in email as reply-to.
   sendFeedback: (body: FeedbackRequest) => request<FeedbackResponse>('POST', '/api/admin/feedback', body),
@@ -311,17 +310,6 @@ export function uploadPhotos(
     if (f.thumb) fd.append('thumbs[]', f.thumb, 'thumb.jpg');
   }
   return xhrUpload('POST', `/api/admin/photos?onConflict=${onConflict}`, fd, onProgress);
-}
-
-/**
- * Test ring with a picture, for servers that show uploaded snapshots (features.doorbellLive off): the same multipart
- * form a Home Assistant automation sends to POST /api/hooks/doorbell (`image` plus the request fields).
- */
-export function doorbellWithImage(body: DoorbellRequest, image: Blob): Promise<DoorbellResponse> {
-  const fd = new FormData();
-  for (const [k, v] of Object.entries(body)) if (v !== undefined) fd.append(k, Array.isArray(v) ? v.join(',') : String(v));
-  fd.append('image', image, 'doorbell.jpg');
-  return xhrUpload('POST', '/api/admin/doorbell', fd);
 }
 
 /** Thumbnail for a photo already in the gallery. */

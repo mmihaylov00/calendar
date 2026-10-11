@@ -123,19 +123,15 @@ test('display, admin and types know every layout', () => {
   for (const p of NEW) assert.ok(admin.includes(`id === '${p}'`), `no schematic for ${p}`);
 });
 
-test('the new layouts have Spanish, English and Portuguese texts', () => {
+test('the new layouts have English labels', () => {
   const admin = read('web/admin/sections/Layout.tsx');
-  const dict = ['', '2', '3', '4', '5', '6', '7'].map((n) => read(`web/admin/i18n-dict${n}.ts`)).join('\n');
   for (const m of admin.matchAll(/\{ id: '(\w+)', name: '([^']+)', desc: '([^']+)'/g)) {
     if (!NEW.includes(m[1])) continue;
-    for (const s of [m[2], m[3]]) {
-      const row = new RegExp(`\\['${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}', '[^']+', '[^']+'\\]`);
-      assert.ok(row.test(dict), `no en/pt for "${s}"`);
-    }
+    assert.ok(m[2] && m[3], `missing label or description for ${m[1]}`);
   }
   const i18n = read('web/shared/i18n.ts');
   for (const k of ['upNext', 'nothingMoreToday', 'everyone', 'birthdays', 'allDone', 'noPeople', 'nothingPlanned', 'daysWord']) {
-    assert.equal(i18n.split(`  ${k}: '`).length - 1, 3, `display string ${k} not in es, en and pt`);
+    assert.equal(i18n.split(`  ${k}: '`).length - 1, 1, `missing English display string ${k}`);
   }
 });
 

@@ -64,7 +64,7 @@ export function HaEntityPicker(props: {
           spellcheck={false}
         />
         {props.value && (
-          <button type="button" class="input-group__btn" aria-label={t('Quitar')} onClick={() => props.onChange('')}>
+          <button type="button" class="input-group__btn" aria-label={t('Remove')} onClick={() => props.onChange('')}>
             <Icon name="x" size={13} />
           </button>
         )}
@@ -76,16 +76,16 @@ export function HaEntityPicker(props: {
       </datalist>
       <div class="field__hint">
         {!props.enabled
-          ? t('Activa Home Assistant para elegir entidades.')
+          ? t('Enable Home Assistant to pick entities.')
           : err
-            ? <span class="err-text">{t('No se pudieron cargar las entidades')}: {err}</span>
+            ? <span class="err-text">{t('Could not load entities')}: {err}</span>
             : sel
               ? <span>
                   {sel.name}: <strong>{sel.state}{sel.unit ? ` ${sel.unit}` : ''}</strong>
                 </span>
               : list
-                ? t('{n} entidades disponibles', { n: options.length })
-                : t('Cargando…')}
+                ? t('{n} entities available', { n: options.length })
+                : t('Loading…')}
       </div>
     </div>
   );

@@ -64,40 +64,40 @@ function repeatSummary(ev: LocalEvent, wd: string[]): string {
   let s = '';
   if (r.freq === 'weekly') {
     const days = (r.weekdays.length ? r.weekdays : [weekdayOf(ev.date)]).slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map((d) => wd[d]).join(', ');
-    s = r.interval > 1 ? t('Cada {n} semanas: {days}', { n: r.interval, days }) : t('Cada semana: {days}', { days });
+    s = r.interval > 1 ? t('Every {n} weeks: {days}', { n: r.interval, days }) : t('Every week: {days}', { days });
   } else if (r.freq === 'monthly') {
     const d = Number(ev.date.slice(8));
-    s = r.interval > 1 ? t('Cada {n} meses, el día {d}', { n: r.interval, d }) : t('Cada mes, el día {d}', { d });
+    s = r.interval > 1 ? t('Every {n} months on day {d}', { n: r.interval, d }) : t('Every month on day {d}', { d });
   } else {
     const dm = fmtDay(ev.date, { weekday: false, year: false });
-    s = r.interval > 1 ? t('Cada {n} años, el {date}', { n: r.interval, date: dm }) : t('Cada año, el {date}', { date: dm });
+    s = r.interval > 1 ? t('Every {n} years on {date}', { n: r.interval, date: dm }) : t('Every year on {date}', { date: dm });
   }
-  if (r.until) s += ` · ${t('hasta {date}', { date: fmtDay(r.until, { weekday: false, year: true }) })}`;
+  if (r.until) s += ` · ${t('until {date}', { date: fmtDay(r.until, { weekday: false, year: true }) })}`;
   return s;
 }
 
 function whenSummary(ev: LocalEvent): string {
   const multi = ev.endDate !== ev.date;
-  const time = ev.allDay ? t('Todo el día') : `${ev.startTime}–${ev.endTime}`;
+  const time = ev.allDay ? t('All day') : `${ev.startTime}–${ev.endTime}`;
   if (!multi) return time;
   const n = daysBetween(ev.date, ev.endDate) + 1;
-  return `${t('{n} días', { n })} · ${ev.allDay ? t('Todo el día') : `${ev.startTime} → ${ev.endTime}`}`;
+  return `${t('{n} days', { n })} · ${ev.allDay ? t('All day') : `${ev.startTime} → ${ev.endTime}`}`;
 }
 
 /* ---------------------------------------------------------------- editor */
 
 function validateEvent(x: LocalEvent): Record<string, string> {
   const e: Record<string, string> = {};
-  if (!x.title.trim()) e.title = 'Obligatorio';
-  if (!isValidDate(x.date)) e.date = 'Fecha no válida';
-  if (!isValidDate(x.endDate) || x.endDate < x.date) e.endDate = 'Debe ser igual o posterior al inicio';
+  if (!x.title.trim()) e.title = 'Required';
+  if (!isValidDate(x.date)) e.date = 'Invalid date';
+  if (!isValidDate(x.endDate) || x.endDate < x.date) e.endDate = 'Must be on or after the start';
   if (!x.allDay) {
-    if (!TIME_RE.test(x.startTime)) e.startTime = 'Hora no válida (HH:MM)';
-    if (!TIME_RE.test(x.endTime)) e.endTime = 'Hora no válida (HH:MM)';
-    else if (x.endDate === x.date && x.endTime <= x.startTime) e.endTime = 'Debe ser posterior a la hora de inicio';
+    if (!TIME_RE.test(x.startTime)) e.startTime = 'Invalid time (HH:MM)';
+    if (!TIME_RE.test(x.endTime)) e.endTime = 'Invalid time (HH:MM)';
+    else if (x.endDate === x.date && x.endTime <= x.startTime) e.endTime = 'Must be after the start time';
   }
-  if (x.repeat.until && (!isValidDate(x.repeat.until) || x.repeat.until < x.date)) e.until = 'Debe ser igual o posterior al inicio';
-  if (x.color && !HEX_RE.test(x.color)) e.color = 'Color no válido';
+  if (x.repeat.until && (!isValidDate(x.repeat.until) || x.repeat.until < x.date)) e.until = 'Must be on or after the start';
+  if (x.color && !HEX_RE.test(x.color)) e.color = 'Invalid colour';
   return e;
 }
 
@@ -151,10 +151,10 @@ function EventEditor({ initial, isNew, defaultColor, onSave, onClose, onDelete }
     }
     onSave(out);
   };
-  const unit = ev.repeat.freq === 'weekly' ? t('semanas') : ev.repeat.freq === 'monthly' ? t('meses') : t('años');
+  const unit = ev.repeat.freq === 'weekly' ? t('weeks') : ev.repeat.freq === 'monthly' ? t('months') : t('years');
   return (
     <Modal
-      title={isNew ? t('Nuevo evento') : t('Editar evento')}
+      title={isNew ? t('New event') : t('Edit event')}
       icon="calendar"
       onClose={onClose}
       dirty={JSON.stringify(ev) !== JSON.stringify(initial)}
@@ -163,15 +163,15 @@ function EventEditor({ initial, isNew, defaultColor, onSave, onClose, onDelete }
         <>
           {onDelete && (
             <Button variant="ghost" icon="trash" class="btn--danger-text" onClick={onDelete}>
-              {t('Eliminar')}
+              {t('Delete')}
             </Button>
           )}
           <span class="spacer" />
           <Button variant="ghost" onClick={onClose}>
-            {t('Cancelar')}
+            {t('Cancel')}
           </Button>
           <Button variant="primary" icon="check" onClick={submit}>
-            {isNew ? t('Añadir') : t('Aplicar')}
+            {isNew ? t('Add') : t('Apply')}
           </Button>
         </>
       }
@@ -179,13 +179,13 @@ function EventEditor({ initial, isNew, defaultColor, onSave, onClose, onDelete }
       <form class="stack ev-editor" onSubmit={submit}>
         <div class="ev-editor__title">
           <EmojiPicker size="lg" value={ev.emoji} allowNone onChange={(v) => upd((x) => void (x.emoji = v))} />
-          <TextInput class="input--lg" value={ev.title} error={!!shown.title} maxLength={120} placeholder={t('Título del evento')} onValue={(v) => upd((x) => void (x.title = v))} />
+          <TextInput class="input--lg" value={ev.title} error={!!shown.title} maxLength={120} placeholder={t('Event title')} onValue={(v) => upd((x) => void (x.title = v))} />
           <ColorPicker compact allowNone value={ev.color} onChange={(v) => upd((x) => void (x.color = v))} />
         </div>
         {shown.title && <div class="field__error">{t(shown.title)}</div>}
         <div class="ev-editor__row">
           <ToggleRow
-            label={t('Todo el día')}
+            label={t('All day')}
             checked={ev.allDay}
             onChange={(v) =>
               upd((x) => {
@@ -198,13 +198,13 @@ function EventEditor({ initial, isNew, defaultColor, onSave, onClose, onDelete }
             }
           />
           <ToggleRow
-            label={t('Varios días')}
+            label={t('Several days')}
             checked={multi}
             onChange={(v) => upd((x) => void (x.endDate = v ? addDays(x.date, 1) : x.date))}
           />
         </div>
         <div class="grid grid--2">
-          <Field label={multi ? t('Desde') : t('Fecha')} error={shown.date}>
+          <Field label={multi ? t('From') : t('Date')} error={shown.date}>
             <div class="dt-pair">
               <input
                 class={`input ${shown.date ? 'is-invalid' : ''}`}
@@ -223,7 +223,7 @@ function EventEditor({ initial, isNew, defaultColor, onSave, onClose, onDelete }
             </div>
           </Field>
           {(multi || !ev.allDay) && (
-            <Field label={multi ? t('Hasta (incluido)') : t('Termina')} error={shown.endDate || shown.endTime}>
+            <Field label={multi ? t('Until (inclusive)') : t('Ends')} error={shown.endDate || shown.endTime}>
               <div class="dt-pair">
                 {multi && <input class={`input ${shown.endDate ? 'is-invalid' : ''}`} type="date" min={ev.date} value={ev.endDate} onInput={(e) => upd((x) => void (x.endDate = e.currentTarget.value))} />}
                 {!ev.allDay && <input class={`input input--time ${shown.endTime ? 'is-invalid' : ''}`} type="time" value={ev.endTime} onInput={(e) => upd((x) => void (x.endTime = e.currentTarget.value))} />}
@@ -232,15 +232,15 @@ function EventEditor({ initial, isNew, defaultColor, onSave, onClose, onDelete }
           )}
         </div>
 
-        <Field label={t('Repetir')}>
+        <Field label={t('Repeat')}>
           <Segmented<RepeatFreq>
             full
             value={ev.repeat.freq}
             options={[
-              { value: 'none', label: t('No') },
-              { value: 'weekly', label: t('Semanal') },
-              { value: 'monthly', label: t('Mensual') },
-              { value: 'yearly', label: t('Anual') },
+              { value: 'none', label: t('Off') },
+              { value: 'weekly', label: t('Weekly') },
+              { value: 'monthly', label: t('Monthly') },
+              { value: 'yearly', label: t('Yearly') },
             ]}
             onChange={(v) => upd((x) => void (x.repeat.freq = v))}
           />
@@ -248,14 +248,14 @@ function EventEditor({ initial, isNew, defaultColor, onSave, onClose, onDelete }
         {ev.repeat.freq !== 'none' && (
           <div class="repeat-box">
             <div class="grid grid--2">
-              <Field label={t('Cada')}>
+              <Field label={t('Every')}>
                 <NumberInput value={ev.repeat.interval} min={1} max={99} suffix={unit} onValue={(v) => upd((x) => void (x.repeat.interval = Math.max(1, Math.min(99, Math.round(v) || 1))))} />
               </Field>
-              <Field label={t('Hasta (opcional)')} error={shown.until}>
+              <Field label={t('Until (optional)')} error={shown.until}>
                 <div class="dt-pair">
                   <input class={`input ${shown.until ? 'is-invalid' : ''}`} type="date" min={ev.date} value={ev.repeat.until ?? ''} onInput={(e) => upd((x) => void (x.repeat.until = e.currentTarget.value || null))} />
                   {ev.repeat.until && (
-                    <button type="button" class="icon-btn" onClick={() => upd((x) => void (x.repeat.until = null))} title={t('Sin fin')}>
+                    <button type="button" class="icon-btn" onClick={() => upd((x) => void (x.repeat.until = null))} title={t('No end')}>
                       <Icon name="x" size={14} />
                     </button>
                   )}
@@ -263,19 +263,19 @@ function EventEditor({ initial, isNew, defaultColor, onSave, onClose, onDelete }
               </Field>
             </div>
             {ev.repeat.freq === 'weekly' && (
-              <Field label={t('Días de la semana')} hint={ev.repeat.weekdays.length ? undefined : t('Ninguno marcado: el mismo día de la semana que la fecha de inicio ({day}).', { day: wd[weekdayOf(isValidDate(ev.date) ? ev.date : '2026-01-05')] })}>
+              <Field label={t('Weekdays')} hint={ev.repeat.weekdays.length ? undefined : t('None ticked: same weekday as the start date ({day}).', { day: wd[weekdayOf(isValidDate(ev.date) ? ev.date : '2026-01-05')] })}>
                 <WeekdayPicker labels={wd} value={ev.repeat.weekdays} onChange={(v) => upd((x) => void (x.repeat.weekdays = v))} />
               </Field>
             )}
             <div class="muted small">
               <Icon name="repeat" size={12} /> {repeatSummary(ev, wd)}
             </div>
-            <Field label={t('Excepciones (días que no se repite)')}>
+            <Field label={t('Exceptions (days it does not repeat)')}>
               <div class="exc-list">
                 {ev.exceptions.map((d) => (
                   <span class="chip">
                     {fmtDay(d, { year: true })}
-                    <button type="button" aria-label={t('Quitar')} onClick={() => upd((x) => void (x.exceptions = x.exceptions.filter((y) => y !== d)))}>
+                    <button type="button" aria-label={t('Remove')} onClick={() => upd((x) => void (x.exceptions = x.exceptions.filter((y) => y !== d)))}>
                       <Icon name="x" size={12} />
                     </button>
                   </span>
@@ -286,12 +286,12 @@ function EventEditor({ initial, isNew, defaultColor, onSave, onClose, onDelete }
                   icon="plus"
                   disabled={!isValidDate(exc) || ev.exceptions.includes(exc)}
                   onClick={() => {
-                    if (!occursOn({ ...ev, exceptions: [] }, exc)) toast(t('Ese día no hay repetición del evento'), 'info');
+                    if (!occursOn({ ...ev, exceptions: [] }, exc)) toast(t('The event does not repeat on that day'), 'info');
                     upd((x) => void (x.exceptions = [...x.exceptions, exc].sort()));
                     setExc('');
                   }}
                 >
-                  {t('Añadir')}
+                  {t('Add')}
                 </Button>
               </div>
             </Field>
@@ -299,24 +299,24 @@ function EventEditor({ initial, isNew, defaultColor, onSave, onClose, onDelete }
         )}
 
         <div class="grid grid--2">
-          <Field label={t('Ubicación')}>
-            <TextInput value={ev.location} maxLength={120} placeholder={t('Opcional')} onValue={(v) => upd((x) => void (x.location = v))} />
+          <Field label={t('Location')}>
+            <TextInput value={ev.location} maxLength={120} placeholder={t('Optional')} onValue={(v) => upd((x) => void (x.location = v))} />
           </Field>
-          <Field label={t('Cuenta atrás')}>
+          <Field label={t('Countdown')}>
             <label class="mini-toggle">
               <Toggle checked={ev.countdown} onChange={(v) => upd((x) => void (x.countdown = v))} />
-              <span>{t('Mostrar “Faltan N días” en la pantalla')}</span>
+              <span>{t('Show “In N days” on the screen')}</span>
             </label>
           </Field>
         </div>
-        <Field label={t('Notas')}>
-          <Textarea value={ev.notes} rows={2} maxLength={1000} placeholder={t('Opcional')} onValue={(v) => upd((x) => void (x.notes = v))} />
+        <Field label={t('Notes')}>
+          <Textarea value={ev.notes} rows={2} maxLength={1000} placeholder={t('Optional')} onValue={(v) => upd((x) => void (x.notes = v))} />
         </Field>
         <div class="ev-editor__preview">
-          <span class="muted small">{t('Así se verá')}</span>
+          <span class="muted small">{t('Preview')}</span>
           <div class="event-pill" style={{ '--ev': ev.color || defaultColor } as any}>
             <span class="event-pill__emoji">{ev.emoji || '·'}</span>
-            <span class="event-pill__title">{ev.title || t('Sin título')}</span>
+            <span class="event-pill__title">{ev.title || t('Untitled')}</span>
           </div>
         </div>
       </form>
@@ -354,7 +354,7 @@ export function LocalEventsSection({ full, setFull, errors, cfg }: SectionProps)
   const saveEv = (ev: LocalEvent) => {
     const isNew = !le.items.some((x) => x.id === ev.id);
     if (isNew && atLimit('localEvents', le.items.length)) {
-      toast(t('Has llegado al máximo ({max}).', { max: limit('localEvents') ?? le.items.length }), 'error');
+      toast(t('You have reached the maximum ({max}).', { max: limit('localEvents') ?? le.items.length }), 'error');
       return;
     }
     setFull((d) => {
@@ -362,16 +362,16 @@ export function LocalEventsSection({ full, setFull, errors, cfg }: SectionProps)
       if (i >= 0) d.localEvents.items[i] = ev;
       else d.localEvents.items.push(ev);
     });
-    toast(editing?.isNew ? t('Evento añadido · guarda para publicarlo') : t('Evento actualizado · guarda para publicarlo'), 'ok', 2200);
+    toast(editing?.isNew ? t('Event added · save to publish') : t('Event updated · save to publish'), 'ok', 2200);
     setEditing(null);
   };
   const remove = async (ev: LocalEvent) => {
-    const ok = await confirmDialog({ title: t('Eliminar “{name}”', { name: ev.title }), body: ev.repeat.freq !== 'none' ? t('Se eliminarán todas las repeticiones.') : undefined, confirm: t('Eliminar'), danger: true });
+    const ok = await confirmDialog({ title: t('Delete “{name}”', { name: ev.title }), body: ev.repeat.freq !== 'none' ? t('All repetitions will be deleted.') : undefined, confirm: t('Delete'), danger: true });
     if (!ok) return;
     setFull((d) => void (d.localEvents.items = d.localEvents.items.filter((x) => x.id !== ev.id)));
     setEditing(null);
   };
-  const duplicate = (ev: LocalEvent) => setEditing({ ev: { ...clone(ev), id: uid('l'), title: t('{name} (copia)', { name: ev.title }).slice(0, 120) }, isNew: true });
+  const duplicate = (ev: LocalEvent) => setEditing({ ev: { ...clone(ev), id: uid('l'), title: t('{name} (copy)', { name: ev.title }).slice(0, 120) }, isNew: true });
 
   const Row = ({ ev, next }: { ev: LocalEvent; next?: string | null }) => {
     const color = ev.color || le.color;
@@ -392,7 +392,7 @@ export function LocalEventsSection({ full, setFull, errors, cfg }: SectionProps)
           </span>
           <span class="lev__emoji">{ev.emoji || le.emoji || '📅'}</span>
           <span class="lev__text">
-            <strong>{ev.title || t('Sin título')}</strong>
+            <strong>{ev.title || t('Untitled')}</strong>
             <span class="muted small">
               {ev.repeat.freq !== 'none' ? repeatSummary(ev, wd) : fmtDay(ev.date, { year: 'auto' })}
               {' · '}
@@ -402,17 +402,17 @@ export function LocalEventsSection({ full, setFull, errors, cfg }: SectionProps)
           </span>
           {n != null && n >= 0 && n <= 30 && <span class="badge badge--soft">{relDays(n)}</span>}
           {ev.countdown && (
-            <span class="badge badge--accent" title={t('Se muestra como cuenta atrás')}>
+            <span class="badge badge--accent" title={t('Shown as a countdown')}>
               ⏳
             </span>
           )}
           {hasErr && <span class="nav__err">!</span>}
         </button>
         <div class="lev__actions">
-          <button type="button" class="icon-btn" title={t('Duplicar')} onClick={() => duplicate(ev)}>
+          <button type="button" class="icon-btn" title={t('Duplicate')} onClick={() => duplicate(ev)}>
             <Icon name="copy" size={15} />
           </button>
-          <button type="button" class="icon-btn icon-btn--danger" title={t('Eliminar')} onClick={() => remove(ev)}>
+          <button type="button" class="icon-btn icon-btn--danger" title={t('Delete')} onClick={() => remove(ev)}>
             <Icon name="trash" size={15} />
           </button>
         </div>
@@ -422,43 +422,43 @@ export function LocalEventsSection({ full, setFull, errors, cfg }: SectionProps)
 
   return (
     <>
-      <PageHeader title={t('Eventos locales')} desc={t('Eventos creados aquí mismo, sin Google ni iCal: citas, extraescolares, recordatorios recurrentes… Aparecen en todas las pantallas que muestren este calendario.')}>
+      <PageHeader title={t('Local events')} desc={t('Events created right here, without Google or iCal: appointments, activities, recurring reminders… They appear on every screen showing this calendar.')}>
         <Button variant="primary" icon="plus" onClick={() => setEditing({ ev: newLocalEvent(today), isNew: true })} disabled={atLimit('localEvents', le.items.length)}>
-          {t('Nuevo evento')}
+          {t('New event')}
         </Button>
       </PageHeader>
       <LimitNote name="localEvents" count={le.items.length} />
 
-      <Card title={t('Calendario local')} icon="calendar" scope="global" id="local-settings">
-        <ToggleRow label={t('Mostrar eventos locales')} hint={t('Desactívalo para ocultarlos sin borrarlos.')} checked={le.enabled} onChange={(v) => setFull((d) => void (d.localEvents.enabled = v))} />
+      <Card title={t('Local calendar')} icon="calendar" scope="global" id="local-settings">
+        <ToggleRow label={t('Show local events')} hint={t('Turn off to hide them without deleting.')} checked={le.enabled} onChange={(v) => setFull((d) => void (d.localEvents.enabled = v))} />
         <div class={`legend-edit ${le.enabled ? '' : 'is-disabled'}`}>
           <EmojiPicker value={le.emoji} allowNone onChange={(v) => setFull((d) => void (d.localEvents.emoji = v))} />
           <ColorPicker compact value={le.color} onChange={(v) => v && setFull((d) => void (d.localEvents.color = v))} />
-          <TextInput value={le.name} maxLength={60} placeholder={t('Familia')} onValue={(v) => setFull((d) => void (d.localEvents.name = v))} />
-          <span class="muted small">{t('Nombre en la leyenda')}</span>
+          <TextInput value={le.name} maxLength={60} placeholder={t('Family')} onValue={(v) => setFull((d) => void (d.localEvents.name = v))} />
+          <span class="muted small">{t('Name in the legend')}</span>
         </div>
         {has('privacy') && <PrivacyModeField value={le.privacy ?? 'busy'} onChange={(v) => setFull((d) => void (d.localEvents.privacy = v))} />}
       </Card>
 
       <Card
-        title={t('Eventos')}
+        title={t('Events')}
         icon="list"
         id="local-list"
-        desc={t('{n} eventos · {r} recurrentes', { n: le.items.length, r: groups.rec.length })}
-        actions={le.items.length > 6 && <SearchInput value={q} onValue={setQ} placeholder={t('Buscar…')} />}
+        desc={t('{n} events · {r} recurring', { n: le.items.length, r: groups.rec.length })}
+        actions={le.items.length > 6 && <SearchInput value={q} onValue={setQ} placeholder={t('Search…')} />}
       >
         {le.items.length === 0 ? (
-          <Empty icon="calendar" title={t('Aún no hay eventos locales')}>
-            <p>{t('Crea un evento puntual o recurrente: “🏊 Natación los martes”, “🗑️ Recogida de vidrio cada 2 semanas”…')}</p>
+          <Empty icon="calendar" title={t('No local events yet')}>
+            <p>{t('Create a one-off or recurring event: “🏊 Swimming on Tuesdays”, “🗑️ Glass collection every 2 weeks”…')}</p>
             <Button variant="primary" icon="plus" onClick={() => setEditing({ ev: newLocalEvent(today), isNew: true })}>
-              {t('Nuevo evento')}
+              {t('New event')}
             </Button>
           </Empty>
         ) : (
           <>
             {groups.up.length > 0 && (
               <div class="lev-group">
-                <h4>{t('Próximos')}</h4>
+                <h4>{t('Upcoming')}</h4>
                 <ul class="lev-list">
                   {groups.up.map((x) => (
                     <Row ev={x.ev} next={x.next} />
@@ -469,7 +469,7 @@ export function LocalEventsSection({ full, setFull, errors, cfg }: SectionProps)
             {groups.rec.length > 0 && (
               <div class="lev-group">
                 <h4>
-                  <Icon name="repeat" size={13} /> {t('Recurrentes')}
+                  <Icon name="repeat" size={13} /> {t('Recurring')}
                 </h4>
                 <ul class="lev-list">
                   {groups.rec.map((x) => (
@@ -481,7 +481,7 @@ export function LocalEventsSection({ full, setFull, errors, cfg }: SectionProps)
             {groups.past.length > 0 && (
               <div class="lev-group">
                 <button type="button" class="lev-group__toggle" onClick={() => setShowPast(!showPast)}>
-                  <Icon name="down" size={13} class={showPast ? 'rot-180' : ''} /> {t('Pasados ({n})', { n: groups.past.length })}
+                  <Icon name="down" size={13} class={showPast ? 'rot-180' : ''} /> {t('Past ({n})', { n: groups.past.length })}
                 </button>
                 {showPast && (
                   <>
@@ -495,17 +495,17 @@ export function LocalEventsSection({ full, setFull, errors, cfg }: SectionProps)
                       variant="ghost"
                       icon="trash"
                       onClick={async () => {
-                        const ok = await confirmDialog({ title: t('Borrar {n} eventos pasados', { n: groups.past.length }), confirm: t('Borrar'), danger: true });
+                        const ok = await confirmDialog({ title: t('Delete {n} past events', { n: groups.past.length }), confirm: t('Clear'), danger: true });
                         if (ok) setFull((d) => void (d.localEvents.items = d.localEvents.items.filter((x) => x.repeat.freq !== 'none' || x.endDate >= today)));
                       }}
                     >
-                      {t('Borrar los pasados')}
+                      {t('Delete past ones')}
                     </Button>
                   </>
                 )}
               </div>
             )}
-            {q && !groups.up.length && !groups.rec.length && !groups.past.length && <div class="muted small">{t('Sin resultados')}</div>}
+            {q && !groups.up.length && !groups.rec.length && !groups.past.length && <div class="muted small">{t('No results')}</div>}
           </>
         )}
       </Card>

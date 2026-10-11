@@ -10,25 +10,25 @@ import { isHttpUrl } from '../util';
 
 type Device = 'iphone' | 'mac' | 'web';
 
-/** Steps per device to get the public link of an iCloud calendar (Spanish keys; Apple's own UI names per language). */
+/** Steps per device to get the public link of an iCloud calendar (Apple's English UI names). */
 const STEPS: Record<Device, string[]> = {
   iphone: [
-    'Abre la app Calendario y toca «Calendarios».',
-    'Toca ⓘ junto al calendario de iCloud que quieras mostrar.',
-    'Activa «Calendario público» y toca «Compartir enlace».',
-    'Elige «Copiar» y pega el enlace aquí abajo.',
+    'Open the Calendar app and tap Calendars.',
+    'Tap ⓘ next to the iCloud calendar you want to show.',
+    'Turn on Public Calendar, then tap Share Link.',
+    'Choose Copy and paste the link below.',
   ],
   mac: [
-    'Abre la app Calendario en el Mac.',
-    'En la lista de calendarios, pasa el puntero sobre el calendario de iCloud y haz clic en el icono de compartir (o haz clic con el botón derecho y elige «Compartir calendario»).',
-    'Selecciona «Calendario público».',
-    'Copia la dirección que aparece (empieza por webcal://) y pégala aquí abajo.',
+    'Open the Calendar app on your Mac.',
+    'In the calendar list, hold the pointer over the iCloud calendar and click the share icon (or Control-click it and choose Share Calendar).',
+    'Select Public Calendar.',
+    'Copy the address that appears (it starts with webcal://) and paste it below.',
   ],
   web: [
-    'Entra en icloud.com/calendar desde un ordenador o una tableta.',
-    'Pasa el puntero sobre el calendario en la barra lateral y haz clic en el icono de compartir.',
-    'Activa «Calendario público» y selecciona «Copiar».',
-    'Pega el enlace aquí abajo.',
+    'Go to icloud.com/calendar on a computer or tablet.',
+    'Hold the pointer over the calendar in the sidebar and click the share icon.',
+    'Turn on Public Calendar and select Copy.',
+    'Paste the link below.',
   ],
 };
 
@@ -66,19 +66,19 @@ export function ICloudGuide({
   const valid = !!u && isHttpUrl(u);
 
   const add = async () => {
-    if (!valid) return setError(t('URL no válida: debe empezar por https://, http:// o webcal://'));
-    if (exists(u)) return setError(t('Ese calendario ya está en la lista.'));
+    if (!valid) return setError(t('Invalid URL: it must start with https://, http:// or webcal://'));
+    if (exists(u)) return setError(t('That calendar is already in the list.'));
     if (!failed) {
       setBusy(true);
       try {
         const res = await api.testIcs(u);
         if (!res.ok) {
-          setError(fetchErrorText(res.error) || t('No se pudo leer el calendario'));
+          setError(fetchErrorText(res.error) || t('Could not read the calendar'));
           setFailed(true);
           return;
         }
       } catch (e) {
-        setError((e as ApiError).message || t('No se pudo leer el calendario'));
+        setError((e as ApiError).message || t('Could not read the calendar'));
         setFailed(true);
         return;
       } finally {
@@ -86,13 +86,13 @@ export function ICloudGuide({
       }
     }
     onAdd(name.trim() || 'iCloud', u);
-    toast(t('Calendario añadido. Guarda para aplicar los cambios.'));
+    toast(t('Calendar added. Save to apply the changes.'));
     onClose();
   };
 
   return (
     <Modal
-      title={t('Calendario de Apple iCloud')}
+      title={t('Apple iCloud calendar')}
       icon="apple"
       size="sm"
       autoFocus={false}
@@ -101,21 +101,21 @@ export function ICloudGuide({
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            {t('Cancelar')}
+            {t('Cancel')}
           </Button>
           <Button variant="primary" icon="plus" loading={busy} disabled={disabled || !url.trim()} onClick={add}>
-            {failed ? t('Añadir de todos modos') : t('Añadir calendario')}
+            {failed ? t('Add anyway') : t('Add calendar')}
           </Button>
         </>
       }
     >
       <div class="stack icloud-guide">
-        <p class="muted">{t('Para mostrar un calendario de iCloud hace falta su enlace público. Consíguelo así:')}</p>
+        <p class="muted">{t('To show an iCloud calendar you need its public link. Here is how to get it:')}</p>
         <Segmented
           full
           value={device}
           options={[
-            { value: 'iphone', label: t('iPhone o iPad') },
+            { value: 'iphone', label: t('iPhone or iPad') },
             { value: 'mac', label: 'Mac' },
             { value: 'web', label: 'iCloud.com' },
           ]}
@@ -126,8 +126,8 @@ export function ICloudGuide({
             <li key={s}>{t(s)}</li>
           ))}
         </ol>
-        <Callout kind="info">{t('Cualquiera que tenga el enlace puede ver el calendario, pero es largo e imposible de adivinar. Los cambios que hagas en iCloud llegan a Marco en unos minutos.')}</Callout>
-        <Field label={t('Enlace del calendario')} error={error || undefined}>
+        <Callout kind="info">{t('Anyone who has the link can see the calendar, but it is long and impossible to guess. Changes you make in iCloud reach Marco within a few minutes.')}</Callout>
+        <Field label={t('Calendar link')} error={error || undefined}>
           <TextInput
             mono
             value={url}
@@ -143,7 +143,7 @@ export function ICloudGuide({
             }}
           />
         </Field>
-        <Field label={t('Nombre')}>
+        <Field label={t('Name')}>
           <TextInput value={name} placeholder="iCloud" onValue={setName} />
         </Field>
         {note}

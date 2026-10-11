@@ -40,11 +40,11 @@ export function ScreenSwitcher(props: {
         onClick={() => setOpen(!open)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        title={t('Pantalla que estás editando')}
+        title={t('Screen you are editing')}
       >
         <span class="scr-switch__swatch" style={{ background: cur.screen.accent }} />
         <span class="scr-switch__label">
-          <span class="scr-switch__pre">{t('Editando')}</span>
+          <span class="scr-switch__pre">{t('Editing')}</span>
           <strong>{cur.name}</strong>
         </span>
         {props.errorScreens?.has(cur.id) && <span class="nav__err">!</span>}
@@ -52,7 +52,7 @@ export function ScreenSwitcher(props: {
       </button>
       {open && (
         <div class="scr-switch__menu" role="listbox">
-          <div class="scr-switch__title">{single ? t('Una sola pantalla') : nScreens(props.screens.length)}</div>
+          <div class="scr-switch__title">{single ? t('A single screen') : nScreens(props.screens.length)}</div>
           {props.screens.map((s) => {
             const on = props.online?.[s.id] ?? 0;
             return (
@@ -72,13 +72,13 @@ export function ScreenSwitcher(props: {
                   {props.openMode && <span class="mono small muted">?screen={s.slug}</span>}
                 </span>
                 {s.id === props.defaultId && (
-                  <span class="scr-switch__star" title={t('Pantalla predeterminada')}>
+                  <span class="scr-switch__star" title={t('Default screen')}>
                     ★
                   </span>
                 )}
                 {props.errorScreens?.has(s.id) && <span class="nav__err">!</span>}
                 {on > 0 && (
-                  <span class="scr-switch__online" title={t('{n} conectadas', { n: on })}>
+                  <span class="scr-switch__online" title={t('{n} connected', { n: on })}>
                     <span class="dot dot--ok" /> {on}
                   </span>
                 )}
@@ -95,7 +95,7 @@ export function ScreenSwitcher(props: {
               props.onNew();
             }}
           >
-            <Icon name="plus" size={15} /> {t('Nueva pantalla…')}
+            <Icon name="plus" size={15} /> {t('New screen…')}
           </button>
           <button
             type="button"
@@ -105,7 +105,7 @@ export function ScreenSwitcher(props: {
               props.onManage();
             }}
           >
-            <Icon name="settings" size={15} /> {t('Gestionar pantallas…')}
+            <Icon name="settings" size={15} /> {t('Manage screens…')}
           </button>
         </div>
       )}

@@ -36,9 +36,9 @@ type Source = CalendarSource & { insecureTls?: boolean };
 
 const KINDS: { value: SourceKind; label: string }[] = [
   { value: 'generic', label: 'General' },
-  { value: 'airbnb', label: 'Alquiler vacacional (Airbnb, Booking…)' },
-  { value: 'birthdays', label: 'Cumpleaños' },
-  { value: 'holidays', label: 'Festivos' },
+  { value: 'airbnb', label: 'Vacation rental (Airbnb, Booking…)' },
+  { value: 'birthdays', label: 'Birthdays' },
+  { value: 'holidays', label: 'Holidays' },
 ];
 
 
@@ -53,7 +53,7 @@ function pushIcs(d: { calendar: { sources: CalendarSource[] } }, name = '', url 
   d.calendar.sources.push({
     id: uid('c'),
     type: 'ics',
-    name: name || t('Calendario {n}', { n: d.calendar.sources.length + 1 }),
+    name: name || t('Calendar {n}', { n: d.calendar.sources.length + 1 }),
     url,
     color: nextColor(d.calendar.sources),
     emoji: '',
@@ -100,7 +100,7 @@ function SourceRow({
   return (
     <div class={`src ${src.enabled ? '' : 'is-off'}`} {...(reorder.rowProps(index) as any)} style={{ '--src-color': src.color } as any}>
       <div class="src__head">
-        <span class="grip" title={t('Arrastra para reordenar')} {...reorder.handleProps(index)}>
+        <span class="grip" title={t('Drag to reorder')} {...reorder.handleProps(index)}>
           <Icon name="grip" size={16} />
         </span>
         <EmojiPicker value={src.emoji ?? ''} allowNone onChange={(v) => update((s) => void (s.emoji = v))} />
@@ -109,15 +109,15 @@ function SourceRow({
           class="src__name"
           value={src.name}
           error={!!errors[`${p}.name`]}
-          placeholder={t('Nombre')}
+          placeholder={t('Name')}
           onValue={(v) => update((s) => void (s.name = v))}
         />
         <span class={`badge ${src.type !== 'ics' ? 'badge--google' : ''}`}>
           {src.type === 'google' ? <GoogleG size={12} /> : src.type === 'microsoft' ? <MicrosoftLogo size={12} /> : 'ICS'}
         </span>
-        <Toggle checked={src.enabled} onChange={(v) => update((s) => void (s.enabled = v))} label={t('Activo')} />
+        <Toggle checked={src.enabled} onChange={(v) => update((s) => void (s.enabled = v))} label={t('Enabled')} />
         <ReorderButtons index={index} count={count} onMove={move} />
-        <button type="button" class="icon-btn icon-btn--danger" onClick={remove} aria-label={t('Eliminar')} title={t('Eliminar')}>
+        <button type="button" class="icon-btn icon-btn--danger" onClick={remove} aria-label={t('Delete')} title={t('Delete')}>
           <Icon name="trash" size={16} />
         </button>
       </div>
@@ -129,9 +129,9 @@ function SourceRow({
             hint={
               hidden ? (
                 <>
-                  {t('Por seguridad, la dirección solo se muestra si has iniciado sesión hace poco.')}{' '}
+                  {t('For security, the address is only shown if you signed in recently.')}{' '}
                   <button type="button" class="link-btn" onClick={() => window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT))}>
-                    {t('Volver a iniciar sesión')}
+                    {t('Sign in again')}
                   </button>
                 </>
               ) : undefined
@@ -140,7 +140,7 @@ function SourceRow({
             <TextInput
               mono
               value={src.url ?? ''}
-              placeholder={hidden ? t('Dirección guardada (oculta)') : 'https://…/calendar.ics'}
+              placeholder={hidden ? t('Saved address (hidden)') : 'https://…/calendar.ics'}
               error={!!errors[`${p}.url`]}
               onValue={(v) => {
                 update((s) => {
@@ -152,7 +152,7 @@ function SourceRow({
               prefix={<Icon name="link" size={14} />}
               suffix={
                 src.url ? (
-                  <span class={urlValid ? 'ok-text' : 'err-text'} title={urlValid ? t('URL válida') : t('URL no válida')}>
+                  <span class={urlValid ? 'ok-text' : 'err-text'} title={urlValid ? t('Valid URL') : t('Invalid URL')}>
                     <Icon name={urlValid ? 'check' : 'x'} size={14} />
                   </span>
                 ) : undefined
@@ -173,32 +173,32 @@ function SourceRow({
         )}
         <div class="src__opts">
           <label class="mini-field">
-            <span>{t('Tipo')}</span>
+            <span>{t('Type')}</span>
             <div class="src__kind">
               <Select value={src.kind} options={KINDS.map((k) => ({ ...k, label: `${KIND_EMOJI[k.value] || '📅'} ${t(k.label)}` }))} onChange={(v) => update((s) => void (s.kind = v))} />
             </div>
           </label>
           {has('privacy') && (
-            <label class="mini-field" title={t('Qué se ve de este calendario en las pantallas en modo privado')}>
-              <span>{t('En modo privado')}</span>
+            <label class="mini-field" title={t('What screens in private mode show of this calendar')}>
+              <span>{t('In private mode')}</span>
               <div class="src__kind">
                 <Select value={src.privacy ?? defaultPrivacyOf(src.kind)} options={privacyModeOptions()} onChange={(v) => update((s) => void (s.privacy = v))} />
               </div>
             </label>
           )}
-          <label class="mini-field" title={t('Cada cuántos minutos se vuelve a descargar')}>
-            <span>{t('Actualizar cada')}</span>
+          <label class="mini-field" title={t('How often (minutes) it is downloaded again')}>
+            <span>{t('Refresh every')}</span>
             <NumberInput value={src.refreshMin} min={1} max={1440} suffix="min" error={!!errors[`${p}.refreshMin`]} onValue={(v) => update((s) => void (s.refreshMin = v))} />
           </label>
           {src.type === 'ics' && (has('insecureTls') || !!src.insecureTls) && (
-            <label class="mini-toggle" title={t('Acepta certificados HTTPS autofirmados (solo en tu red local)')}>
+            <label class="mini-toggle" title={t('Accept self-signed HTTPS certificates (local network only)')}>
               <Toggle size="sm" checked={!!src.insecureTls} onChange={(v) => update((s) => void (s.insecureTls = v))} />
-              <span>{t('Certificado autofirmado')}</span>
+              <span>{t('Self-signed certificate')}</span>
             </label>
           )}
           {src.type === 'ics' && (
             <Button size="sm" icon="play" loading={test.loading} disabled={!urlValid} onClick={runTest}>
-              {t('Probar')}
+              {t('Test')}
             </Button>
           )}
         </div>
@@ -207,7 +207,7 @@ function SourceRow({
             {test.res.ok ? (
               <>
                 <strong>
-                  <Icon name="check" size={14} /> {t('{n} eventos encontrados', { n: test.res.count ?? 0 })}
+                  <Icon name="check" size={14} /> {t('{n} events found', { n: test.res.count ?? 0 })}
                 </strong>
                 {!!test.res.sample?.length && (
                   <ul>
@@ -219,7 +219,7 @@ function SourceRow({
               </>
             ) : (
               <span>
-                <Icon name="alert" size={14} /> {fetchErrorText(test.res.error) || t('No se pudo leer el calendario')}
+                <Icon name="alert" size={14} /> {fetchErrorText(test.res.error) || t('Could not read the calendar')}
               </span>
             )}
           </div>
@@ -246,7 +246,7 @@ interface LinkedCalendar {
 
 type ProviderId = 'google' | 'microsoft';
 
-/** What differs between Google and Microsoft in the linked accounts card. Strings are Spanish keys for t(). */
+/** What differs between Google and Microsoft in the linked accounts card. Strings are English. */
 interface Provider {
   id: ProviderId;
   label: string;
@@ -268,8 +268,8 @@ function googleProvider(me: SectionProps['me']): Provider {
     id: 'google',
     label: 'Google',
     configured: offers('googleCalendar') && !!me.googleConfigured,
-    leaveBody: 'Vas a salir a Google para vincular la cuenta. ¿Guardamos primero los cambios pendientes?',
-    disconnectBody: 'Se dejarán de mostrar sus calendarios en la pantalla.',
+    leaveBody: 'You are going to Google to link the account. Save pending changes first?',
+    disconnectBody: 'Its calendars will no longer be shown on the screen.',
     connectPath: '/auth/google/connect',
     accounts: () => api.googleAccounts(),
     calendars: async (email) =>
@@ -286,9 +286,9 @@ function microsoftProvider(me: SectionProps['me']): Provider {
     id: 'microsoft',
     label: 'Microsoft',
     configured: has('microsoftCalendar') && !!me.microsoftConfigured,
-    leaveBody: 'Vas a salir a Microsoft para vincular la cuenta. ¿Guardamos primero los cambios pendientes?',
+    leaveBody: 'You are about to go to Microsoft to link the account. Save your pending changes first?',
     disconnectBody:
-      'Se dejarán de mostrar sus calendarios en la pantalla y Marco borrará su acceso. Para retirar también el permiso en Microsoft, entra en account.live.com/consent/Manage (cuenta personal) o en myapps.microsoft.com (cuenta del trabajo o del centro educativo).',
+      'Its calendars will no longer show on the screen and Marco will delete its access. To remove the permission at Microsoft too, go to account.live.com/consent/Manage (personal account) or myapps.microsoft.com (work or school account).',
     connectPath: '/auth/microsoft/connect',
     accounts: () => api.microsoftAccounts(),
     calendars: async (email) =>
@@ -342,9 +342,9 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
   const go = async (p: Provider) => {
     if (dirty) {
       const ok = await confirmDialog({
-        title: t('Guardar cambios antes de continuar'),
+        title: t('Save changes before continuing'),
         body: t(p.leaveBody),
-        confirm: t('Guardar y continuar'),
+        confirm: t('Save and continue'),
       });
       if (!ok) return;
       if (!(await save())) return;
@@ -356,8 +356,8 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
   const connect = async () => {
     if (!providers.length) return setIcloud(true);
     const choice = await choiceDialog<ProviderId | 'apple'>({
-      title: t('Vincular cuenta'),
-      body: t('¿Qué cuenta quieres vincular?'),
+      title: t('Link account'),
+      body: t('Which account do you want to link?'),
       choices: [
         ...providers.map((p) => ({ value: p.id, label: p.label, kind: 'default' as const, icon: p.id })),
         { value: 'apple' as const, label: 'Apple iCloud', kind: 'default' as const, icon: 'apple' as const },
@@ -374,9 +374,9 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
   const disconnect = async (a: Linked) => {
     const p = byId(a.provider);
     const ok = await confirmDialog({
-      title: t('Desvincular {email}', { email: a.email }),
+      title: t('Unlink {email}', { email: a.email }),
       body: t(p.disconnectBody),
-      confirm: t('Desvincular'),
+      confirm: t('Unlink'),
       danger: true,
     });
     if (!ok) return;
@@ -385,7 +385,7 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
       set((d) => {
         d.calendar.sources = d.calendar.sources.filter((s) => !ofAccount(s, a));
       });
-      toast(t('Cuenta desvinculada. Guarda para aplicar los cambios en los calendarios.'), 'info');
+      toast(t('Account unlinked. Save to apply the calendar changes.'), 'info');
       load();
     } catch (e) {
       toast((e as ApiError).message, 'error');
@@ -415,24 +415,24 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
 
   const desc =
     providers.length > 1
-      ? t('Vincula cuentas de Google o de Microsoft (Outlook.com, Hotmail, Microsoft 365) y elige qué calendarios mostrar.')
+      ? t('Link Google or Microsoft accounts (Outlook.com, Hotmail, Microsoft 365) and choose which calendars to show.')
       : providers[0]?.id === 'microsoft'
-        ? t('Vincula una cuenta de Outlook.com, Hotmail o Microsoft 365 y elige qué calendarios mostrar.')
+        ? t('Link an Outlook.com, Hotmail or Microsoft 365 account and choose which calendars to show.')
         : providers[0]?.id === 'google'
-          ? t('Vincula una cuenta de Google y elige qué calendarios mostrar.')
-          : t('Añade un calendario de Apple iCloud con su enlace público.');
+          ? t('Link a Google account and choose which calendars to show.')
+          : t('Add an Apple iCloud calendar with its public link.');
   const hasMicrosoft = !!accounts?.some((a) => a.provider === 'microsoft');
 
   return (
     <Card
-      title={t('Cuentas vinculadas')}
+      title={t('Linked accounts')}
       id="cal-accounts"
       scope="global"
       icon="link"
       desc={desc}
       actions={
         <Button icon="plus" variant="primary" size="sm" onClick={connect}>
-          {providers.length ? t('Vincular cuenta') : t('Añadir iCloud')}
+          {providers.length ? t('Link account') : t('Add iCloud')}
         </Button>
       }
     >
@@ -448,7 +448,7 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
       {providers.length === 0 ? (
         (offers('googleCalendar') || offers('microsoftCalendar')) && (
           <Callout kind="warn">
-            {t('Para vincular cuentas, añade GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET (Google) o MICROSOFT_CLIENT_ID y MICROSOFT_CLIENT_SECRET (Microsoft) al archivo .env y reinicia. Mientras tanto puedes usar la URL iCal secreta de tu calendario.')}
+            {t('To link accounts, add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET (Google) or MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET (Microsoft) to the .env file and restart. Meanwhile you can use your calendar’s secret iCal URL.')}
           </Callout>
         )
       ) : accounts === null ? (
@@ -457,13 +457,13 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
           <div class="skeleton" />
         </div>
       ) : accounts.length === 0 ? (
-        <Empty icon="calendar" title={err ? t('No se pudieron cargar las cuentas') : t('Ninguna cuenta vinculada')}>
+        <Empty icon="calendar" title={err ? t('Could not load accounts') : t('No linked accounts')}>
           {err ||
             (providers.length > 1
-              ? t('Pulsa “Vincular cuenta” para dar acceso de solo lectura a tu calendario de Google o de Outlook.')
+              ? t('Press “Link account” to give read-only access to your Google or Outlook calendar.')
               : providers[0].id === 'microsoft'
-                ? t('Pulsa “Vincular cuenta” para dar acceso de solo lectura a tu calendario de Outlook.')
-                : t('Pulsa “Vincular cuenta” para dar acceso de solo lectura a tu Google Calendar.'))}
+                ? t('Press “Link account” to give read-only access to your Outlook calendar.')
+                : t('Press “Link account” to grant read-only access to your Google Calendar.'))}
         </Empty>
       ) : (
         <div class="gaccounts">
@@ -481,13 +481,13 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
                     </span>
                   </div>
                   <Button size="sm" variant="ghost" icon="x" onClick={() => disconnect(a)}>
-                    {t('Desvincular')}
+                    {t('Unlink')}
                   </Button>
                 </div>
                 {list === undefined ? (
                   <div class="skeleton" />
                 ) : list === 'error' ? (
-                  <Callout kind="error">{t('No se pudo leer la lista de calendarios. Vuelve a vincular la cuenta.')}</Callout>
+                  <Callout kind="error">{t('Could not read the calendar list. Link the account again.')}</Callout>
                 ) : (
                   <ul class="gcal-list">
                     {list.map((c) => {
@@ -502,7 +502,7 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
                             <span class="dot-color" style={{ background: c.color || '#888' }} />
                             <span class="gcal__name">{c.name}</span>
                             {c.owner && <span class="muted small">{c.owner}</span>}
-                            {c.primary && <span class="badge badge--soft">{t('Principal')}</span>}
+                            {c.primary && <span class="badge badge--soft">{t('Primary')}</span>}
                           </label>
                         </li>
                       );
@@ -516,13 +516,13 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
       )}
       {hasMicrosoft && (
         <p class="muted small">
-          {t('Marco solo lee tus calendarios. Para retirar el permiso también en Microsoft:')}{' '}
+          {t('Marco only reads your calendars. To remove the permission at Microsoft too:')}{' '}
           <a href="https://account.live.com/consent/Manage" target="_blank" rel="noopener noreferrer">
-            {t('cuenta personal')}
+            {t('personal account')}
           </a>
           {' · '}
           <a href="https://myapps.microsoft.com" target="_blank" rel="noopener noreferrer">
-            {t('cuenta del trabajo o del centro educativo')}
+            {t('work or school account')}
           </a>
         </p>
       )}
@@ -547,21 +547,21 @@ function ScreenSourcesCard({ cfg, set, full }: SectionProps) {
     <Card
       id="cal-screen-sources"
       scope="screen"
-      title={t('Calendarios en esta pantalla')}
+      title={t('Calendars on this screen')}
       icon="eye"
-      desc={full.screens.length > 1 ? t('Por ejemplo: la cocina solo con la familia y los cumpleaños; la entrada con las reservas.') : t('Elige qué calendarios se muestran.')}
+      desc={full.screens.length > 1 ? t('For example: the kitchen only with family and birthdays; the hall with bookings.') : t('Choose which calendars are shown.')}
     >
       <Segmented
         full
         value={all ? 'all' : 'some'}
         options={[
-          { value: 'all', label: t('Todos los calendarios') },
-          { value: 'some', label: t('Solo algunos') },
+          { value: 'all', label: t('All calendars') },
+          { value: 'some', label: t('Only some') },
         ]}
         onChange={(v) => set((d) => void (d.calendar.sourceIds = v === 'all' ? null : opts.filter((o) => !disabled.has(o.id)).map((o) => o.id)))}
       />
       {all ? (
-        <p class="muted small">{t('Se muestran todos los calendarios activos, también los que añadas en el futuro.')}</p>
+        <p class="muted small">{t('All active calendars are shown, including ones you add later.')}</p>
       ) : (
         <ul class="gcal-list screen-src-list">
           {opts.map((o) => {
@@ -578,15 +578,15 @@ function ScreenSourcesCard({ cfg, set, full }: SectionProps) {
                     {o.emoji ? `${o.emoji} ` : ''}
                     {o.name}
                   </span>
-                  {disabled.has(o.id) && <span class="badge badge--soft">{t('Desactivado')}</span>}
-                  {(o.id === 'local' || o.id === 'birthdays') && <span class="badge badge--soft">{o.id === 'local' ? t('Eventos locales') : t('Cumpleaños')}</span>}
+                  {disabled.has(o.id) && <span class="badge badge--soft">{t('Disabled')}</span>}
+                  {(o.id === 'local' || o.id === 'birthdays') && <span class="badge badge--soft">{o.id === 'local' ? t('Local events') : t('Birthdays')}</span>}
                 </label>
               </li>
             );
           })}
         </ul>
       )}
-      {!all && (ids ?? []).length === 0 && <Callout kind="warn">{t('No has marcado ningún calendario: esta pantalla no mostrará eventos.')}</Callout>}
+      {!all && (ids ?? []).length === 0 && <Callout kind="warn">{t('No calendar ticked: this screen will show no events.')}</Callout>}
     </Card>
   );
 }
@@ -602,46 +602,46 @@ export function CalendarsSection(props: SectionProps) {
   const addIcs = (name = '', url = '', kind: SourceKind = 'generic') => set((d) => pushIcs(d, name, url, kind));
 
   const removeSource = async (s: Source) => {
-    const ok = await confirmDialog({ title: t('Eliminar “{name}”', { name: s.name || 'calendario' }), body: t('Sus eventos dejarán de mostrarse.'), confirm: t('Eliminar'), danger: true });
+    const ok = await confirmDialog({ title: t('Delete “{name}”', { name: s.name || 'calendario' }), body: t('Its events will no longer be shown.'), confirm: t('Delete'), danger: true });
     if (ok) set((d) => void (d.calendar.sources = d.calendar.sources.filter((x) => x.id !== s.id)));
   };
 
   return (
     <>
       <PageHeader
-        title={t('Calendarios')}
+        title={t('Calendars')}
         desc={
           offers('microsoftCalendar')
             ? offers('googleCalendar')
-              ? t('Conecta calendarios iCal, Google y Microsoft, y decide cómo se muestran.')
-              : t('Conecta calendarios iCal y Microsoft, y decide cómo se muestran.')
+              ? t('Connect iCal, Google and Microsoft calendars, and decide how they look.')
+              : t('Connect iCal and Microsoft calendars, and decide how they look.')
             : offers('googleCalendar')
-              ? t('Conecta calendarios iCal y Google, y decide cómo se muestran.')
-              : t('Conecta calendarios iCal y decide cómo se muestran.')
+              ? t('Connect iCal and Google calendars and decide how they are shown.')
+              : t('Connect iCal calendars and decide how they are shown.')
         }
       />
 
       <Card
-        title={t('Calendarios conectados')}
+        title={t('Connected calendars')}
         id="cal-sources"
         scope="global"
         icon="link"
-        desc={t('Cada calendario tiene su color y emoji. El orden define la prioridad en la leyenda.')}
+        desc={t('Each calendar has its own colour and emoji. The order defines the legend priority.')}
         actions={
           <Button icon="plus" variant="primary" size="sm" disabled={atMax} onClick={() => addIcs()}>
-            {t('Añadir URL iCal')}
+            {t('Add iCal URL')}
           </Button>
         }
       >
         {sources.length === 0 ? (
-          <Empty icon="calendar" title={t('Aún no hay calendarios')}>
+          <Empty icon="calendar" title={t('No calendars yet')}>
             {offers('googleCalendar') && offers('microsoftCalendar')
-              ? t('Pega la URL .ics de tu calendario (Airbnb, Booking, Google, iCloud, Outlook…) o vincula una cuenta de Google o de Microsoft.')
+              ? t('Paste your calendar’s .ics URL (Airbnb, Booking, Google, iCloud, Outlook…) or link a Google or Microsoft account.')
               : offers('googleCalendar')
-                ? t('Pega la URL .ics de tu calendario (Airbnb, Booking, Google, iCloud, Outlook…) o vincula una cuenta de Google.')
+                ? t('Paste your calendar’s .ics URL (Airbnb, Booking, Google, iCloud, Outlook…) or link a Google account.')
                 : offers('microsoftCalendar')
-                  ? t('Pega la URL .ics de tu calendario (Airbnb, Booking, Google, iCloud, Outlook…) o vincula una cuenta de Microsoft.')
-                  : t('Pega la URL .ics de tu calendario (Airbnb, Booking, Google, iCloud, Outlook…).')}
+                  ? t('Paste your calendar’s .ics URL (Airbnb, Booking, Google, iCloud, Outlook…) or link a Microsoft account.')
+                  : t('Paste your calendar’s .ics URL (Airbnb, Booking, Google, iCloud, Outlook…).')}
           </Empty>
         ) : (
           <div class="src-list">
@@ -667,14 +667,14 @@ export function CalendarsSection(props: SectionProps) {
         )}
         <LimitNote name="sources" count={sources.length} />
         <div class="quick-add">
-          <span class="muted small">{t('Añadir rápido:')}</span>
+          <span class="muted small">{t('Quick add:')}</span>
           {HOLIDAY_PRESETS.filter((p) => !sources.some((s) => s.url === p.url)).map((p) => (
             <button type="button" class="pill" disabled={atMax} onClick={() => addIcs(t(p.name), p.url, 'holidays')}>
               🎉 {t(p.name)}
             </button>
           ))}
           <button type="button" class="pill" disabled={atMax} onClick={() => addIcs('Airbnb', '', 'airbnb')}>
-            🏠 {t('Reservas Airbnb')}
+            🏠 {t('Airbnb bookings')}
           </button>
         </div>
       </Card>
@@ -683,64 +683,64 @@ export function CalendarsSection(props: SectionProps) {
 
       <ScreenSourcesCard {...props} />
 
-      <Card id="cal-view" scope="screen" title={t('Vista del calendario')} icon="calendar">
-        <ToggleRow label={t('Mostrar calendario')} checked={c.enabled} onChange={(v) => set((d) => void (d.calendar.enabled = v))} />
+      <Card id="cal-view" scope="screen" title={t('Calendar view')} icon="calendar">
+        <ToggleRow label={t('Show calendar')} checked={c.enabled} onChange={(v) => set((d) => void (d.calendar.enabled = v))} />
         <div class={`stack ${c.enabled ? '' : 'is-disabled'}`}>
           <div class="grid grid--2">
-            <Field label={t('Tipo de vista')}>
+            <Field label={t('View type')}>
               <Segmented
                 full
                 value={c.view}
                 options={[
-                  { value: 'month', label: t('Mensual') },
-                  { value: 'week', label: t('Semanal') },
+                  { value: 'month', label: t('Monthly') },
+                  { value: 'week', label: t('Weekly') },
                   { value: 'agenda', label: t('Agenda') },
                 ]}
                 onChange={(v) => set((d) => void (d.calendar.view = v))}
               />
             </Field>
-            <Field label={t('La semana empieza en')}>
+            <Field label={t('Week starts on')}>
               <Segmented
                 full
                 value={c.weekStart}
                 options={[
-                  { value: 1, label: t('Lunes') },
-                  { value: 0, label: t('Domingo') },
+                  { value: 1, label: t('Monday') },
+                  { value: 0, label: t('Sunday') },
                 ]}
                 onChange={(v) => set((d) => void (d.calendar.weekStart = v))}
               />
             </Field>
-            <Field label={t('Semanas a mostrar')} error={errors['calendar.weeks']}>
+            <Field label={t('Weeks to show')} error={errors['calendar.weeks']}>
               <Segmented full value={c.weeks} options={[1, 2, 3, 4, 5, 6].map((n) => ({ value: n, label: String(n) }))} onChange={(v) => set((d) => void (d.calendar.weeks = v))} />
             </Field>
-            <Field label={t('Máx. eventos visibles por día')} error={errors['calendar.maxEventsPerDay']}>
+            <Field label={t('Max. visible events per day')} error={errors['calendar.maxEventsPerDay']}>
               <Slider value={c.maxEventsPerDay} min={1} max={8} step={1} onChange={(v) => set((d) => void (d.calendar.maxEventsPerDay = v))} />
             </Field>
           </div>
           <div class="toggle-grid">
-            <ToggleRow icon="📍" label={t('Ubicación del evento')} checked={c.showLocation} onChange={(v) => set((d) => void (d.calendar.showLocation = v))} />
-            <ToggleRow icon="⏱️" label={t('Hora de fin')} checked={c.showEndTime} onChange={(v) => set((d) => void (d.calendar.showEndTime = v))} />
-            <ToggleRow icon="🔢" label={t('“Día X de Y” en eventos largos')} checked={c.showDayXofY} onChange={(v) => set((d) => void (d.calendar.showDayXofY = v))} />
-            <ToggleRow icon="🏷️" label={t('Leyenda de calendarios')} checked={c.showLegend} onChange={(v) => set((d) => void (d.calendar.showLegend = v))} />
-            <ToggleRow icon="⏭️" label={t('Solo eventos actuales y futuros')} checked={c.hidePast} onChange={(v) => set((d) => void (d.calendar.hidePast = v))} />
+            <ToggleRow icon="📍" label={t('Event location')} checked={c.showLocation} onChange={(v) => set((d) => void (d.calendar.showLocation = v))} />
+            <ToggleRow icon="⏱️" label={t('End time')} checked={c.showEndTime} onChange={(v) => set((d) => void (d.calendar.showEndTime = v))} />
+            <ToggleRow icon="🔢" label={t('“Day X of Y” on long events')} checked={c.showDayXofY} onChange={(v) => set((d) => void (d.calendar.showDayXofY = v))} />
+            <ToggleRow icon="🏷️" label={t('Calendar legend')} checked={c.showLegend} onChange={(v) => set((d) => void (d.calendar.showLegend = v))} />
+            <ToggleRow icon="⏭️" label={t('Current & future events only')} checked={c.hidePast} onChange={(v) => set((d) => void (d.calendar.hidePast = v))} />
             <ToggleRow
               icon="↔️"
-              label={t('Desplazar los textos largos')}
-              hint={t('Los títulos que no caben se deslizan despacio para leerlos enteros: en el calendario, junto al reloj, en las cuentas atrás y en las noticias. Los que ocupan varias líneas suben línea a línea.')}
+              label={t('Slide long titles')}
+              hint={t('Titles that do not fit slide slowly so you can read them in full: in the calendar, next to the clock, in countdowns and in the news. Titles on several lines move up one line at a time.')}
               checked={c.marquee !== false}
               onChange={(v) => set((d) => void (d.calendar.marquee = v))}
             />
             <ToggleRow
               icon="🔁"
-              label={t('Rotar los días con muchos eventos')}
-              hint={t('Si en un día no caben todos, se van mostrando por turnos.')}
+              label={t('Rotate busy days')}
+              hint={t('When a day has more events than fit, they take turns.')}
               checked={c.rotateBusyDays !== false}
               onChange={(v) => set((d) => void (d.calendar.rotateBusyDays = v))}
             />
             <ToggleRow
               icon="🗜️"
-              label={t('Días llenos en compacto')}
-              hint={t('Si en un día no caben sus eventos, se muestran en líneas pequeñas, y las semanas con más eventos ocupan más alto. Lo que aun así no cabe se muestra por turnos o con “+N”.')}
+              label={t('Compact busy days')}
+              hint={t('When a day cannot fit its events, they show as small one-line entries, and weeks with more events get more height. What still does not fit takes turns or shows “+N”.')}
               checked={c.compactBusyDays === true}
               onChange={(v) => set((d) => void (d.calendar.compactBusyDays = v))}
             />

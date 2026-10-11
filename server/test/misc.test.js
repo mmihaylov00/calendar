@@ -5,14 +5,14 @@ import { isoWithOffset, zonedMidnight, localDate, addDays } from '../core/lib/tz
 import { mapOpenMeteo } from '../core/weather.js';
 import { sanitizeFilename, isGalleryFile } from '../photos.js';
 import { hashPassword, verifyPassword } from '../auth.js';
-import { displayConfig } from '../routes/public.js';
+import { displayConfig } from '../core/screens.js';
 import { defaultConfig } from '../core/defaults.js';
 
 test('weather i18n', () => {
-  assert.equal(wmoDescription(0, 'es'), 'Despejado');
-  assert.equal(wmoDescription(63, 'pt'), 'Chuva');
+  assert.equal(wmoDescription(0, 'es'), 'Clear sky');
+  assert.equal(wmoDescription(63, 'pt'), 'Rain');
   assert.equal(wmoDescription(95, 'en'), 'Thunderstorm');
-  assert.equal(windDirLabel(225, 'es'), 'SO');
+  assert.equal(windDirLabel(225, 'es'), 'SW');
   assert.equal(windDirLabel(225, 'en'), 'SW');
   assert.equal(windDirLabel(359, 'es'), 'N');
 });
@@ -36,8 +36,8 @@ test('open-meteo mapping', () => {
   const w = mapOpenMeteo(j, { lang: 'es', locationName: 'Lisbon', forecastDays: 5, now: new Date('2026-10-09T10:30:00+01:00') });
   assert.equal(w.current.temp, 21.4);
   assert.equal(w.current.windKmh, 14);
-  assert.equal(w.current.windDirLabel, 'NO');
-  assert.equal(w.current.description, 'Parcialmente nublado');
+  assert.equal(w.current.windDirLabel, 'NW');
+  assert.equal(w.current.description, 'Partly cloudy');
   assert.equal(w.today.sunrise, '2026-10-09T07:36:00+01:00');
   assert.equal(w.today.max, 24);
   assert.equal(w.daily.length, 2);
@@ -66,7 +66,7 @@ test('display config never leaks urls, accounts or HA entities', () => {
   const c = defaultConfig();
   c.calendar.sources.push({ id: 'g', type: 'google', name: 'G', googleAccount: 'a@b.c', googleCalendarId: 'x', color: '#000', emoji: '', kind: 'generic', enabled: true, refreshMin: 5 });
   c.weather.haIndoorTempEntity = 'sensor.salon';
-  const d = displayConfig(c);
+  const d = displayConfig(c, c.screens[0]);
   const s = JSON.stringify(d);
   assert.ok(!s.includes('calendar.google.com'));
   assert.ok(!s.includes('a@b.c'));

@@ -6,12 +6,10 @@ import { t } from '../i18n';
 import { clone, DEFAULT_ICON_RULES, matchIconRule, moveItem, resolveEmoji, uid } from '../util';
 import type { SectionProps } from './common';
 
-const EXAMPLES = ['Cumple de la abuela 🎈', 'Reserva Airbnb – João', 'Check-out apartamento', 'Vuelo a Madrid', 'Dentista Lucía', 'Cena con amigos', 'Pádel'];
-
 export function IconRulesSection({ cfg, set, errors }: SectionProps) {
   const rules = cfg.calendar.iconRules;
   const sources = cfg.calendar.sources;
-  const [sample, setSample] = useState(() => t('Cumpleaños de María'));
+  const [sample, setSample] = useState('');
   const [sampleSrc, setSampleSrc] = useState<string>(sources[0]?.id ?? '');
   const src = sources.find((s) => s.id === sampleSrc);
   const match = useMemo(() => matchIconRule(rules, sample), [rules, sample]);
@@ -23,9 +21,9 @@ export function IconRulesSection({ cfg, set, errors }: SectionProps) {
 
   const restore = async () => {
     const ok = await confirmDialog({
-      title: t('Restaurar reglas predeterminadas'),
-      body: t('Se reemplazarán tus reglas actuales por las predeterminadas.'),
-      confirm: t('Restaurar'),
+      title: t('Restore default rules'),
+      body: t('Your current rules will be replaced by the defaults.'),
+      confirm: t('Restore'),
       danger: true,
     });
     if (ok) set((d) => void (d.calendar.iconRules = clone(DEFAULT_ICON_RULES)));
@@ -33,55 +31,48 @@ export function IconRulesSection({ cfg, set, errors }: SectionProps) {
 
   return (
     <>
-      <PageHeader title={t('Iconos automáticos')} desc={t('Reglas que añaden un emoji (y opcionalmente un color) según el título del evento. Se evalúan en orden: gana la primera que coincide.')}>
+      <PageHeader title={t('Automatic icons')} desc={t('Rules that add an emoji (and optionally a colour) based on the event title. Evaluated in order: the first match wins.')}>
         <Button variant="ghost" icon="refresh" onClick={restore}>
-          {t('Restaurar predeterminadas')}
+          {t('Restore defaults')}
         </Button>
       </PageHeader>
 
-      <Card id="ico-tester" title={t('Probar reglas')} icon="wand" class="tester">
+      <Card id="ico-tester" title={t('Test rules')} icon="wand" class="tester">
         <div class="tester__row">
-          <Field label={t('Título de un evento')} class="tester__input">
-            <input class="input input--lg" value={sample} placeholder={t('Escribe el título de un evento…')} onInput={(e) => setSample(e.currentTarget.value)} />
+          <Field label={t('Event title')} class="tester__input">
+            <input class="input input--lg" value={sample} placeholder={t('Type an event title…')} onInput={(e) => setSample(e.currentTarget.value)} />
           </Field>
           {sources.length > 0 && (
-            <Field label={t('Calendario')} class="tester__src">
-              <Select value={sampleSrc} options={[{ value: '', label: t('(ninguno)') }, ...sources.map((s) => ({ value: s.id, label: `${s.emoji || ''} ${s.name}`.trim() }))]} onChange={setSampleSrc} />
+            <Field label={t('Calendar')} class="tester__src">
+              <Select value={sampleSrc} options={[{ value: '', label: t('(none)') }, ...sources.map((s) => ({ value: s.id, label: `${s.emoji || ''} ${s.name}`.trim() }))]} onChange={setSampleSrc} />
             </Field>
           )}
         </div>
         <div class="tester__preview">
           <div class="event-pill" style={{ '--ev': color } as any}>
             <span class="event-pill__emoji">{emoji || '·'}</span>
-            <span class="event-pill__title">{sample || t('Sin título')}</span>
+            <span class="event-pill__title">{sample || t('Untitled')}</span>
           </div>
           <div class="tester__why small muted">
             {match ? (
               <>
-                {t('Regla #{n} · coincide con', { n: match.index + 1 })} <span class="chip chip--static">{match.keyword}</span>
+                {t('Rule #{n} · matches', { n: match.index + 1 })} <span class="chip chip--static">{match.keyword}</span>
               </>
             ) : emoji ? (
-              t('Sin regla: se usa el emoji del calendario')
+              t('No rule: the calendar’s emoji is used')
             ) : (
-              t('Ninguna regla coincide')
+              t('No rule matches')
             )}
           </div>
-        </div>
-        <div class="quick-add">
-          {EXAMPLES.map((key) => t(key)).map((e) => (
-            <button type="button" class="pill" onClick={() => setSample(e)}>
-              {e}
-            </button>
-          ))}
         </div>
       </Card>
 
       <Card
-        title={t('Reglas')}
+        title={t('Rules')}
         id="ico-rules"
         scope="global"
         icon="tag"
-        desc={t('{n} reglas · sin distinguir mayúsculas ni acentos', { n: rules.length })}
+        desc={t('{n} rules · case- and accent-insensitive', { n: rules.length })}
         actions={
           <Button
             variant="primary"
@@ -89,13 +80,13 @@ export function IconRulesSection({ cfg, set, errors }: SectionProps) {
             icon="plus"
             onClick={() => set((d) => void d.calendar.iconRules.unshift({ id: uid('r'), match: [], emoji: '⭐', color: null }))}
           >
-            {t('Nueva regla')}
+            {t('New rule')}
           </Button>
         }
       >
         {rules.length === 0 ? (
-          <Empty icon="tag" title={t('Sin reglas')}>
-            {t('Añade una regla o restaura las predeterminadas.')}
+          <Empty icon="tag" title={t('No rules')}>
+            {t('Add a rule or restore the defaults.')}
           </Empty>
         ) : (
           <div class="rule-list">
@@ -117,7 +108,7 @@ export function IconRulesSection({ cfg, set, errors }: SectionProps) {
                     <Chips
                       values={r.match}
                       error={!!errors[`rule.${r.id}.match`]}
-                      placeholder={t('Palabras clave (Enter o coma para añadir)')}
+                      placeholder={t('Keywords (Enter or comma to add)')}
                       onChange={(v) => upd((x) => void (x.match = v))}
                     />
                   </div>
@@ -126,8 +117,8 @@ export function IconRulesSection({ cfg, set, errors }: SectionProps) {
                   <button
                     type="button"
                     class="icon-btn icon-btn--danger"
-                    aria-label={t('Eliminar')}
-                    title={t('Eliminar')}
+                    aria-label={t('Delete')}
+                    title={t('Delete')}
                     onClick={() => set((d) => void (d.calendar.iconRules = d.calendar.iconRules.filter((x) => x.id !== r.id)))}
                   >
                     <Icon name="trash" size={16} />

@@ -16,13 +16,12 @@ FROM node:22-alpine
 ARG MARCO_RUNTIME_USER=node
 # SETUP_REQUIRE_TOKEN: inside a container the client address is not reliable (docker-proxy, Docker Desktop,
 # rootless networking and same-host reverse proxies all show up as a private gateway address), so the setup
-# wizard always asks for the one-time token printed in the log (docker compose logs | grep setup).
+# wizard always asks for the one-time token printed in the log (Home Assistant app Log tab).
 LABEL org.opencontainers.image.title="Marco" \
       org.opencontainers.image.description="Your family's day, framed. Self-hosted family wall calendar and dashboard." \
       org.opencontainers.image.source="https://github.com/mmihaylov00/marco" \
       org.opencontainers.image.licenses="MIT"
-# MARCO_INSTALL=docker: the admin shows how to update a container (git pull, docker compose up -d --build) and never
-# offers the update button.
+# Container updates are managed outside Marco; the admin never offers an in-process update button.
 ENV NODE_ENV=production \
     MARCO_INSTALL=docker \
     PORT=3000 \

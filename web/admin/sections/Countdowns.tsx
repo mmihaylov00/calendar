@@ -26,19 +26,19 @@ function nextDate(c: Countdown, today: string): string | null {
 }
 
 export function daysLabel(n: number): string {
-  if (n === 0) return t('¡Hoy!');
-  if (n === 1) return t('¡Mañana!');
-  if (n < 0) return t('Pasado');
-  return t('Faltan {n} días', { n });
+  if (n === 0) return t('Today!');
+  if (n === 1) return t('Tomorrow!');
+  if (n < 0) return t('Past');
+  return t('In {n} days', { n });
 }
 
 const PRESETS = [
-  { emoji: '🎄', title: 'Navidad', md: '12-25' },
-  { emoji: '🎆', title: 'Nochevieja', md: '12-31' },
-  { emoji: '👑', title: 'Reyes', md: '01-06' },
+  { emoji: '🎄', title: 'Christmas', md: '12-25' },
+  { emoji: '🎆', title: 'New Year’s Eve', md: '12-31' },
+  { emoji: '👑', title: 'Epiphany', md: '01-06' },
   { emoji: '🎃', title: 'Halloween', md: '10-31' },
-  { emoji: '❤️', title: 'San Valentín', md: '02-14' },
-  { emoji: '☀️', title: 'Verano', md: '06-21' },
+  { emoji: '❤️', title: 'Valentine’s Day', md: '02-14' },
+  { emoji: '☀️', title: 'Summer', md: '06-21' },
 ];
 
 export function CountdownsSection({ full, setFull, cfg, set, errors }: SectionProps) {
@@ -85,18 +85,18 @@ export function CountdownsSection({ full, setFull, cfg, set, errors }: SectionPr
 
   return (
     <>
-      <PageHeader title={t('Cuentas atrás')} desc={t('Chips “Faltan 12 días” en el panel lateral de la pantalla: fechas especiales, viajes, próximos cumpleaños y eventos marcados.')} />
+      <PageHeader title={t('Countdowns')} desc={t('“In 12 days” chips in the screen side panel: special dates, trips, upcoming birthdays and flagged events.')} />
 
-      <Card title={t('En esta pantalla')} icon="monitor" scope="screen" id="cd-screen">
-        <ToggleRow label={t('Mostrar cuentas atrás')} hint={t('Se colocan en el panel lateral; si falta espacio se muestran menos.')} checked={sc.enabled} onChange={(v) => set((d) => void (d.countdowns.enabled = v))} />
-        <Field label={t('Máximo de chips')}>
+      <Card title={t('On this screen')} icon="monitor" scope="screen" id="cd-screen">
+        <ToggleRow label={t('Show countdowns')} hint={t('Placed in the side panel; fewer are shown if space is short.')} checked={sc.enabled} onChange={(v) => set((d) => void (d.countdowns.enabled = v))} />
+        <Field label={t('Max chips')}>
           <Slider value={sc.max} min={1} max={12} step={1} disabled={!sc.enabled} onChange={(v) => set((d) => void (d.countdowns.max = v))} />
         </Field>
         {live && live !== 'na' && (
           <div class="cd-live">
-            <span class="muted small">{t('Ahora en {name} (configuración guardada):', { name: cfg.screen.name })}</span>
+            <span class="muted small">{t('Now on {name} (saved settings):', { name: cfg.screen.name })}</span>
             <div class="cd-chips">
-              {live.items.length === 0 && <span class="muted small">{t('Nada que mostrar')}</span>}
+              {live.items.length === 0 && <span class="muted small">{t('Nothing to show')}</span>}
               {live.items.slice(0, sc.max).map((i) => (
                 <span class={`cd-chip ${i.days <= 1 ? 'is-hot' : ''}`} style={i.color ? ({ '--cd': i.color } as any) : undefined}>
                   <span>{i.emoji || '⏳'}</span>
@@ -112,21 +112,21 @@ export function CountdownsSection({ full, setFull, cfg, set, errors }: SectionPr
         )}
       </Card>
 
-      <Card title={t('Fechas')} icon="hourglass" scope="global" id="cd-list" desc={t('{n} cuentas atrás manuales', { n: cd.items.length })}>
+      <Card title={t('Dates')} icon="hourglass" scope="global" id="cd-list" desc={t('{n} manual countdowns', { n: cd.items.length })}>
         <form class="cd-add" onSubmit={add}>
           <EmojiPicker value={emoji} onChange={setEmoji} />
-          <TextInput class="cd-add__title" value={title} onValue={setTitle} maxLength={80} placeholder={t('Ej.: Viaje a Madeira')} autoFocus={focusAdd} />
+          <TextInput class="cd-add__title" value={title} onValue={setTitle} maxLength={80} placeholder={t('E.g. Trip to Madeira')} autoFocus={focusAdd} />
           <input class="input cd-add__date" type="date" value={date} onInput={(e) => setDate(e.currentTarget.value)} />
-          <label class="mini-toggle" title={t('Se repite cada año')}>
+          <label class="mini-toggle" title={t('Repeats every year')}>
             <Toggle size="sm" checked={yearly} onChange={setYearly} />
-            <span>{t('Anual')}</span>
+            <span>{t('Yearly')}</span>
           </label>
           <Button type="submit" variant="primary" icon="plus" disabled={!title.trim() || !isValidDate(date) || atMax}>
-            {t('Añadir')}
+            {t('Add')}
           </Button>
         </form>
         <div class="quick-add">
-          <span class="muted small">{t('Añadir rápido:')}</span>
+          <span class="muted small">{t('Quick add:')}</span>
           {PRESETS.filter((p) => !cd.items.some((c) => c.yearly && c.date.slice(5) === p.md)).map((p) => (
             <button
               type="button"
@@ -140,8 +140,8 @@ export function CountdownsSection({ full, setFull, cfg, set, errors }: SectionPr
         </div>
         <LimitNote name="countdowns" count={cd.items.length} />
         {rows.length === 0 ? (
-          <Empty icon="hourglass" title={t('Sin fechas')}>
-            {t('Añade una fecha o usa los atajos de arriba.')}
+          <Empty icon="hourglass" title={t('No dates')}>
+            {t('Add a date or use the shortcuts above.')}
           </Empty>
         ) : (
           <ul class="cd-list">
@@ -153,9 +153,9 @@ export function CountdownsSection({ full, setFull, cfg, set, errors }: SectionPr
                   <EmojiPicker value={c.emoji} allowNone onChange={(v) => upd(c.id, (x) => void (x.emoji = v))} />
                   <input class={`input input--bare cd-row__title ${errors[`cd.${c.id}.title`] ? 'is-invalid' : ''}`} value={c.title} maxLength={80} onInput={(e) => upd(c.id, (x) => void (x.title = e.currentTarget.value))} />
                   <input class={`input cd-row__date ${errors[`cd.${c.id}.date`] ? 'is-invalid' : ''}`} type="date" value={c.date} onInput={(e) => upd(c.id, (x) => void (x.date = e.currentTarget.value))} />
-                  <label class="mini-toggle" title={t('Se repite cada año')}>
+                  <label class="mini-toggle" title={t('Repeats every year')}>
                     <Toggle size="sm" checked={c.yearly} onChange={(v) => upd(c.id, (x) => void (x.yearly = v))} />
-                    <span class="hide-xs">{t('Anual')}</span>
+                    <span class="hide-xs">{t('Yearly')}</span>
                   </label>
                   <ColorPicker compact allowNone value={c.color} onChange={(v) => upd(c.id, (x) => void (x.color = v))} />
                   <span class={`cd-row__days ${days != null && days <= 7 && days >= 0 ? 'is-soon' : ''}`} title={nd ? fmtDay(nd, { year: true }) : ''}>
@@ -164,9 +164,9 @@ export function CountdownsSection({ full, setFull, cfg, set, errors }: SectionPr
                   <button
                     type="button"
                     class="icon-btn icon-btn--danger"
-                    aria-label={t('Eliminar')}
+                    aria-label={t('Delete')}
                     onClick={async () => {
-                      if (await confirmDialog({ title: t('Eliminar “{name}”', { name: c.title }), confirm: t('Eliminar'), danger: true })) setFull((d) => void (d.countdowns.items = d.countdowns.items.filter((x) => x.id !== c.id)));
+                      if (await confirmDialog({ title: t('Delete “{name}”', { name: c.title }), confirm: t('Delete'), danger: true })) setFull((d) => void (d.countdowns.items = d.countdowns.items.filter((x) => x.id !== c.id)));
                     }}
                   >
                     <Icon name="trash" size={15} />
@@ -178,27 +178,27 @@ export function CountdownsSection({ full, setFull, cfg, set, errors }: SectionPr
         )}
       </Card>
 
-      <Card title={t('Automáticas')} icon="wand" scope="global" id="cd-auto" desc={t('Añade cuentas atrás sin tener que crearlas a mano.')}>
-        <ToggleRow icon="🎂" label={t('Próximos cumpleaños')} hint={t('Cumpleaños que caen dentro de los próximos N días.')} checked={cd.includeBirthdays} onChange={(v) => setFull((d) => void (d.countdowns.includeBirthdays = v))} />
+      <Card title={t('Automatic')} icon="wand" scope="global" id="cd-auto" desc={t('Adds countdowns without creating them by hand.')}>
+        <ToggleRow icon="🎂" label={t('Upcoming birthdays')} hint={t('Birthdays within the next N days.')} checked={cd.includeBirthdays} onChange={(v) => setFull((d) => void (d.countdowns.includeBirthdays = v))} />
         <div class={`grid grid--2 ${cd.includeBirthdays ? '' : 'is-disabled'}`}>
-          <Field label={t('Cumpleaños dentro de')} error={errors['countdowns.birthdayDays']}>
-            <NumberInput value={cd.birthdayDays} min={1} max={366} suffix={t('días')} error={!!errors['countdowns.birthdayDays']} onValue={(v) => setFull((d) => void (d.countdowns.birthdayDays = v))} />
+          <Field label={t('Birthdays within')} error={errors['countdowns.birthdayDays']}>
+            <NumberInput value={cd.birthdayDays} min={1} max={366} suffix={t('days')} error={!!errors['countdowns.birthdayDays']} onValue={(v) => setFull((d) => void (d.countdowns.birthdayDays = v))} />
           </Field>
         </div>
         <ToggleRow
           icon="⏳"
-          label={t('Eventos marcados')}
+          label={t('Flagged events')}
           hint={
             <>
-              {t('Eventos locales con “Cuenta atrás” y eventos que coinciden con una regla de estilo con cuenta atrás (')}
-              <a href="#/filters">{t('Filtros y cambios')}</a>).
+              {t('Local events with “Countdown” and events matching a style rule with countdown (')}
+              <a href="#/filters">{t('Filters & overrides')}</a>).
             </>
           }
           checked={cd.includeFlagged}
           onChange={(v) => setFull((d) => void (d.countdowns.includeFlagged = v))}
         />
-        <Field label={t('Ignorar fechas a más de')} error={errors['countdowns.horizonDays']} hint={t('Se aplica a todas las cuentas atrás.')}>
-          <NumberInput value={cd.horizonDays} min={1} max={3660} suffix={t('días')} error={!!errors['countdowns.horizonDays']} onValue={(v) => setFull((d) => void (d.countdowns.horizonDays = v))} />
+        <Field label={t('Ignore dates further than')} error={errors['countdowns.horizonDays']} hint={t('Applies to all countdowns.')}>
+          <NumberInput value={cd.horizonDays} min={1} max={3660} suffix={t('days')} error={!!errors['countdowns.horizonDays']} onValue={(v) => setFull((d) => void (d.countdowns.horizonDays = v))} />
         </Field>
       </Card>
     </>

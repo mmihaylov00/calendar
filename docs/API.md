@@ -488,10 +488,9 @@ values of *Admin → Home Assistant → Doorbell and camera* (`homeassistant.doo
   screens. Pictures are kept in memory only for those 500 ms and never written to disk. The token and the camera
   entity never reach a screen. Rings are kept in memory: after a server restart nothing rings.
 - The overlay shows above night mode: a dimmed screen is fully lit while it rings and goes back to night mode when the
-  ring ends. A screen turned off by an HDMI schedule (`deploy/screen-schedule.sh`) stays off.
-- The chime uses the screen's alert volume (*Alerts*). The kiosk (`deploy/kiosk.sh`) starts Chromium with
-  `--autoplay-policy=no-user-gesture-required`, so it plays without a tap; other browsers may stay silent until
-  someone has touched the page once.
+  ring ends. A screen whose hardware is powered off stays off.
+- The chime uses the screen's alert volume (*Alerts*). Browsers may stay silent until someone has touched the page once. A dedicated Chromium kiosk can use
+  `--autoplay-policy=no-user-gesture-required` to allow the chime without a tap.
 - Without a camera (`camera: ""`) the screens show a bell and "Someone is at the door".
 
 **Servers with snapshots instead of a live camera** (`features.doorbell` on, `features.doorbellLive` off: Marco Cloud,

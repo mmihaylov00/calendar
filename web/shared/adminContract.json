@@ -3,21 +3,6 @@
   "version": 1,
   "endpoints": [
     {
-      "method": "POST",
-      "path": "/api/account/lang",
-      "query": [],
-      "feature": "accountMenu",
-      "callers": [
-        "accountLang"
-      ],
-      "request": "{lang}",
-      "response": "inline",
-      "responseArray": false,
-      "responseKeys": [
-        "ok"
-      ]
-    },
-    {
       "method": "DELETE",
       "path": "/api/admin/activity",
       "query": [],
@@ -465,10 +450,9 @@
       "query": [],
       "feature": "doorbell",
       "callers": [
-        "doorbell",
-        "doorbellWithImage"
+        "doorbell"
       ],
-      "request": "DoorbellRequest | multipart/form-data",
+      "request": "DoorbellRequest",
       "response": "DoorbellResponse",
       "responseArray": false,
       "responseKeys": [

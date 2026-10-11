@@ -81,7 +81,7 @@ async function withApp(fn, { secrets = {}, env = {} } = {}) {
 }
 
 const body = (extra = {}) => ({
-  password: GOOD, passwordConfirm: GOOD, language: 'es', screenName: 'Cocina',
+  password: GOOD, passwordConfirm: GOOD, language: 'en', screenName: 'Cocina',
   location: { name: 'Porto, Portugal', lat: 41.14961, lon: -8.61099, timezone: 'Europe/Lisbon' },
   units: 'metric', format24: false,
   calendars: [{ name: 'Festivos de España', url: 'https://calendar.google.com/calendar/ical/es.spain%23holiday%40group.v.calendar.google.com/public/basic.ics', kind: 'holidays' }],
@@ -107,7 +107,7 @@ test('fresh install needs setup: status, no default password, login refused, adm
     assert.equal(st.status, 200);
     assert.equal(st.json.needsSetup, true);
     assert.equal(st.json.version, '9.9.9');
-    assert.equal(st.json.suggestedLanguage, 'pt');
+    assert.equal(st.json.suggestedLanguage, 'en');
     assert.equal(st.json.googleConfigured, false);
     assert.equal(st.json.tokenRequired, false); // LAN client, no SETUP_TOKEN
     assert.equal(store.getSecrets().passwordHash, undefined);
@@ -152,7 +152,7 @@ test('complete: validates, applies the settings, logs in, writes activity; then 
     const cfg = (await call('GET', '/api/admin/config')).json;
     const scr = cfg.screens[0];
     assert.equal(scr.name, 'Cocina');
-    assert.equal(scr.screen.language, 'es');
+    assert.equal(scr.screen.language, 'en');
     assert.equal(scr.screen.accent, '#2ec4b6');
     assert.equal(scr.layout.preset, 'agenda');
     assert.equal(scr.background.source, 'gallery');

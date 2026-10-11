@@ -61,15 +61,15 @@ export function isHttpUrl(s: string, allowWebcal = false): boolean {
   }
 }
 
-/** Public holiday iCal feeds (Google's public holiday calendars), by ISO country code. Name = Spanish i18n key. */
+/** Public holiday iCal feeds (Google's public holiday calendars), by ISO country code. Names are English. */
 export const HOLIDAY_PRESETS: { cc: string; flag: string; name: string; url: string }[] = [
-  { cc: 'PT', flag: '🇵🇹', name: 'Festivos de Portugal', url: 'https://calendar.google.com/calendar/ical/es.portuguese.official%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-  { cc: 'ES', flag: '🇪🇸', name: 'Festivos de España', url: 'https://calendar.google.com/calendar/ical/es.spain%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-  { cc: 'GB', flag: '🇬🇧', name: 'Festivos de Reino Unido', url: 'https://calendar.google.com/calendar/ical/en.uk%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-  { cc: 'US', flag: '🇺🇸', name: 'Festivos de Estados Unidos', url: 'https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-  { cc: 'DE', flag: '🇩🇪', name: 'Festivos de Alemania', url: 'https://calendar.google.com/calendar/ical/en.german%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-  { cc: 'FR', flag: '🇫🇷', name: 'Festivos de Francia', url: 'https://calendar.google.com/calendar/ical/en.french%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-  { cc: 'BR', flag: '🇧🇷', name: 'Festivos de Brasil', url: 'https://calendar.google.com/calendar/ical/pt.brazilian%23holiday%40group.v.calendar.google.com/public/basic.ics' },
+  { cc: 'PT', flag: '🇵🇹', name: 'Portugal holidays', url: 'https://calendar.google.com/calendar/ical/es.portuguese.official%23holiday%40group.v.calendar.google.com/public/basic.ics' },
+  { cc: 'ES', flag: '🇪🇸', name: 'Spain holidays', url: 'https://calendar.google.com/calendar/ical/es.spain%23holiday%40group.v.calendar.google.com/public/basic.ics' },
+  { cc: 'GB', flag: '🇬🇧', name: 'UK holidays', url: 'https://calendar.google.com/calendar/ical/en.uk%23holiday%40group.v.calendar.google.com/public/basic.ics' },
+  { cc: 'US', flag: '🇺🇸', name: 'US holidays', url: 'https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics' },
+  { cc: 'DE', flag: '🇩🇪', name: 'Germany holidays', url: 'https://calendar.google.com/calendar/ical/en.german%23holiday%40group.v.calendar.google.com/public/basic.ics' },
+  { cc: 'FR', flag: '🇫🇷', name: 'France holidays', url: 'https://calendar.google.com/calendar/ical/en.french%23holiday%40group.v.calendar.google.com/public/basic.ics' },
+  { cc: 'BR', flag: '🇧🇷', name: 'Brazil holidays', url: 'https://calendar.google.com/calendar/ical/pt.brazilian%23holiday%40group.v.calendar.google.com/public/basic.ics' },
 ];
 
 export const SWATCHES = [
@@ -85,28 +85,7 @@ export const EMOJI_GRID = [
   '🎬', '🎵', '🎮', '📺', '🎨', '📸', '⭐', '📌', '⏰', '🔔', '💬', '✅',
 ];
 
-/** Mirror of server/core/defaults.js DEFAULT_ICON_RULES (used by "restore defaults"). */
-export const DEFAULT_ICON_RULES: IconRule[] = [
-  { id: 'r_birthday', match: ['cumple', 'birthday', 'aniversário', 'aniversario', 'faz anos'], emoji: '🎂', color: null },
-  { id: 'r_checkout', match: ['check-out', 'checkout', 'check out', 'salida huésped'], emoji: '🧳', color: null },
-  { id: 'r_airbnb', match: ['airbnb', 'booking', 'reserva', 'reservation', 'reserved', 'check-in', 'checkin', 'hóspede', 'huésped'], emoji: '🏠', color: null },
-  { id: 'r_flight', match: ['vuelo', 'flight', 'voo', 'aeropuerto', 'airport', 'aeroporto'], emoji: '✈️', color: null },
-  { id: 'r_doctor', match: ['médico', 'medico', 'doctor', 'dentista', 'dentist', 'consulta', 'hospital', 'clínica'], emoji: '🩺', color: null },
-  { id: 'r_school', match: ['colegio', 'escuela', 'school', 'escola', 'guardería', 'creche'], emoji: '🎒', color: null },
-  { id: 'r_sport', match: ['fútbol', 'futbol', 'futebol', 'football', 'gym', 'ginásio', 'gimnasio', 'padel', 'pádel', 'tenis', 'ténis', 'tennis', 'deporte', 'desporto', 'sport', 'running', 'yoga'], emoji: '🏃', color: null },
-  { id: 'r_dinner', match: ['cena', 'cenar', 'dinner', 'jantar', 'restaurante', 'restaurant', 'almuerzo', 'almoço', 'lunch'], emoji: '🍽️', color: null },
-  { id: 'r_meeting', match: ['reunión', 'reunion', 'meeting', 'call', 'reunião', 'zoom', 'teams'], emoji: '💼', color: null },
-  // Public holidays before vacations: Google holiday feeds carry "Public holiday" in the description.
-  { id: 'r_holiday', match: ['festivo', 'feriado', 'public holiday', 'bank holiday'], emoji: '🎉', color: null },
-  { id: 'r_vacation', match: ['vacaciones', 'holiday', 'férias', 'vacation'], emoji: '🏖️', color: null },
-  { id: 'r_wedding', match: ['boda', 'wedding', 'casamento'], emoji: '💍', color: null },
-  { id: 'r_shopping', match: ['compra', 'shopping', 'mercado', 'supermercado'], emoji: '🛒', color: null },
-  { id: 'r_car', match: ['coche', 'car', 'taller', 'itv', 'inspeção', 'inspección', 'oficina auto', 'carro'], emoji: '🚗', color: null },
-  { id: 'r_bill', match: ['pago', 'factura', 'fatura', 'bill', 'recibo', 'pagamento'], emoji: '💶', color: null },
-  { id: 'r_vet', match: ['veterinario', 'veterinário', 'vet'], emoji: '🐾', color: null },
-  { id: 'r_cinema', match: ['cine', 'cinema', 'film', 'filme', 'película'], emoji: '🎬', color: null },
-  { id: 'r_concert', match: ['concierto', 'concert', 'concerto', 'festival'], emoji: '🎵', color: null },
-];
+export { DEFAULT_ICON_RULES } from '../shared/emoji';
 
 export function guessKind(nameOrId: string): SourceKind {
   const s = normalize(nameOrId);
@@ -121,85 +100,84 @@ export function formatBytes(n: number): string {
   if (!Number.isFinite(n)) return '';
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
-  // "4,1 MB" in Spanish / Portuguese, "4.1 MB" in English
   return `${(n / 1024 / 1024).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`;
 }
 
 export type Errors = Record<string, string>;
 
 /** Message of every "over the limit" error (the server answers limit_exceeded for the same cases). */
-export const LIMIT_EXCEEDED = 'Supera el máximo permitido';
+export const LIMIT_EXCEEDED = 'Over the allowed maximum';
 
 /** UTF-8 size of a string (custom CSS limit). */
 export const cssBytes = (v: string) => new TextEncoder().encode(v).length;
 
-/** Client-side validation. Keys are dotted paths used by fields to show inline errors. Messages are Spanish keys for t().
+/** Client-side validation. Keys are dotted paths used by fields to show inline errors. Messages are English.
  *  Rules for features the server turns off (Home Assistant, password login) are skipped. */
 export function validateConfig(c: AppConfig, caps: Caps = currentCaps()): Errors {
   const e: Errors = {};
   const ha = hasFeature(caps, 'homeassistant');
   const s = c.screen;
-  if (!s.name.trim()) e['screen.name'] = 'Obligatorio';
-  if (!HEX_RE.test(s.accent)) e['screen.accent'] = 'Color no válido';
-  if (!(s.fontScale >= 0.5 && s.fontScale <= 2)) e['screen.fontScale'] = 'Entre 0.5 y 2';
+  if (!s.name.trim()) e['screen.name'] = 'Required';
+  if (!HEX_RE.test(s.accent)) e['screen.accent'] = 'Invalid colour';
+  if (!(s.fontScale >= 0.5 && s.fontScale <= 2)) e['screen.fontScale'] = 'Between 0.5 and 2';
   if (s.nightMode.enabled) {
-    if (!TIME_RE.test(s.nightMode.from)) e['screen.nightMode.from'] = 'Hora no válida (HH:MM)';
-    if (!TIME_RE.test(s.nightMode.to)) e['screen.nightMode.to'] = 'Hora no válida (HH:MM)';
+    if (!TIME_RE.test(s.nightMode.from)) e['screen.nightMode.from'] = 'Invalid time (HH:MM)';
+    if (!TIME_RE.test(s.nightMode.to)) e['screen.nightMode.to'] = 'Invalid time (HH:MM)';
   }
   const b = c.background;
-  if (!(b.intervalSec >= 10)) e['background.intervalSec'] = 'Mínimo 10 s';
+  if (!(b.intervalSec >= 10)) e['background.intervalSec'] = 'Minimum 10 s';
   const cal = c.calendar;
-  if (!(cal.weeks >= 1 && cal.weeks <= 6)) e['calendar.weeks'] = 'Entre 1 y 6';
-  if (!(cal.maxEventsPerDay >= 1 && cal.maxEventsPerDay <= 12)) e['calendar.maxEventsPerDay'] = 'Entre 1 y 12';
+  if (!(cal.weeks >= 1 && cal.weeks <= 6)) e['calendar.weeks'] = 'Between 1 and 6';
+  if (!(cal.maxEventsPerDay >= 1 && cal.maxEventsPerDay <= 12)) e['calendar.maxEventsPerDay'] = 'Between 1 and 12';
   cal.sources.forEach((src) => {
     const p = `source.${src.id}`;
-    if (!src.name.trim()) e[`${p}.name`] = 'Obligatorio';
-    if (!HEX_RE.test(src.color)) e[`${p}.color`] = 'Color no válido';
+    if (!src.name.trim()) e[`${p}.name`] = 'Required';
+    if (!HEX_RE.test(src.color)) e[`${p}.color`] = 'Invalid colour';
     if (src.type === 'ics') {
       // A hidden URL (see CalendarSource.urlHidden) is still stored on the server: an empty field keeps it.
       const kept = src.urlHidden && !src.url;
-      if (!kept && (!src.url || !isHttpUrl(src.url, true))) e[`${p}.url`] = 'URL no válida (http, https o webcal)';
+      if (!kept && (!src.url || !isHttpUrl(src.url, true))) e[`${p}.url`] = 'Invalid URL (http, https or webcal)';
     } else if (src.type === 'microsoft') {
-      if (!src.microsoftAccount || !src.microsoftCalendarId) e[`${p}.url`] = 'Falta la cuenta o el calendario de Microsoft';
+      if (!src.microsoftAccount || !src.microsoftCalendarId) e[`${p}.url`] = 'Missing Microsoft account or calendar';
     } else {
-      if (!src.googleAccount || !src.googleCalendarId) e[`${p}.url`] = 'Falta la cuenta o el calendario de Google';
+      if (!src.googleAccount || !src.googleCalendarId) e[`${p}.url`] = 'Missing Google account or calendar';
     }
-    if (!(src.refreshMin >= 1 && src.refreshMin <= 1440)) e[`${p}.refreshMin`] = 'Entre 1 y 1440 min';
+    if (!(src.refreshMin >= 1 && src.refreshMin <= 1440)) e[`${p}.refreshMin`] = 'Between 1 and 1440 min';
   });
   cal.iconRules.forEach((r) => {
-    if (!r.match.some((m) => m.trim())) e[`rule.${r.id}.match`] = 'Añade al menos una palabra clave';
-    if (!r.emoji.trim()) e[`rule.${r.id}.emoji`] = 'Elige un emoji';
-    if (r.color && !HEX_RE.test(r.color)) e[`rule.${r.id}.color`] = 'Color no válido';
+    if (!r.match.some((m) => m.trim())) e[`rule.${r.id}.match`] = 'Add at least one keyword';
+    if (!r.emoji.trim()) e[`rule.${r.id}.emoji`] = 'Pick an emoji';
+    if (r.color && !HEX_RE.test(r.color)) e[`rule.${r.id}.color`] = 'Invalid colour';
   });
   const d = c.datetime;
-  if (!d.timezone.trim()) e['datetime.timezone'] = 'Obligatorio';
+  if (!d.timezone.trim()) e['datetime.timezone'] = 'Required';
   else {
     try {
       new Intl.DateTimeFormat('en', { timeZone: d.timezone });
     } catch {
-      e['datetime.timezone'] = 'Zona horaria desconocida';
+      e['datetime.timezone'] = 'Unknown time zone';
     }
   }
   const w = c.weather;
   if (w.enabled) {
-    if (!(w.lat >= -90 && w.lat <= 90)) e['weather.lat'] = 'Latitud entre -90 y 90';
-    if (!(w.lon >= -180 && w.lon <= 180)) e['weather.lon'] = 'Longitud entre -180 y 180';
-    if (ha && w.provider === 'homeassistant' && !w.haWeatherEntity) e['weather.haWeatherEntity'] = 'Elige una entidad weather.*';
+    if (!(w.lat >= -90 && w.lat <= 90)) e['weather.lat'] = 'Latitude between -90 and 90';
+    if (!(w.lon >= -180 && w.lon <= 180)) e['weather.lon'] = 'Longitude between -180 and 180';
+    if (ha && w.provider === 'homeassistant' && !w.haWeatherEntity) e['weather.haWeatherEntity'] = 'Pick a weather.* entity';
   }
   c.news.feeds.forEach((f) => {
-    if (!f.name.trim()) e[`feed.${f.id}.name`] = 'Obligatorio';
-    if (!isHttpUrl(f.url)) e[`feed.${f.id}.url`] = 'URL no válida';
+    if (!f.name.trim()) e[`feed.${f.id}.name`] = 'Required';
+    if (!isHttpUrl(f.url)) e[`feed.${f.id}.url`] = 'Invalid URL';
   });
-  if (!(c.news.rotateSec >= 3)) e['news.rotateSec'] = 'Mínimo 3 s';
-  if (!(c.news.maxItems >= 1 && c.news.maxItems <= 200)) e['news.maxItems'] = 'Entre 1 y 200';
-  if (ha && c.homeassistant.enabled && !isHttpUrl(c.homeassistant.url)) e['homeassistant.url'] = 'URL no válida';
+  if (!(c.news.rotateSec >= 3)) e['news.rotateSec'] = 'Minimum 3 s';
+  if (!(c.news.maxItems >= 1 && c.news.maxItems <= 200)) e['news.maxItems'] = 'Between 1 and 200';
+  if (ha && c.homeassistant.enabled && !isHttpUrl(c.homeassistant.url)) e['homeassistant.url'] = 'Invalid URL';
   c.auth.allowedGoogleEmails.forEach((m, i) => {
-    if (!EMAIL_RE.test(m)) e[`auth.allowedGoogleEmails.${i}`] = 'Email no válido';
+    if (!EMAIL_RE.test(m)) e[`auth.allowedGoogleEmails.${i}`] = 'Invalid email';
   });
   if (hasFeature(caps, 'passwordLogin') && !c.auth.passwordLoginEnabled && c.auth.allowedGoogleEmails.length === 0)
-    e['auth.passwordLoginEnabled'] = 'Añade un email de Google permitido antes de desactivar la contraseña';
+    e['auth.passwordLoginEnabled'] = 'Add an allowed Google email before disabling the password';
   (c.privacy?.schedule ?? []).forEach((r) => {
-    if (r.from === r.to) e[`privacy.${r.id}.to`] = 'Debe ser distinta de la hora de inicio';
+    if (r.from === r.to) e[`privacy.${r.id}.to`] = 'Must differ from the start time';
   });
   const cssMax = caps.limits.customCssBytes;
   if (typeof cssMax === 'number' && hasFeature(caps, 'customCss') && cssBytes(s.customCss) > cssMax) e['screen.customCss'] = LIMIT_EXCEEDED;
@@ -225,53 +203,53 @@ export function validateGlobal(c: StoredConfig): Errors {
   const e: Errors = {};
   const seenSlugs = new Map<string, string>();
   for (const s of c.screens) {
-    if (!s.name.trim()) e[`scr.${s.id}.name`] = 'Obligatorio';
-    if (!SLUG_RE.test(s.slug)) e[`scr.${s.id}.slug`] = 'Solo minúsculas, números y guiones';
-    else if (seenSlugs.has(s.slug)) e[`scr.${s.id}.slug`] = 'Ya existe otra pantalla con esta dirección';
+    if (!s.name.trim()) e[`scr.${s.id}.name`] = 'Required';
+    if (!SLUG_RE.test(s.slug)) e[`scr.${s.id}.slug`] = 'Only lowercase letters, numbers and hyphens';
+    else if (seenSlugs.has(s.slug)) e[`scr.${s.id}.slug`] = 'Another screen already uses this address';
     seenSlugs.set(s.slug, s.id);
   }
   for (const x of c.localEvents?.items ?? []) {
     const p = `local.${x.id}`;
-    if (!x.title.trim()) e[`${p}.title`] = 'Obligatorio';
-    if (!isValidDate(x.date)) e[`${p}.date`] = 'Fecha no válida';
-    if (!isValidDate(x.endDate) || x.endDate < x.date) e[`${p}.endDate`] = 'Debe ser igual o posterior al inicio';
+    if (!x.title.trim()) e[`${p}.title`] = 'Required';
+    if (!isValidDate(x.date)) e[`${p}.date`] = 'Invalid date';
+    if (!isValidDate(x.endDate) || x.endDate < x.date) e[`${p}.endDate`] = 'Must be on or after the start';
     if (!x.allDay) {
-      if (!TIME_RE.test(x.startTime)) e[`${p}.startTime`] = 'Hora no válida (HH:MM)';
-      if (!TIME_RE.test(x.endTime)) e[`${p}.endTime`] = 'Hora no válida (HH:MM)';
-      else if (x.endDate === x.date && x.endTime <= x.startTime) e[`${p}.endTime`] = 'Debe ser posterior a la hora de inicio';
+      if (!TIME_RE.test(x.startTime)) e[`${p}.startTime`] = 'Invalid time (HH:MM)';
+      if (!TIME_RE.test(x.endTime)) e[`${p}.endTime`] = 'Invalid time (HH:MM)';
+      else if (x.endDate === x.date && x.endTime <= x.startTime) e[`${p}.endTime`] = 'Must be after the start time';
     }
-    if (x.repeat.until && (!isValidDate(x.repeat.until) || x.repeat.until < x.date)) e[`${p}.until`] = 'Debe ser igual o posterior al inicio';
-    if (x.color && !HEX_RE.test(x.color)) e[`${p}.color`] = 'Color no válido';
+    if (x.repeat.until && (!isValidDate(x.repeat.until) || x.repeat.until < x.date)) e[`${p}.until`] = 'Must be on or after the start';
+    if (x.color && !HEX_RE.test(x.color)) e[`${p}.color`] = 'Invalid colour';
   }
   for (const b of c.birthdays?.items ?? []) {
     const p = `bday.${b.id}`;
-    if (!b.name.trim()) e[`${p}.name`] = 'Obligatorio';
-    if (!(b.month >= 1 && b.month <= 12) || !(b.day >= 1 && b.day <= daysInMonth(b.month))) e[`${p}.date`] = 'Fecha no válida';
-    if (b.year != null && !(b.year >= 1900 && b.year <= 2100)) e[`${p}.year`] = 'Año entre 1900 y 2100';
+    if (!b.name.trim()) e[`${p}.name`] = 'Required';
+    if (!(b.month >= 1 && b.month <= 12) || !(b.day >= 1 && b.day <= daysInMonth(b.month))) e[`${p}.date`] = 'Invalid date';
+    if (b.year != null && !(b.year >= 1900 && b.year <= 2100)) e[`${p}.year`] = 'Year between 1900 and 2100';
   }
   for (const r of c.eventRules?.items ?? []) {
     const p = `frule.${r.id}`;
-    if (!r.match.trim()) e[`${p}.match`] = 'Obligatorio';
-    if (r.action === 'style' && !r.emoji && !r.color && !r.countdown) e[`${p}.emoji`] = 'Elige un emoji, un color o la cuenta atrás';
-    if (r.color && !HEX_RE.test(r.color)) e[`${p}.color`] = 'Color no válido';
+    if (!r.match.trim()) e[`${p}.match`] = 'Required';
+    if (r.action === 'style' && !r.emoji && !r.color && !r.countdown) e[`${p}.emoji`] = 'Pick an emoji, a color or countdown';
+    if (r.color && !HEX_RE.test(r.color)) e[`${p}.color`] = 'Invalid colour';
   }
   for (const k of c.countdowns?.items ?? []) {
     const p = `cd.${k.id}`;
-    if (!k.title.trim()) e[`${p}.title`] = 'Obligatorio';
-    if (!isValidDate(k.date)) e[`${p}.date`] = 'Fecha no válida';
+    if (!k.title.trim()) e[`${p}.title`] = 'Required';
+    if (!isValidDate(k.date)) e[`${p}.date`] = 'Invalid date';
   }
   const cd = c.countdowns;
   if (cd) {
-    if (!(cd.birthdayDays >= 1 && cd.birthdayDays <= 366)) e['countdowns.birthdayDays'] = 'Entre 1 y 366';
-    if (!(cd.horizonDays >= 1 && cd.horizonDays <= 3660)) e['countdowns.horizonDays'] = 'Entre 1 y 3660';
+    if (!(cd.birthdayDays >= 1 && cd.birthdayDays <= 366)) e['countdowns.birthdayDays'] = 'Between 1 and 366';
+    if (!(cd.horizonDays >= 1 && cd.horizonDays <= 3660)) e['countdowns.horizonDays'] = 'Between 1 and 3660';
   }
   for (const m of c.schedules?.items ?? []) {
     const p = `sched.${m.id}`;
-    if (!m.title.trim()) e[`${p}.title`] = 'Obligatorio';
-    if (!TIME_RE.test(m.from)) e[`${p}.from`] = 'Hora no válida (HH:MM)';
-    if (!TIME_RE.test(m.to)) e[`${p}.to`] = 'Hora no válida (HH:MM)';
-    else if (m.from === m.to) e[`${p}.to`] = 'Debe ser distinta de la hora de inicio';
-    if (m.startDate && m.endDate && m.endDate < m.startDate) e[`${p}.endDate`] = 'Debe ser igual o posterior al inicio';
+    if (!m.title.trim()) e[`${p}.title`] = 'Required';
+    if (!TIME_RE.test(m.from)) e[`${p}.from`] = 'Invalid time (HH:MM)';
+    if (!TIME_RE.test(m.to)) e[`${p}.to`] = 'Invalid time (HH:MM)';
+    else if (m.from === m.to) e[`${p}.to`] = 'Must differ from the start time';
+    if (m.startDate && m.endDate && m.endDate < m.startDate) e[`${p}.endDate`] = 'Must be on or after the start';
   }
   return e;
 }
@@ -373,7 +351,7 @@ export function allSourceOptions(c: Pick<StoredConfig, 'calendar' | 'localEvents
     .filter((s) => opts.includeDisabled || s.enabled)
     .map((s) => ({ id: s.id, name: s.name || s.id, color: s.color, emoji: s.emoji || KIND_EMOJI[s.kind] || '' }));
   out.push({ id: 'local', name: c.localEvents.name || 'Local', color: c.localEvents.color, emoji: c.localEvents.emoji || '📅' });
-  out.push({ id: 'birthdays', name: c.birthdays.name || 'Cumpleaños', color: c.birthdays.color, emoji: c.birthdays.emoji || '🎂' });
+  out.push({ id: 'birthdays', name: c.birthdays.name || 'Birthdays', color: c.birthdays.color, emoji: c.birthdays.emoji || '🎂' });
   return out;
 }
 

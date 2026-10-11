@@ -11,25 +11,20 @@ export interface Tick {
 
 type TickFn = (t: Tick) => void;
 const subs = new Set<TickFn>();
-let tz = 'Europe/Lisbon';
+let tz = 'Europe/Sofia';
 let lastMinute = -1;
 let lastDay = '';
 let timer: ReturnType<typeof setTimeout> | null = null;
 let visBound = false;
 
-/** Optional fixed clock offset (ms), e.g. ?now=2026-10-09T10:43 for screenshots. */
-let offset = 0;
-export function setClockOffset(ms: number) {
-  offset = ms;
-}
-export const now = () => new Date(Date.now() + offset);
+export const now = () => new Date();
 
 export function setTimezone(z: string) {
   try {
     new Intl.DateTimeFormat('en', { timeZone: z });
     tz = z;
   } catch {
-    tz = 'Europe/Lisbon';
+    tz = 'Europe/Sofia';
   }
   lastDay = '';
 }

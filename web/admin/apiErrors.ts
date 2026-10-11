@@ -1,17 +1,17 @@
 // Error codes a server can answer with (self-hosted Marco or Marco Cloud) and the message the admin shows for each.
 // api.ts uses apiErrorMessage() for every failed call, so a section that toasts `error.message` shows a
-// translated sentence instead of the raw code. Messages are Spanish keys for t() (rows in i18n-dict11.ts).
+// translated sentence instead of the raw code. Messages are English.
 import { t } from './i18n';
 import { LIMIT_EXCEEDED } from './util';
 
 export const API_ERROR_MESSAGES = {
-  rate_limited: 'Demasiadas peticiones seguidas. Espera un momento y vuelve a intentarlo.',
-  screen_limit: 'Has llegado al máximo de pantallas.',
+  rate_limited: 'Too many requests in a row. Wait a moment and try again.',
+  screen_limit: 'You have reached the maximum number of screens.',
   limit_exceeded: LIMIT_EXCEEDED,
-  feature_unavailable: 'Esta función no está disponible en este servidor.',
-  conflict: 'La configuración se ha guardado en otro sitio mientras editabas. Recarga la página para ver la versión actual.',
-  photo_quota: 'No queda espacio para más fotos. Borra alguna y vuelve a intentarlo.',
-  readonly: 'Tu cuenta solo puede ver la configuración, no cambiarla.',
+  feature_unavailable: 'This feature is not available on this server.',
+  conflict: 'The settings were saved somewhere else while you were editing. Reload the page to see the current version.',
+  photo_quota: 'There is no room for more photos. Delete some and try again.',
+  readonly: 'Your account can view the settings but not change them.',
 } as const;
 
 export type ApiErrorCode = keyof typeof API_ERROR_MESSAGES;
@@ -29,15 +29,15 @@ export function apiErrorCode(body: unknown): ApiErrorCode | '' {
 
 /** Codes a server answers when it could not fetch a calendar or feed URL (Marco Cloud names them this way). */
 export const FETCH_ERROR_MESSAGES: Record<string, string> = {
-  blocked_url: 'Esa dirección no se puede consultar desde el servidor (red local, nombre interno o puerto no permitido).',
-  too_large: 'El archivo es demasiado grande (máx. 2 MB).',
-  timeout: 'Tardó demasiado en responder.',
-  too_many_redirects: 'Demasiadas redirecciones.',
-  http_denied: 'Acceso denegado: comprueba que el enlace sea público o que incluya su clave.',
-  http_not_found: 'No encontrado (404): comprueba la dirección.',
-  http_error: 'El servidor de origen respondió con un error.',
-  fetch_failed: 'No se pudo conectar con esa dirección.',
-  not_a_feed: 'No es un feed RSS ni Atom.',
+  blocked_url: 'The server cannot fetch that address (local network, internal name or a port that is not allowed).',
+  too_large: 'The file is too large (2 MB max).',
+  timeout: 'It took too long to answer.',
+  too_many_redirects: 'Too many redirects.',
+  http_denied: 'Access denied: check that the link is public or includes its key.',
+  http_not_found: 'Not found (404): check the address.',
+  http_error: 'The source server answered with an error.',
+  fetch_failed: 'Could not connect to that address.',
+  not_a_feed: 'It is not an RSS or Atom feed.',
 };
 
 /** Translated text for a fetch error code; anything else (a self-hosted server's own message) as it came. */

@@ -1,4 +1,4 @@
-// Marco brand mark (docs/logo.svg, web/public/favicon.svg) as inline SVG markup for the admin and the display.
+// Marco brand mark (web/public/favicon.svg) as inline SVG markup for the admin and the display.
 // Each call gets its own gradient and clip-path ids, so several marks can share a page.
 let seq = 0;
 

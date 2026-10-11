@@ -5,6 +5,14 @@ import { parseBirthdayCsv, parseBirthDate, CSV_ERRORS } from '../core/csv.js';
 
 const NOW = new Date('2026-10-09T12:00:00Z');
 
+// These messages reach the UI directly, so the parser must produce English.
+test('CSV error messages are English', () => {
+  assert.deepEqual(CSV_ERRORS, {
+    noDate: 'date is missing', badDate: 'invalid date', badYear: 'invalid year',
+    noName: 'name is missing', longName: 'name is too long', limit: 'limit of 500 birthdays reached',
+  });
+});
+
 test('date formats: dd/mm, dd-mm-yyyy, dd.mm.yy (2-digit years pivot on the current year), ISO', () => {
   assert.deepEqual(parseBirthDate('15/03', NOW), { day: 15, month: 3, year: null });
   assert.deepEqual(parseBirthDate('5-3-1990', NOW), { day: 5, month: 3, year: 1990 });

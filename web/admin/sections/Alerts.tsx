@@ -77,13 +77,13 @@ function Remaining({ a }: { a: Announcement }) {
       <div class="remain__bar">
         <span style={{ width: `${pct}%` }} />
       </div>
-      <span class="muted small">{t('quedan {t}', { t: label })}</span>
+      <span class="muted small">{t('{t} left', { t: label })}</span>
     </div>
   );
 }
 
 function screenNames(ids: string[], screens: { id: string; name: string }[]) {
-  if (!ids.length) return t('Todas las pantallas');
+  if (!ids.length) return t('All screens');
   return ids.map((id) => screens.find((s) => s.id === id)?.name ?? id).join(', ');
 }
 
@@ -104,11 +104,11 @@ function ScheduleEditor({ initial, isNew, screens, onSave, onClose, onDelete }: 
       return c;
     });
   const e: Record<string, string> = {};
-  if (!m.title.trim()) e.title = 'Obligatorio';
-  if (!TIME_RE.test(m.from)) e.from = 'Hora no válida (HH:MM)';
-  if (!TIME_RE.test(m.to)) e.to = 'Hora no válida (HH:MM)';
-  else if (m.from === m.to) e.to = 'Debe ser distinta de la hora de inicio';
-  if (m.startDate && m.endDate && m.endDate < m.startDate) e.endDate = 'Debe ser igual o posterior al inicio';
+  if (!m.title.trim()) e.title = 'Required';
+  if (!TIME_RE.test(m.from)) e.from = 'Invalid time (HH:MM)';
+  if (!TIME_RE.test(m.to)) e.to = 'Invalid time (HH:MM)';
+  else if (m.from === m.to) e.to = 'Must differ from the start time';
+  if (m.startDate && m.endDate && m.endDate < m.startDate) e.endDate = 'Must be on or after the start';
   const shown = tried ? e : {};
   const crosses = TIME_RE.test(m.from) && TIME_RE.test(m.to) && m.to < m.from;
   const submit = () => {
@@ -118,7 +118,7 @@ function ScheduleEditor({ initial, isNew, screens, onSave, onClose, onDelete }: 
   };
   return (
     <Modal
-      title={isNew ? t('Nuevo mensaje programado') : t('Editar mensaje programado')}
+      title={isNew ? t('New scheduled message') : t('Edit scheduled message')}
       icon="clock"
       onClose={onClose}
       dirty={JSON.stringify(m) !== JSON.stringify(initial)}
@@ -126,15 +126,15 @@ function ScheduleEditor({ initial, isNew, screens, onSave, onClose, onDelete }: 
         <>
           {onDelete && (
             <Button variant="ghost" icon="trash" class="btn--danger-text" onClick={onDelete}>
-              {t('Eliminar')}
+              {t('Delete')}
             </Button>
           )}
           <span class="spacer" />
           <Button variant="ghost" onClick={onClose}>
-            {t('Cancelar')}
+            {t('Cancel')}
           </Button>
           <Button variant="primary" icon="check" onClick={submit}>
-            {isNew ? t('Añadir') : t('Aplicar')}
+            {isNew ? t('Add') : t('Apply')}
           </Button>
         </>
       }
@@ -142,41 +142,41 @@ function ScheduleEditor({ initial, isNew, screens, onSave, onClose, onDelete }: 
       <div class="stack">
         <div class="ev-editor__title">
           <EmojiPicker size="lg" value={m.emoji} allowNone onChange={(v) => upd((x) => void (x.emoji = v))} />
-          <TextInput class="input--lg" value={m.title} maxLength={80} error={!!shown.title} placeholder={t('Ej.: Sacar la basura')} onValue={(v) => upd((x) => void (x.title = v))} />
+          <TextInput class="input--lg" value={m.title} maxLength={80} error={!!shown.title} placeholder={t('E.g. Take out the trash')} onValue={(v) => upd((x) => void (x.title = v))} />
         </div>
-        <Field label={t('Texto (opcional)')}>
-          <Textarea rows={2} maxLength={300} value={m.body} placeholder={t('Orgánico y envases 🟡')} onValue={(v) => upd((x) => void (x.body = v))} />
+        <Field label={t('Text (optional)')}>
+          <Textarea rows={2} maxLength={300} value={m.body} placeholder={t('Organic and packaging 🟡')} onValue={(v) => upd((x) => void (x.body = v))} />
         </Field>
-        <Field label={t('Días')} hint={m.days.length ? undefined : t('Ninguno marcado: todos los días')}>
+        <Field label={t('Days')} hint={m.days.length ? undefined : t('None ticked: every day')}>
           <WeekdayPicker labels={wd} value={m.days} onChange={(v) => upd((x) => void (x.days = v))} />
         </Field>
         <div class="grid grid--2">
-          <Field label={t('Desde')} error={shown.from}>
+          <Field label={t('From')} error={shown.from}>
             <input class={`input ${shown.from ? 'is-invalid' : ''}`} type="time" value={m.from} onInput={(ev) => upd((x) => void (x.from = ev.currentTarget.value))} />
           </Field>
-          <Field label={t('Hasta')} error={shown.to} hint={crosses ? t('Termina al día siguiente') : undefined}>
+          <Field label={t('To')} error={shown.to} hint={crosses ? t('Ends the next day') : undefined}>
             <input class={`input ${shown.to ? 'is-invalid' : ''}`} type="time" value={m.to} onInput={(ev) => upd((x) => void (x.to = ev.currentTarget.value))} />
           </Field>
-          <Field label={t('Primer día (opcional)')}>
+          <Field label={t('First day (optional)')}>
             <input class="input" type="date" value={m.startDate ?? ''} onInput={(ev) => upd((x) => void (x.startDate = ev.currentTarget.value || null))} />
           </Field>
-          <Field label={t('Último día (opcional)')} error={shown.endDate}>
+          <Field label={t('Last day (optional)')} error={shown.endDate}>
             <input class={`input ${shown.endDate ? 'is-invalid' : ''}`} type="date" value={m.endDate ?? ''} onInput={(ev) => upd((x) => void (x.endDate = ev.currentTarget.value || null))} />
           </Field>
         </div>
         <div class="grid grid--2">
-          <Field label={t('Estilo')}>
+          <Field label={t('Style')}>
             <StylePicker value={m.style} onChange={(v) => upd((x) => void (x.style = v))} />
           </Field>
-          <Field label={t('Sonido al empezar')}>
+          <Field label={t('Sound at start')}>
             <label class="mini-toggle">
               <Toggle checked={m.sound} onChange={(v) => upd((x) => void (x.sound = v))} />
-              <span>{m.sound ? t('Con aviso sonoro') : t('Silencioso')}</span>
+              <span>{m.sound ? t('With sound') : t('Silent')}</span>
             </label>
           </Field>
         </div>
         {screens.length > 1 && (
-          <Field label={t('Pantallas')}>
+          <Field label={t('Screens')}>
             <ScreenTargets screens={screens} value={m.screenIds} onChange={(v) => upd((x) => void (x.screenIds = v))} />
           </Field>
         )}
@@ -187,7 +187,7 @@ function ScheduleEditor({ initial, isNew, screens, onSave, onClose, onDelete }: 
 }
 
 function scheduleWhen(m: ScheduledMessage, wd: string[]) {
-  const days = !m.days.length ? t('Todos los días') : m.days.length === 5 && [1, 2, 3, 4, 5].every((d) => m.days.includes(d)) ? t('Lunes a viernes') : m.days.slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map((d) => wd[d]).join(', ');
+  const days = !m.days.length ? t('Every day') : m.days.length === 5 && [1, 2, 3, 4, 5].every((d) => m.days.includes(d)) ? t('Monday to Friday') : m.days.slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map((d) => wd[d]).join(', ');
   let s = `${days} · ${m.from}–${m.to}`;
   if (m.startDate || m.endDate) s += ` · ${m.startDate ? fmtDay(m.startDate, { weekday: false }) : '…'} → ${m.endDate ? fmtDay(m.endDate, { weekday: false }) : '…'}`;
   return s;
@@ -235,10 +235,10 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
     }
   };
   const clearAll = async () => {
-    if (!(await confirmDialog({ title: t('¿Quitar todos los avisos activos?'), confirm: t('Quitar todos'), danger: true }))) return;
+    if (!(await confirmDialog({ title: t('Remove all active alerts?'), confirm: t('Remove all'), danger: true }))) return;
     try {
       const r = await api.clearAnnouncements();
-      toast(t('{n} avisos retirados', { n: r.cleared }));
+      toast(t('{n} alerts removed', { n: r.cleared }));
       load();
     } catch (e) {
       toast((e as ApiError).message, 'error');
@@ -247,7 +247,7 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
   const resend = async (a: Announcement) => {
     try {
       const r = await api.announce({ title: a.title, body: a.body, emoji: a.emoji, style: a.style, durationSec: a.durationSec, sound: a.sound, screens: a.screenIds });
-      toast(r.delivered ? withPollNote(t('Aviso enviado a {n} pantallas', { n: r.delivered })) : t('Aviso guardado: se mostrará cuando se conecte una pantalla'));
+      toast(r.delivered ? withPollNote(t('Alert sent to {n} screens', { n: r.delivered })) : t('Alert saved: it will show when a screen connects'));
       load();
     } catch (e) {
       toast((e as ApiError).message, 'error');
@@ -259,24 +259,24 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
 
   return (
     <>
-      <PageHeader title={t('Avisos')} desc={t('Mensajes que aparecen sobre el calendario: al momento, programados o desde Home Assistant (ver “API y webhooks”).')} />
+      <PageHeader title={t('Alerts')} desc={t('Messages shown over the calendar: instantly, scheduled or from Home Assistant (see “API & webhooks”).')} />
 
       {ann && (
-        <Card title={t('Enviar un aviso ahora')} icon="megaphone" id="al-send" scope="global">
+        <Card title={t('Send an alert now')} icon="megaphone" id="al-send" scope="global">
           <AnnounceForm screens={saved.screens} onSent={() => load()} />
         </Card>
       )}
 
       {ann && (
         <Card
-          title={t('Avisos activos')}
+          title={t('Active alerts')}
           icon="bell"
           id="al-active"
-          desc={active.length ? t('{n} en pantalla ahora', { n: active.length }) : undefined}
+          desc={active.length ? t('{n} on screen now', { n: active.length }) : undefined}
           actions={
             active.length > 1 && (
               <Button size="sm" variant="ghost" icon="x" onClick={clearAll}>
-                {t('Quitar todos')}
+                {t('Remove all')}
               </Button>
             )
           }
@@ -284,7 +284,7 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
           {err && !data ? (
             <div class="err-text small">{err}</div>
           ) : active.length === 0 ? (
-            <div class="muted small">{t('No hay avisos en pantalla.')}</div>
+            <div class="muted small">{t('No alerts on screen.')}</div>
           ) : (
             <ul class="ann-list">
               {active.map((a) => (
@@ -299,7 +299,7 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
                     <Remaining a={a} />
                   </div>
                   <Button size="sm" variant="ghost" icon="x" onClick={() => clearOne(a)}>
-                    {t('Quitar')}
+                    {t('Remove')}
                   </Button>
                 </li>
               ))}
@@ -310,25 +310,25 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
 
       {schedOn && (
         <Card
-          title={t('Mensajes programados')}
+          title={t('Scheduled messages')}
           icon="clock"
           id="al-sched"
           scope="global"
-          desc={t('Se muestran automáticamente en una franja horaria, p. ej. “🗑️ Sacar la basura” martes y viernes de 20:00 a 22:00.')}
+          desc={t('Shown automatically in a time window, e.g. “🗑️ Take out the trash” Tue and Fri 20:00–22:00.')}
           actions={
             <Button size="sm" variant="primary" icon="plus" onClick={() => setEditing({ m: newSchedule(), isNew: true })} disabled={sched.length >= 100}>
-              {t('Nuevo')}
+              {t('New')}
             </Button>
           }
         >
           {sched.length === 0 ? (
-            <Empty icon="clock" title={t('Sin mensajes programados')}>
+            <Empty icon="clock" title={t('No scheduled messages')}>
               <Button
                 variant="default"
                 icon="plus"
-                onClick={() => setEditing({ m: { ...newSchedule(), title: t('Sacar la basura') }, isNew: true })}
+                onClick={() => setEditing({ m: { ...newSchedule(), title: t('Take out the trash') }, isNew: true })}
               >
-                🗑️ {t('Sacar la basura (mar y vie, 20–22 h)')}
+                🗑️ {t('Take out the trash (Tue & Fri, 8–10 pm)')}
               </Button>
             </Empty>
           ) : (
@@ -342,8 +342,8 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
                       <span class="sched__emoji">{m.emoji || '🗓️'}</span>
                       <span class="sched__text">
                         <strong>
-                          {m.title || t('Sin título')}
-                          {on && <span class="badge badge--ok">{t('Activo ahora')}</span>}
+                          {m.title || t('Untitled')}
+                          {on && <span class="badge badge--ok">{t('Active now')}</span>}
                           {m.sound && <Icon name="volume" size={13} class="muted" />}
                         </strong>
                         <span class="muted small">
@@ -356,7 +356,7 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
                     <Toggle
                       size="sm"
                       checked={m.enabled}
-                      label={t('Activo')}
+                      label={t('Enabled')}
                       onChange={(v) =>
                         setFull((d) => {
                           const x = d.schedules.items.find((y) => y.id === m.id);
@@ -372,17 +372,17 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
         </Card>
       )}
 
-      <Card title={t('Avisos en esta pantalla')} icon="volume" id="al-screen" scope="screen">
-        <ToggleRow label={t('Mostrar avisos y mensajes programados')} hint={t('Si lo desactivas, esta pantalla no recibe ningún aviso.')} checked={al.enabled} onChange={(v) => set((d) => void (d.alerts.enabled = v))} />
+      <Card title={t('Alerts on this screen')} icon="volume" id="al-screen" scope="screen">
+        <ToggleRow label={t('Show alerts and scheduled messages')} hint={t('If off, this screen receives no alerts.')} checked={al.enabled} onChange={(v) => set((d) => void (d.alerts.enabled = v))} />
         <div class={`stack ${al.enabled ? '' : 'is-disabled'}`}>
-          <ToggleRow label={t('Permitir sonido')} hint={t('Un tono suave sintetizado (sin archivos). Solo suena si el aviso lo pide.')} checked={al.sound} onChange={(v) => set((d) => void (d.alerts.sound = v))} />
+          <ToggleRow label={t('Allow sound')} hint={t('A soft synthesized tone (no files). Only plays if the alert asks for it.')} checked={al.sound} onChange={(v) => set((d) => void (d.alerts.sound = v))} />
           <div class={`vol-row ${al.sound ? '' : 'is-disabled'}`}>
-            <Field label={t('Volumen')} error={errors['alerts.volume']}>
+            <Field label={t('Volume')} error={errors['alerts.volume']}>
               <Slider value={al.volume} min={0} max={1} step={0.05} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => set((d) => void (d.alerts.volume = v))} />
             </Field>
             <div class="vol-row__test">
               {ALERT_STYLES.map((s) => (
-                <button type="button" class={`pill pill--${s.value}`} onClick={() => playChime(s.value, al.volume)} title={t('Probar sonido')}>
+                <button type="button" class={`pill pill--${s.value}`} onClick={() => playChime(s.value, al.volume)} title={t('Test sound')}>
                   <Icon name="play" size={11} /> {t(s.label)}
                 </button>
               ))}
@@ -393,26 +393,26 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
 
       {ann && (
         <Card
-          title={t('Historial')}
+          title={t('History')}
           icon="history"
           id="al-history"
           actions={
             <Button size="sm" variant="ghost" onClick={() => setShowHist(!showHist)}>
-              {showHist ? t('Ocultar') : t('Mostrar ({n})', { n: data?.history.length ?? 0 })}
+              {showHist ? t('Hide') : t('Show ({n})', { n: data?.history.length ?? 0 })}
             </Button>
           }
         >
           {showHist &&
             (!data?.history.length ? (
-              <div class="muted small">{t('Todavía no se ha enviado ningún aviso.')}</div>
+              <div class="muted small">{t('No alert has been sent yet.')}</div>
             ) : (
               <div class="table-wrap">
                 <table class="table">
                   <thead>
                     <tr>
-                      <th>{t('Aviso')}</th>
-                      <th>{t('Enviado')}</th>
-                      <th>{t('Origen')}</th>
+                      <th>{t('Alert')}</th>
+                      <th>{t('Sent')}</th>
+                      <th>{t('Source')}</th>
                       <th />
                     </tr>
                   </thead>
@@ -421,7 +421,7 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
                       <tr>
                         <td>
                           <span class={`style-dot style-dot--${a.style}`} /> {a.emoji} <strong>{a.title || a.body}</strong>
-                          {a.clearedAt && <span class="muted small"> · {t('retirado')}</span>}
+                          {a.clearedAt && <span class="muted small"> · {t('removed')}</span>}
                         </td>
                         <td class="muted" title={a.createdAt}>
                           {fmtDateTime(a.createdAt)}
@@ -429,7 +429,7 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
                         <td class="muted">{a.via === 'hook' ? `⚡ ${a.by.replace(/^token:/, '')}` : a.by}</td>
                         <td class="num">
                           <Button size="sm" variant="ghost" icon="refresh" onClick={() => resend(a)}>
-                            {t('Reenviar')}
+                            {t('Resend')}
                           </Button>
                         </td>
                       </tr>
@@ -454,13 +454,13 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
               else d.schedules.items.push(m);
             });
             setEditing(null);
-            toast(t('Guarda para publicar los cambios'), 'info', 2000);
+            toast(t('Save to publish the changes'), 'info', 2000);
           }}
           onDelete={
             editing.isNew
               ? undefined
               : async () => {
-                  if (!(await confirmDialog({ title: t('Eliminar “{name}”', { name: editing.m.title }), confirm: t('Eliminar'), danger: true }))) return;
+                  if (!(await confirmDialog({ title: t('Delete “{name}”', { name: editing.m.title }), confirm: t('Delete'), danger: true }))) return;
                   setFull((d) => void (d.schedules.items = d.schedules.items.filter((x) => x.id !== editing.m.id)));
                   setEditing(null);
                 }

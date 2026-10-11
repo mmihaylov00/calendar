@@ -12,8 +12,8 @@ import { allSourceOptions, moveItem, normalize, uid } from '../util';
 import type { SectionProps } from './common';
 
 const ACTIONS: { value: EventRuleAction; label: string; icon: 'eyeOff' | 'edit' | 'palette' }[] = [
-  { value: 'hide', label: 'Ocultar', icon: 'eyeOff' },
-  { value: 'rename', label: 'Renombrar', icon: 'edit' },
+  { value: 'hide', label: 'Hide', icon: 'eyeOff' },
+  { value: 'rename', label: 'Rename', icon: 'edit' },
   { value: 'style', label: 'Emoji / color', icon: 'palette' },
 ];
 
@@ -44,25 +44,25 @@ function RuleRow({ r, i, n, hits, errors, sources, upd, remove, move, reorder, h
         <div class="frule__action">
           <Select value={r.action} options={ACTIONS.map((a) => ({ value: a.value, label: t(a.label) }))} onChange={(v) => upd((x) => void (x.action = v))} />
         </div>
-        <span class="frule__lbl">{t('si')}</span>
+        <span class="frule__lbl">{t('if')}</span>
         <div class="frule__mode">
           <Select
             value={r.matchMode}
             options={[
-              { value: 'contains', label: t('contiene') },
-              { value: 'exact', label: t('es exactamente') },
-              { value: 'startsWith', label: t('empieza por') },
+              { value: 'contains', label: t('contains') },
+              { value: 'exact', label: t('is exactly') },
+              { value: 'startsWith', label: t('starts with') },
             ]}
             onChange={(v) => upd((x) => void (x.matchMode = v))}
           />
         </div>
-        <TextInput class="frule__match" value={r.match} error={!!errors[`${p}.match`]} maxLength={120} placeholder={t('Texto del título…')} onValue={(v) => upd((x) => void (x.match = v))} />
-        <span class={`frule__hits ${hits ? 'is-on' : ''}`} title={t('Eventos afectados en los próximos 14 días')}>
+        <TextInput class="frule__match" value={r.match} error={!!errors[`${p}.match`]} maxLength={120} placeholder={t('Title text…')} onValue={(v) => upd((x) => void (x.match = v))} />
+        <span class={`frule__hits ${hits ? 'is-on' : ''}`} title={t('Events affected in the next 14 days')}>
           {hits ?? 0}
         </span>
-        <Toggle checked={r.enabled} size="sm" label={t('Activa')} onChange={(v) => upd((x) => void (x.enabled = v))} />
+        <Toggle checked={r.enabled} size="sm" label={t('Enabled')} onChange={(v) => upd((x) => void (x.enabled = v))} />
         <ReorderButtons index={i} count={n} onMove={move} />
-        <button type="button" class="icon-btn icon-btn--danger" aria-label={t('Eliminar')} onClick={remove}>
+        <button type="button" class="icon-btn icon-btn--danger" aria-label={t('Delete')} onClick={remove}>
           <Icon name="trash" size={15} />
         </button>
       </div>
@@ -70,27 +70,27 @@ function RuleRow({ r, i, n, hits, errors, sources, upd, remove, move, reorder, h
         {r.action === 'rename' && (
           <div class="frule__rename">
             <Icon name="enter" size={14} class="flip-x" />
-            <TextInput value={r.replaceWith} maxLength={120} placeholder={r.matchMode === 'exact' ? t('Nuevo título') : t('Reemplazar por (vacío = quitar el texto)')} onValue={(v) => upd((x) => void (x.replaceWith = v))} />
+            <TextInput value={r.replaceWith} maxLength={120} placeholder={r.matchMode === 'exact' ? t('New title') : t('Replace with (empty = remove the text)')} onValue={(v) => upd((x) => void (x.replaceWith = v))} />
           </div>
         )}
         {r.action === 'style' && (
           <div class={`frule__style ${errors[`${p}.emoji`] ? 'is-invalid' : ''}`}>
             <EmojiPicker value={r.emoji} allowNone error={!!errors[`${p}.emoji`]} onChange={(v) => upd((x) => void (x.emoji = v))} />
             <ColorPicker compact allowNone value={r.color} onChange={(v) => upd((x) => void (x.color = v))} />
-            <label class="mini-toggle" title={t('Mostrar como cuenta atrás en la pantalla')}>
+            <label class="mini-toggle" title={t('Show as a countdown on the screen')}>
               <Toggle size="sm" checked={r.countdown} onChange={(v) => upd((x) => void (x.countdown = v))} />
-              <span>⏳ {t('Cuenta atrás')}</span>
+              <span>⏳ {t('Countdown')}</span>
             </label>
           </div>
         )}
         <SourcePicker compact options={sources} value={r.sourceIds} onChange={(v) => upd((x) => void (x.sourceIds = v))} />
         {r.matchMode === 'contains' && (
-          <label class="mini-toggle" title={t('Buscar también en la descripción y la ubicación')}>
+          <label class="mini-toggle" title={t('Also search description and location')}>
             <Toggle size="sm" checked={r.field === 'any'} onChange={(v) => upd((x) => void (x.field = v ? 'any' : 'title'))} />
-            <span>{t('+ descripción y lugar')}</span>
+            <span>{t('+ description and place')}</span>
           </label>
         )}
-        <input class="input input--sm input--bare frule__note" value={r.note} maxLength={200} placeholder={t('Nota (opcional)')} onInput={(e) => upd((x) => void (x.note = e.currentTarget.value))} />
+        <input class="input input--sm input--bare frule__note" value={r.note} maxLength={200} placeholder={t('Note (optional)')} onInput={(e) => upd((x) => void (x.note = e.currentTarget.value))} />
       </div>
       {errors[`${p}.emoji`] && <div class="field__error">{t(errors[`${p}.emoji`])}</div>}
     </div>
@@ -109,7 +109,7 @@ function PreviewRow({ e, rules, onHide, onEmoji, onColor, onFocusRule }: { e: Pr
             {e.title}
             {e.age != null && ` (${e.age})`}
           </span>
-          {e.hidden && <span class="badge badge--soft">{t('oculto')}</span>}
+          {e.hidden && <span class="badge badge--soft">{t('hidden')}</span>}
         </div>
         <div class="pev__meta muted small">
           {eventTimeLabel(e)} · {e.sourceName}
@@ -117,7 +117,7 @@ function PreviewRow({ e, rules, onHide, onEmoji, onColor, onFocusRule }: { e: Pr
             <>
               {' · '}
               <span class="pev__before">
-                {t('antes')}: <s>{e.originalTitle}</s>
+                {t('before')}: <s>{e.originalTitle}</s>
               </span>
             </>
           )}
@@ -139,14 +139,14 @@ function PreviewRow({ e, rules, onHide, onEmoji, onColor, onFocusRule }: { e: Pr
       </div>
       <div class="pev__actions">
         {!e.hidden && (
-          <button type="button" class="pev__act" onClick={onHide} title={t('Crear una regla que oculte este evento')}>
-            <Icon name="eyeOff" size={14} /> <span>{t('Ocultar')}</span>
+          <button type="button" class="pev__act" onClick={onHide} title={t('Create a rule that hides this event')}>
+            <Icon name="eyeOff" size={14} /> <span>{t('Hide')}</span>
           </button>
         )}
-        <div class="pev__act pev__act--pick" title={t('Cambiar emoji')}>
+        <div class="pev__act pev__act--pick" title={t('Change emoji')}>
           <EmojiPicker value={e.emoji ?? ''} allowNone onChange={onEmoji} />
         </div>
-        <div class="pev__act pev__act--pick" title={t('Cambiar color')}>
+        <div class="pev__act pev__act--pick" title={t('Change color')}>
           <ColorPicker compact allowNone value={e.color} onChange={onColor} />
         </div>
       </div>
@@ -158,12 +158,12 @@ function PreviewRow({ e, rules, onHide, onEmoji, onColor, onFocusRule }: { e: Pr
 function previewError(e: ApiError): string {
   const details = (e.body as { details?: { path?: string }[] } | null)?.details ?? [];
   const path = details[0]?.path ?? '';
-  if (path === 'screen') return t('Guarda la pantalla para filtrar por ella');
-  if (path.startsWith('localEvents')) return t('Hay un evento local con datos no válidos: corrígelo en Eventos locales para ver la vista previa.');
-  if (path.startsWith('birthdays')) return t('Hay un cumpleaños con datos no válidos: corrígelo en Cumpleaños para ver la vista previa.');
-  if (path.startsWith('calendar.iconRules')) return t('Hay una regla de iconos incompleta: corrígela para ver la vista previa.');
-  if (path.startsWith('eventRules')) return t('Hay reglas incompletas: corrígelas para ver la vista previa.');
-  return `${t('No se pudo cargar la vista previa')}: ${e.message}`;
+  if (path === 'screen') return t('Save the screen to filter by it');
+  if (path.startsWith('localEvents')) return t('A local event has invalid data: fix it in Local events to see the preview.');
+  if (path.startsWith('birthdays')) return t('A birthday has invalid data: fix it in Birthdays to see the preview.');
+  if (path.startsWith('calendar.iconRules')) return t('An icon rule is incomplete: fix it to see the preview.');
+  if (path.startsWith('eventRules')) return t('Some rules are incomplete: fix them to see the preview.');
+  return `${t('Could not load the preview')}: ${e.message}`;
 }
 
 export function FiltersSection({ full, setFull, errors, cfg, screenId, saved }: SectionProps) {
@@ -211,7 +211,7 @@ export function FiltersSection({ full, setFull, errors, cfg, screenId, saved }: 
         }
       } catch (e) {
         const ae = e as ApiError;
-        if (my === seq.current) setPerr(ae.status === 400 ? previewError(ae) : ae.status === 404 ? t('El servidor aún no admite la vista previa.') : ae.message);
+        if (my === seq.current) setPerr(ae.status === 400 ? previewError(ae) : ae.status === 404 ? t('The server does not support the preview yet.') : ae.message);
       } finally {
         if (my === seq.current) setLoading(false);
       }
@@ -226,7 +226,7 @@ export function FiltersSection({ full, setFull, errors, cfg, screenId, saved }: 
   const styleRuleFor = (title: string) => rules.find((r) => r.action === 'style' && r.matchMode === 'exact' && normalize(r.match) === normalize(title));
   const quickHide = (e: PreviewEvent) => {
     setFull((d) => void d.eventRules.items.push(newRule('hide', e.originalTitle || e.title, { matchMode: 'exact', sourceIds: [e.sourceId] })));
-    toast(t('Regla creada: ocultar “{title}”', { title: e.originalTitle || e.title }), 'ok', 2200);
+    toast(t('Rule created: hide “{title}”', { title: e.originalTitle || e.title }), 'ok', 2200);
   };
   const quickStyle = (e: PreviewEvent, patch: Partial<EventRule>) => {
     const existing = styleRuleFor(e.title);
@@ -235,7 +235,7 @@ export function FiltersSection({ full, setFull, errors, cfg, screenId, saved }: 
       if (r) Object.assign(r, patch, { enabled: true });
       else d.eventRules.items.unshift(newRule('style', e.title, { matchMode: 'exact', ...patch }));
     });
-    toast(existing ? t('Regla actualizada para “{title}”', { title: e.title }) : t('Regla creada para “{title}”', { title: e.title }), 'ok', 2000);
+    toast(existing ? t('Rule updated for “{title}”', { title: e.title }) : t('Rule created for “{title}”', { title: e.title }), 'ok', 2000);
   };
   const focusRule = (id: string) => {
     setHit(id);
@@ -250,14 +250,14 @@ export function FiltersSection({ full, setFull, errors, cfg, screenId, saved }: 
 
   return (
     <>
-      <PageHeader title={t('Filtros y cambios')} desc={t('Oculta eventos que no quieres ver (“No disponible”, “Blocked”…), corrige títulos o fija el emoji y el color de una serie. Se aplican en todas las pantallas.')} />
+      <PageHeader title={t('Filters & overrides')} desc={t('Hide events you do not want to see (“Not available”, “Blocked”…), fix titles or pin the emoji and color of a series. Applies to all screens.')} />
 
       <Card
-        title={t('Reglas')}
+        title={t('Rules')}
         icon="filter"
         id="flt-rules"
         scope="global"
-        desc={t('Orden: primero ocultar, luego renombrar (en orden) y por último el primer estilo que coincida. Sin distinguir mayúsculas ni acentos.')}
+        desc={t('Order: hide first, then rename (in order), finally the first matching style. Case- and accent-insensitive.')}
         actions={
           <div class="btn-row">
             {ACTIONS.map((a) => (
@@ -269,8 +269,8 @@ export function FiltersSection({ full, setFull, errors, cfg, screenId, saved }: 
         }
       >
         {rules.length === 0 ? (
-          <Empty icon="filter" title={t('Sin reglas todavía')}>
-            {t('Crea una con los botones de arriba o directamente desde la vista previa (“Ocultar”, emoji, color).')}
+          <Empty icon="filter" title={t('No rules yet')}>
+            {t('Create one with the buttons above or right from the preview (“Hide”, emoji, color).')}
           </Empty>
         ) : (
           <div class="frule-list">
@@ -287,7 +287,7 @@ export function FiltersSection({ full, setFull, errors, cfg, screenId, saved }: 
                 move={move}
                 highlight={hit === r.id}
                 remove={async () => {
-                  if (r.match && !(await confirmDialog({ title: t('Eliminar la regla “{name}”', { name: r.match }), confirm: t('Eliminar'), danger: true }))) return;
+                  if (r.match && !(await confirmDialog({ title: t('Delete rule “{name}”', { name: r.match }), confirm: t('Delete'), danger: true }))) return;
                   setFull((d) => void (d.eventRules.items = d.eventRules.items.filter((x) => x.id !== r.id)));
                 }}
                 upd={(fn) =>
@@ -300,14 +300,14 @@ export function FiltersSection({ full, setFull, errors, cfg, screenId, saved }: 
             ))}
           </div>
         )}
-        {ruleErr && <Callout kind="error">{t('Hay reglas incompletas (marcadas en rojo).')}</Callout>}
+        {ruleErr && <Callout kind="error">{t('Some rules are incomplete (marked in red).')}</Callout>}
       </Card>
 
       <Card
-        title={t('Vista previa · próximos 14 días')}
+        title={t('Preview · next 14 days')}
         icon="eye"
         id="flt-preview"
-        desc={prev ? t('{n} eventos · {h} ocultos · {c} modificados', { n: prev.events.length, h: hiddenCount, c: changed }) : t('Con los cambios sin guardar aplicados')}
+        desc={prev ? t('{n} events · {h} hidden · {c} changed', { n: prev.events.length, h: hiddenCount, c: changed }) : t('With unsaved changes applied')}
         actions={loading ? <span class="spinner" /> : undefined}
       >
         <div class="toolbar">
@@ -316,23 +316,23 @@ export function FiltersSection({ full, setFull, errors, cfg, screenId, saved }: 
               size="sm"
               value={scope}
               options={[
-                { value: 'all', label: t('Todas las fuentes') },
-                { value: 'screen', label: t('Esta pantalla') },
+                { value: 'all', label: t('All sources') },
+                { value: 'screen', label: t('This screen') },
               ]}
               onChange={setScope}
             />
           )}
-          {scope === 'screen' && !screenSaved && <span class="muted small">{t('Guarda la pantalla para filtrar por ella')}</span>}
+          {scope === 'screen' && !screenSaved && <span class="muted small">{t('Save the screen to filter by it')}</span>}
           <label class="mini-toggle">
             <Toggle size="sm" checked={showHidden} onChange={setShowHidden} />
-            <span>{t('Mostrar ocultos')}</span>
+            <span>{t('Show hidden')}</span>
           </label>
-          <SearchInput value={q} onValue={setQ} placeholder={t('Buscar evento…')} />
+          <SearchInput value={q} onValue={setQ} placeholder={t('Search event…')} />
         </div>
         {perr && <Callout kind={perr.includes('incompletas') ? 'warn' : 'error'}>{perr}</Callout>}
         {prev?.errors.length ? (
           <div class="muted small">
-            <Icon name="alert" size={12} /> {t('Sin datos de: {list}', { list: prev.errors.map((e) => sources.find((s) => s.id === e.sourceId)?.name ?? e.sourceId).join(', ') })}
+            <Icon name="alert" size={12} /> {t('No data from: {list}', { list: prev.errors.map((e) => sources.find((s) => s.id === e.sourceId)?.name ?? e.sourceId).join(', ') })}
           </div>
         ) : null}
         {!prev && !perr ? (
@@ -342,7 +342,7 @@ export function FiltersSection({ full, setFull, errors, cfg, screenId, saved }: 
             <div class="skeleton" />
           </div>
         ) : prev && events.length === 0 ? (
-          <Empty icon="calendar" title={q ? t('Sin resultados') : t('No hay eventos en los próximos 14 días')} />
+          <Empty icon="calendar" title={q ? t('No results') : t('No events in the next 14 days')} />
         ) : (
           <ul class={`pev-list ${loading ? 'is-loading' : ''}`}>
             {events.map((e, i) => {

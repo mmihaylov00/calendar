@@ -9,7 +9,7 @@ import { validateConfig as serverValidate } from '../core/validate.js';
 import { CONTRACT_PATH, contractText, generateContract } from '../../scripts/gen-contract.mjs';
 import { loadWebModules } from './webModules.js';
 
-const [capsMod, nav, search, util, auth, urls, liveNote, dict, fb] = await loadWebModules(
+const [capsMod, nav, search, util, auth, urls, liveNote, fb] = await loadWebModules(
   '/web/admin/caps.ts',
   '/web/admin/navFilter.ts',
   '/web/admin/searchIndex.ts',
@@ -17,7 +17,6 @@ const [capsMod, nav, search, util, auth, urls, liveNote, dict, fb] = await loadW
   '/web/admin/authRedirect.ts',
   '/web/admin/screenUrl.ts',
   '/web/admin/liveNote.ts',
-  '/web/admin/i18n-dict.ts',
   '/web/admin/feedbackForm.ts'
 );
 const { capsFrom, hasFeature, limitOf, setCaps } = capsMod;
@@ -174,33 +173,29 @@ test('feedback: self-hosted never offers it, the cloud does when it says so', ()
 });
 
 test('feedback form: limits, the details it sends and nothing else', () => {
-  const meta = fb.feedbackMeta({ version: ' 0.5.1 ', page: 'calendars', screens: 2, userAgent: 'UA/1.0', lang: 'es', timeZone: 'Europe/Lisbon', extra: 'x' });
-  assert.deepEqual(meta, { version: '0.5.1', page: 'calendars', screens: 2, userAgent: 'UA/1.0', lang: 'es', timeZone: 'Europe/Lisbon' });
-  assert.deepEqual(fb.metaRows(meta).map(([k]) => k), ['Versión', 'Página', 'Pantallas', 'Idioma', 'Zona horaria', 'Navegador']);
+  const meta = fb.feedbackMeta({ version: ' 0.5.1 ', page: 'calendars', screens: 2, userAgent: 'UA/1.0', lang: 'en', timeZone: 'Europe/Lisbon', extra: 'x' });
+  assert.deepEqual(meta, { version: '0.5.1', page: 'calendars', screens: 2, userAgent: 'UA/1.0', lang: 'en', timeZone: 'Europe/Lisbon' });
+  assert.deepEqual(fb.metaRows(meta).map(([k]) => k), ['Version', 'Page', 'Screens', 'Language', 'Time zone', 'Browser']);
   assert.deepEqual(fb.feedbackMeta({ screens: -1, userAgent: 'x'.repeat(500) }), { userAgent: 'x'.repeat(300) });
-  assert.equal(fb.messageError('  ab '), 'Escribe un poco más para que podamos entenderlo.');
+  assert.equal(fb.messageError('  ab '), 'Write a little more so we can understand it.');
   assert.equal(fb.messageError('It broke'), '');
-  assert.equal(fb.messageError('x'.repeat(fb.FEEDBACK_MAX + 1)), 'El mensaje es demasiado largo.');
+  assert.equal(fb.messageError('x'.repeat(fb.FEEDBACK_MAX + 1)), 'The message is too long.');
   assert.deepEqual(fb.feedbackBody('idea', '  More colors ', meta, true), { kind: 'idea', message: 'More colors', meta });
   assert.deepEqual(fb.feedbackBody('problem', 'Broken', meta, false), { kind: 'problem', message: 'Broken', meta: null });
   assert.equal(fb.feedbackBody('weird', 'Hi there', meta, false).kind, 'other');
-  assert.equal(fb.GITHUB_ISSUES_URL, 'https://github.com/mr-reb00t/marco/issues/new/choose');
-  // every label and message of the form is translated
-  for (const k of ['Ayuda y comentarios', 'Problema', 'Idea', 'Otra cosa', 'Abrir un issue en GitHub', 'Gracias, lo leeremos.', ...fb.metaRows(meta).map(([k]) => k), fb.messageError(''), fb.messageError('x'.repeat(fb.FEEDBACK_MAX + 1))]) {
-    assert.ok(dict.EN[k], k);
-    assert.ok(dict.PT[k], k);
-  }
+  assert.equal(fb.GITHUB_ISSUES_URL, 'https://github.com/mmihaylov00/marco/issues/new');
+
 });
 
 test('navFilter: palette and settings search follow the features', () => {
   const c = cloud();
   const visible = nav.filterNav(nav.NAV_ITEMS, c).map((n) => n.id);
   const labels = nav.filterSettings(search.SETTINGS_INDEX, c, visible).map((s) => s.label);
-  for (const gone of ['Cambiar contraseña', 'Emails de Google permitidos', 'Sensores de Home Assistant para el tiempo', 'Fuentes de noticias (RSS)', 'Tokens de API', 'Galería de fotos', 'Acceso a las pantallas', 'Cuentas de Google Calendar', 'Cerrar sesión en todos los dispositivos']) {
+  for (const gone of ['Change password', 'Allowed Google emails', 'Home Assistant weather sensors', 'News sources (RSS)', 'API tokens', 'Photo gallery', 'Display access', 'Google Calendar accounts', 'Sign out everywhere']) {
     assert.ok(!labels.includes(gone), gone);
   }
-  assert.ok(labels.includes('CSS personalizado'));
-  assert.ok(labels.includes('Exportar configuración'));
+  assert.ok(labels.includes('Custom CSS'));
+  assert.ok(labels.includes('Export settings'));
   for (const s of search.SETTINGS_INDEX) assert.ok(nav.NAV_ITEMS.some((n) => n.id === s.route), `unknown route ${s.route}`);
 
   const noCmds = capsFrom({ ...cloudHealth(), features: { ...cloudHealth().features, displayCommands: false } });
@@ -354,18 +349,18 @@ test('account menu links and household names', () => {
 test('accountNav: multi-tenant servers turn Security into Account', () => {
   const cl = nav.accountNav(nav.filterNav(nav.NAV_ITEMS, cloud()), cloud());
   const sec = cl.find((n) => n.id === 'security');
-  assert.equal(sec.label, 'Cuenta');
+  assert.equal(sec.label, 'Account');
   assert.equal(sec.icon, 'user');
-  assert.equal(cl.filter((n) => n.label === 'Seguridad').length, 0);
+  assert.equal(cl.filter((n) => n.label === 'Security').length, 0);
   for (const caps of [selfHosted(), oldServer()]) {
     const sh = nav.accountNav(nav.filterNav(nav.NAV_ITEMS, caps), caps);
-    assert.equal(sh.find((n) => n.id === 'security').label, 'Seguridad');
+    assert.equal(sh.find((n) => n.id === 'security').label, 'Security');
   }
   // the account entries in the settings search follow accountMenu
   const visible = cl.map((n) => n.id);
   const labels = (caps) => nav.filterSettings(search.SETTINGS_INDEX, caps, visible).filter((s) => s.route === 'security').map((s) => s.label);
-  assert.deepEqual(labels(cloud()), ['Nombre del hogar', 'Sesiones abiertas']);
-  assert.ok(!labels(selfHosted()).includes('Nombre del hogar'));
+  assert.deepEqual(labels(cloud()), ['Household name', 'Open sessions']);
+  assert.ok(!labels(selfHosted()).includes('Household name'));
 });
 
 test('screenUrl: private links, display origin and open mode', () => {
@@ -380,13 +375,11 @@ test('screenUrl: private links, display origin and open mode', () => {
 test('liveNote: sent messages mention the delay only when the server polls', () => {
   setCaps(capsFrom({ ok: true, version: '0.5.0' }));
   assert.equal(liveNote.pollNote(), '');
-  assert.equal(liveNote.withPollNote('Recargando · 2 pantallas'), 'Recargando · 2 pantallas');
+  assert.equal(liveNote.withPollNote('Reloading · 2 screens'), 'Reloading · 2 screens');
   setCaps(capsFrom({ ok: true, version: '0.5.0', live: 'poll' }));
-  assert.equal(liveNote.withPollNote('Recargando · 2 pantallas'), 'Recargando · 2 pantallas · llegará a las pantallas en unos 90 s');
+  assert.equal(liveNote.withPollNote('Reloading · 2 screens'), 'Reloading · 2 screens · reaches the screens within about 90 s');
   setCaps(capsFrom(cloudHealth()));
   assert.ok(liveNote.pollNote());
-  assert.equal(dict.EN['llegará a las pantallas en unos 90 s'], 'reaches the screens within about 90 s');
-  assert.ok(dict.PT['llegará a las pantallas en unos 90 s']);
   setCaps(capsFrom(null));
 });
 
@@ -417,7 +410,7 @@ test('adminContract.json: shape, features and account endpoints', () => {
   assert.equal(get('GET /api/admin/photos').responseArray, true);
   assert.equal(get('PUT /api/admin/password').feature, 'passwordLogin');
   assert.equal(get('POST /api/admin/pair/claim').feature, null);
-  assert.equal(get('POST /api/account/lang').feature, 'accountMenu');
+  assert.equal(get('POST /api/account/lang'), undefined);
   assert.equal(get('PATCH /api/admin/household').feature, 'accountMenu');
   assert.deepEqual(get('GET /api/admin/google/calendars').query, ['account']);
   assert.ok(get('GET /api/admin/activity').query.includes('before'));
@@ -434,10 +427,10 @@ test('dashboard greeting: first name, none for an email address', () => {
 
 test('guessKind: vacation rentals only on clear words', () => {
   assert.equal(util.guessKind('Festivos en Portugal'), 'holidays');
-  assert.equal(util.guessKind('Familia'), 'generic');
+  assert.equal(util.guessKind('Family'), 'generic');
   assert.equal(util.guessKind('Calendario personal'), 'generic');
   assert.equal(util.guessKind('AL CUSTOM'), 'generic');
-  assert.equal(util.guessKind('Reservas Airbnb'), 'airbnb');
+  assert.equal(util.guessKind('Airbnb bookings'), 'airbnb');
   assert.equal(util.guessKind('Booking.com'), 'airbnb');
-  assert.equal(util.guessKind('Cumpleaños'), 'birthdays');
+  assert.equal(util.guessKind('Birthdays'), 'birthdays');
 });

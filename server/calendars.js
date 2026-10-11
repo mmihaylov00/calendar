@@ -9,7 +9,7 @@ import { addDays, isoWithOffset, localDate, zonedMidnight, daysBetween } from '.
 import { hash } from './lib/text.js';
 import { t } from './core/lib/i18n.js';
 import { parseIcsText, expandEvents } from './ics.js';
-import { matchRule, normalizeAirbnbTitle, tidyTitle, translateHoliday, KIND_EMOJI } from './rules.js';
+import { matchRule, normalizeAirbnbTitle, tidyTitle, KIND_EMOJI } from './rules.js';
 import { applyEventRules } from './eventRules.js';
 import { expandLocalEvents, expandBirthdays, localSource, birthdaysSource } from './localEvents.js';
 import * as google from './google.js';
@@ -252,7 +252,6 @@ export function buildSourceEvents(raws, source, { rules, eventRules = [], from, 
     title = String(title || '').trim();
     let titleEmoji = '';
     if (source.kind === 'airbnb') ({ title, emoji: titleEmoji } = normalizeAirbnbTitle(title, description, lang));
-    else if (source.kind === 'holidays') title = translateHoliday(title, lang);
     if (!title) title = t('untitled', lang);
     const location = String(r.location || '').trim();
 

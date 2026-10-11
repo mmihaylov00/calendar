@@ -1,22 +1,17 @@
 {
   "name": "marco",
-  "version": "0.6.1",
+  "version": "0.6.1-ha.2",
   "private": true,
   "type": "module",
-  "description": "Self-hosted family wall calendar & dashboard for a Raspberry Pi kiosk or any browser: Google Calendar, iCal, weather, photos, announcements. A free, open-source DAKboard alternative.",
+  "description": "Home Assistant family dashboard with Google Calendar, private iCal feeds, weather and photos.",
   "license": "MIT",
   "keywords": [
     "calendar",
     "dashboard",
-    "wall-display",
-    "raspberry-pi",
-    "kiosk",
-    "dakboard",
-    "family-calendar",
     "home-assistant",
-    "self-hosted",
     "google-calendar",
-    "ical"
+    "ical",
+    "self-hosted"
   ],
   "engines": {
     "node": ">=20"
@@ -27,8 +22,6 @@
     "start": "NODE_ENV=production node server/index.js",
     "typecheck": "tsc --noEmit -p .",
     "test": "node --test server/test/",
-    "demo": "node scripts/demo.js",
-    "check:release": "node scripts/check-release.js",
     "contract": "node scripts/gen-contract.mjs"
   },
   "dependencies": {

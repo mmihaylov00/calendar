@@ -70,7 +70,7 @@ export function bannerFor(info: UpdateInfo | null, caps: Caps, pageVersion: stri
 export interface UpdateHowTo {
   /** commands to run, in order (one per line) */
   commands: string[];
-  /** where to run them (Spanish source string for t()) */
+  /** where to run them (English label) */
   where: string;
 }
 
@@ -78,15 +78,15 @@ export interface UpdateHowTo {
 export function howToUpdate(install: UpdateInstall): UpdateHowTo {
   switch (install.kind) {
     case 'release':
-      return { commands: ['marco update'], where: 'En el servidor (por SSH o en su terminal):' };
+      return { commands: ['marco update'], where: 'On the server (over SSH or in its terminal):' };
     case 'checkout':
       return install.cli
-        ? { commands: ['marco update'], where: 'En el servidor (por SSH o en su terminal):' }
-        : { commands: ['git pull', 'npm ci', 'npm run build'], where: 'En la carpeta de Marco, y después reinicia el servidor:' };
+        ? { commands: ['marco update'], where: 'On the server (over SSH or in its terminal):' }
+        : { commands: ['git pull', 'npm ci', 'npm run build'], where: 'In the Marco folder, then restart the server:' };
     case 'docker':
-      return { commands: ['git pull', 'docker compose up -d --build'], where: 'En la carpeta de Marco, donde está docker-compose.yml:' };
+      return { commands: ['git pull', 'docker compose up -d --build'], where: 'In the Marco folder, where docker-compose.yml is:' };
     default:
-      return { commands: ['curl -fsSL https://marcohome.app/install | bash'], where: 'En el servidor, o descarga la versión desde GitHub:' };
+      return { commands: ['curl -fsSL https://marcohome.app/install | bash'], where: 'On the server, or download the release from GitHub:' };
   }
 }
 

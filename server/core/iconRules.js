@@ -1,236 +1,215 @@
 // Default icon rules, shared by the server (server/core/defaults.js), the admin and the display
-// (web/shared/emoji.ts): keywords in English, Spanish and Portuguese, matched against event titles and descriptions.
+// (web/shared/emoji.ts): English keywords, matched against event titles and descriptions.
 // More specific categories come first. A plain module (not JSON) so it imports the same way on Node, Vite and Workers.
 export default [
   {
     id: 'r_birthday', emoji: '🎂',
     match: [
-      'cumple', 'cumpleaños', 'birthday', 'bday', 'b-day', 'aniversário', 'aniversario', 'faz anos',
+      'birthday', 'bday', 'b-day',
     ],
   },
   {
     id: 'r_checkout', emoji: '🧳',
     match: [
-      'check-out', 'checkout', 'check out', 'departure', 'salida huésped', 'saída',
+      'check-out', 'checkout', 'check out', 'departure',
     ],
   },
   {
     id: 'r_airbnb', emoji: '🏠',
     match: [
-      'airbnb', 'booking', 'vrbo', 'reserva', 'reservation', 'reserved', 'check-in', 'checkin', 'guest', 'guests',
-      'hóspede', 'huésped',
+      'airbnb', 'booking', 'vrbo', 'reservation', 'reserved', 'check-in', 'checkin', 'guest', 'guests',
     ],
   },
   {
     id: 'r_flight', emoji: '✈️',
     match: [
-      'vuelo', 'flight', 'fly to', 'voo', 'aeropuerto', 'airport', 'aeroporto', 'boarding', 'embarque',
+      'flight', 'fly to', 'airport', 'boarding',
     ],
   },
   {
     id: 'r_train', emoji: '🚆',
     match: [
-      'train', 'tren', 'comboio', 'railway', 'estación de tren',
+      'train', 'railway',
     ],
   },
   {
     id: 'r_doctor', emoji: '🩺',
     match: [
-      'médico', 'medico', 'doctor', 'dr.', 'gp', 'dentista', 'dentist', 'orthodontist', 'ortodoncista',
-      'pediatrician', 'pediatra', 'consulta', 'appointment', 'checkup', 'check-up', 'hospital', 'clinic', 'clínica',
-      'physio', 'fisio', 'therapy', 'terapia', 'vaccine', 'vacuna', 'vacina', 'optician', 'óptica',
+      'doctor', 'dr.', 'gp', 'dentist', 'orthodontist', 'pediatrician', 'appointment', 'checkup', 'check-up', 'hospital', 'clinic', 'physio', 'therapy', 'vaccine', 'optician',
     ],
   },
   {
     id: 'r_pharmacy', emoji: '💊',
     match: [
-      'pharmacy', 'farmacia', 'farmácia', 'prescription', 'receta', 'medication', 'medicine', 'medicación',
-      'medicação',
+      'pharmacy', 'prescription', 'medication', 'medicine',
     ],
   },
   {
     id: 'r_school', emoji: '🎒',
     match: [
-      'colegio', 'escuela', 'school', 'escola', 'kindergarten', 'nursery', 'daycare', 'guardería', 'creche',
-      'parents evening', 'tutoría', 'reunião de pais', 'field trip', 'excursión',
+      'school', 'kindergarten', 'nursery', 'daycare', 'parents evening', 'field trip',
     ],
   },
   {
     id: 'r_exam', emoji: '📝',
     match: [
-      'exam', 'examen', 'exame', 'quiz', 'homework', 'deberes', 'trabalho de casa', 'assignment',
+      'exam', 'quiz', 'homework', 'assignment',
     ],
   },
   {
     id: 'r_swim', emoji: '🏊',
     match: [
-      'swim', 'swimming', 'natación', 'natação', 'piscina', 'pool',
+      'swim', 'swimming', 'pool',
     ],
   },
   {
     id: 'r_sport', emoji: '🏃',
     match: [
-      'fútbol', 'futbol', 'futebol', 'football', 'soccer', 'basketball', 'baloncesto', 'basquetebol', 'gym',
-      'workout', 'training', 'entreno', 'entrenamiento', 'treino', 'ginásio', 'gimnasio', 'padel', 'pádel', 'tenis',
-      'ténis', 'tennis', 'deporte', 'desporto', 'sport', 'sports', 'match', 'partido', 'jogo', 'running', 'run',
-      'yoga', 'pilates', 'dance', 'baile', 'dança', 'karate', 'judo', 'cycling', 'ciclismo', 'hiking', 'senderismo',
+      'football', 'soccer', 'basketball', 'gym', 'workout', 'training', 'padel', 'tennis', 'sport', 'sports', 'match', 'running', 'run', 'yoga', 'pilates', 'dance', 'karate', 'judo', 'cycling', 'hiking',
     ],
   },
   {
     id: 'r_haircut', emoji: '💇',
     match: [
-      'haircut', 'hairdresser', 'barber', 'salon', 'peluquería', 'peluqueria', 'cabeleireiro', 'barbería',
-      'barbearia',
+      'haircut', 'hairdresser', 'barber', 'salon',
     ],
   },
   {
     id: 'r_coffee', emoji: '☕',
     match: [
-      'coffee', 'café', 'brunch', 'breakfast', 'desayuno', 'pequeno-almoço', 'merienda', 'lanche',
+      'coffee', 'café', 'brunch', 'breakfast',
     ],
   },
   {
     id: 'r_dinner', emoji: '🍽️',
     match: [
-      'cena', 'cenar', 'dinner', 'jantar', 'restaurante', 'restaurant', 'almuerzo', 'almoço', 'lunch', 'comida',
-      'bbq', 'barbecue', 'barbacoa', 'churrasco',
+      'dinner', 'restaurant', 'lunch', 'bbq', 'barbecue',
     ],
   },
   {
     id: 'r_drinks', emoji: '🍻',
     match: [
-      'drinks', 'beers', 'pub', 'bar', 'cañas', 'copas', 'happy hour',
+      'drinks', 'beers', 'pub', 'bar', 'happy hour',
     ],
   },
   {
     id: 'r_party', emoji: '🥳',
     match: [
-      'party', 'fiesta', 'festa', 'celebration', 'celebración', 'celebração', 'sleepover', 'playdate',
-      'christening', 'bautizo', 'batizado', 'communion', 'comunión', 'comunhão',
+      'party', 'celebration', 'sleepover', 'playdate', 'christening', 'communion',
     ],
   },
   {
     id: 'r_meeting', emoji: '💼',
     match: [
-      'reunión', 'reunion', 'meeting', 'call', 'reunião', 'zoom', 'teams', 'google meet', 'interview', 'entrevista',
-      'conference', 'conferencia', 'conferência', 'presentation', 'presentación', 'apresentação',
+      'meeting', 'call', 'zoom', 'teams', 'google meet', 'interview', 'conference', 'presentation',
     ],
   },
   {
     id: 'r_work', emoji: '💻',
     match: [
-      'work', 'trabajo', 'trabalho', 'office', 'oficina', 'escritório', 'shift', 'turno', 'on call', 'guardia',
+      'work', 'office', 'shift', 'on call',
     ],
   },
   {
     id: 'r_holiday', emoji: '🎉',
     match: [
-      'festivo', 'feriado', 'public holiday', 'bank holiday', 'national holiday',
+      'public holiday', 'bank holiday', 'national holiday',
     ],
   },
   {
     id: 'r_vacation', emoji: '🏖️',
     match: [
-      'vacaciones', 'holiday', 'holidays', 'férias', 'vacation', 'trip', 'viaje', 'viagem', 'getaway', 'escapada',
-      'beach', 'playa', 'praia', 'camping', 'acampada', 'campismo',
+      'holiday', 'holidays', 'vacation', 'trip', 'getaway', 'beach', 'camping',
     ],
   },
   {
     id: 'r_wedding', emoji: '💍',
     match: [
-      'boda', 'wedding', 'casamento', 'engagement', 'pedida', 'noivado',
+      'wedding', 'engagement',
     ],
   },
   {
     id: 'r_shopping', emoji: '🛒',
     match: [
-      'compra', 'compras', 'shopping', 'groceries', 'grocery', 'mercado', 'supermercado', 'supermarket', 'market',
+      'shopping', 'groceries', 'grocery', 'supermarket', 'market',
     ],
   },
   {
     id: 'r_delivery', emoji: '📦',
     match: [
-      'delivery', 'package', 'parcel', 'entrega', 'paquete', 'encomenda', 'pick up parcel', 'recogida',
+      'delivery', 'package', 'parcel', 'pick up parcel',
     ],
   },
   {
     id: 'r_car', emoji: '🚗',
     match: [
-      'coche', 'car', 'taller', 'garage', 'mechanic', 'mecánico', 'mecânico', 'itv', 'mot', 'inspeção',
-      'inspección', 'inspection', 'oficina auto', 'carro', 'car wash', 'lavado', 'tyres', 'neumáticos', 'pneus',
+      'car', 'garage', 'mechanic', 'mot', 'inspection', 'car wash', 'tyres',
     ],
   },
   {
     id: 'r_repair', emoji: '🔧',
     match: [
-      'plumber', 'fontanero', 'canalizador', 'electrician', 'electricista', 'eletricista', 'repair', 'reparación',
-      'reparação', 'technician', 'técnico', 'maintenance', 'mantenimiento', 'manutenção', 'installer',
-      'instalación',
+      'plumber', 'electrician', 'repair', 'technician', 'maintenance', 'installer',
     ],
   },
   {
     id: 'r_cleaning', emoji: '🧹',
     match: [
-      'cleaning', 'cleaner', 'limpieza', 'limpeza', 'housekeeping', 'laundry', 'colada', 'lavandería', 'lavandaria',
+      'cleaning', 'cleaner', 'housekeeping', 'laundry',
     ],
   },
   {
     id: 'r_trash', emoji: '🗑️',
     match: [
-      'trash', 'garbage', 'rubbish', 'bins', 'bin day', 'recycling', 'basura', 'reciclaje', 'lixo', 'reciclagem',
+      'trash', 'garbage', 'rubbish', 'bins', 'bin day', 'recycling',
     ],
   },
   {
     id: 'r_garden', emoji: '🌱',
     match: [
-      'garden', 'gardening', 'jardín', 'jardim', 'jardinería', 'jardinagem', 'plants', 'plantas', 'lawn',
+      'garden', 'gardening', 'plants', 'lawn',
     ],
   },
   {
     id: 'r_bill', emoji: '💶',
     match: [
-      'pago', 'factura', 'fatura', 'bill', 'invoice', 'payment', 'pay', 'rent', 'alquiler', 'renda', 'mortgage',
-      'hipoteca', 'recibo', 'pagamento', 'taxes', 'impuestos', 'impostos', 'insurance', 'seguro',
+      'bill', 'invoice', 'payment', 'pay', 'rent', 'mortgage', 'taxes', 'insurance',
     ],
   },
   {
     id: 'r_deadline', emoji: '⏰',
     match: [
-      'deadline', 'due', 'plazo', 'prazo', 'vencimiento', 'vencimento', 'expires', 'caduca', 'renewal',
-      'renovación', 'renovação',
+      'deadline', 'due',
     ],
   },
   {
     id: 'r_vet', emoji: '🐾',
     match: [
-      'veterinario', 'veterinário', 'vet', 'veterinary', 'grooming', 'peluquería canina', 'dog', 'perro', 'cão',
-      'puppy', 'cachorro',
+      'vet', 'veterinary', 'grooming', 'dog', 'puppy',
     ],
   },
   {
     id: 'r_music', emoji: '🎹',
     match: [
-      'piano', 'guitar', 'guitarra', 'violin', 'violín', 'violino', 'music lesson', 'clase de música',
-      'aula de música', 'choir', 'coro', 'band practice', 'ensayo', 'ensaio',
+      'piano', 'guitar', 'violin', 'music lesson', 'choir', 'band practice',
     ],
   },
   {
     id: 'r_cinema', emoji: '🎬',
     match: [
-      'cine', 'cinema', 'movie', 'movies', 'film', 'filme', 'película', 'theatre', 'theater', 'teatro', 'show',
-      'espectáculo', 'espetáculo',
+      'cinema', 'movie', 'movies', 'film', 'theatre', 'theater', 'show',
     ],
   },
   {
     id: 'r_concert', emoji: '🎵',
     match: [
-      'concierto', 'concert', 'concerto', 'festival', 'gig', 'live music',
+      'concert', 'festival', 'gig', 'live music',
     ],
   },
   {
     id: 'r_babysitter', emoji: '🧸',
     match: [
-      'babysitter', 'babysitting', 'nanny', 'niñera', 'canguro', 'ama', 'baby-sitter',
+      'babysitter', 'babysitting', 'nanny', 'baby-sitter',
     ],
   },
 ];

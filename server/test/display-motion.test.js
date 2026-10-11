@@ -63,7 +63,7 @@ test('the display reads ?marquee= and ?rotate=, and the README documents them', 
   const main = read('web/display/main.ts');
   assert.match(main, /params\.get\('marquee'\)/);
   assert.match(main, /params\.get\('rotate'\)/);
-  for (const f of ['README.md', 'README.es.md']) {
+  for (const f of ['README.md']) {
     const md = read(f);
     assert.match(md, /\?marquee=0/, f);
     assert.match(md, /\?rotate=0/, f);

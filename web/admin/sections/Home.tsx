@@ -25,19 +25,19 @@ const wmoEmoji = (code: number, day: boolean) => (code <= 1 && !day ? '🌙' : W
 
 function greeting(name: string) {
   const h = new Date().getHours();
-  const g = h < 6 ? t('Buenas noches') : h < 13 ? t('Buenos días') : h < 20 ? t('Buenas tardes') : t('Buenas noches');
+  const g = h < 6 ? t('Good evening') : h < 13 ? t('Good morning') : h < 20 ? t('Good afternoon') : t('Good evening');
   return name ? `${g}, ${name}` : g;
 }
 
 const WARN_TEXT: Record<string, { text: string; route: string; kind: 'warn' | 'error' | 'info' }> = {
-  default_password: { text: 'Estás usando la contraseña inicial. Cámbiala en Seguridad.', route: 'security', kind: 'error' },
-  env_password: { text: 'La contraseña viene de ADMIN_PASSWORD. Te recomendamos cambiarla en Seguridad.', route: 'security', kind: 'info' },
-  display_access_open: { text: 'Las pantallas están en modo abierto: cualquiera que llegue a este servidor puede ver el calendario sin clave. Recomendado: enlaces privados y vinculación.', route: 'security/sec-display', kind: 'warn' },
-  source_errors: { text: 'Hay calendarios con errores de descarga.', route: 'status', kind: 'warn' },
-  no_displays: { text: 'Ninguna pantalla conectada ahora mismo.', route: 'displays', kind: 'info' },
-  outdated_displays: { text: 'Alguna pantalla ejecuta una versión antigua: recárgala.', route: 'displays', kind: 'warn' },
-  google_auth_failed: { text: 'Una cuenta de Google ha perdido el acceso. Vuelve a vincularla.', route: 'calendars', kind: 'error' },
-  microsoft_auth_failed: { text: 'Una cuenta de Microsoft ha perdido el acceso. Vuelve a vincularla.', route: 'calendars', kind: 'error' },
+  default_password: { text: 'You are using the initial password. Change it in Security.', route: 'security', kind: 'error' },
+  env_password: { text: 'The password comes from ADMIN_PASSWORD. We recommend changing it in Security.', route: 'security', kind: 'info' },
+  display_access_open: { text: 'Screens are in open mode: anyone who can reach this server can see the calendar without a key. Recommended: private links and pairing.', route: 'security/sec-display', kind: 'warn' },
+  source_errors: { text: 'Some calendars fail to download.', route: 'status', kind: 'warn' },
+  no_displays: { text: 'No screen connected right now.', route: 'displays', kind: 'info' },
+  outdated_displays: { text: 'A screen is running an old version: reload it.', route: 'displays', kind: 'warn' },
+  google_auth_failed: { text: 'A Google account lost access. Link it again.', route: 'calendars', kind: 'error' },
+  microsoft_auth_failed: { text: 'A Microsoft account lost its access. Link it again.', route: 'calendars', kind: 'error' },
 };
 
 export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionProps) {
@@ -84,7 +84,7 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
     }
   };
   const night = (mode: NightCommand) =>
-    cmd(`night-${mode}`, () => api.displayCommand({ action: 'night', mode }), mode === 'on' ? t('Modo noche activado') : mode === 'off' ? t('Modo noche desactivado') : t('Modo noche automático'));
+    cmd(`night-${mode}`, () => api.displayCommand({ action: 'night', mode }), mode === 'on' ? t('Night mode on') : mode === 'off' ? t('Night mode off') : t('Automatic night mode'));
 
   const tz = cfg.datetime.timezone;
   const today = todayIn(tz);
@@ -105,8 +105,8 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
             {d && (
               <>
                 {' · '}
-                {t('servidor v{v}', { v: d.version })}
-                {d.uptime != null && runtime() !== 'workers' && <> · {t('activo {d}', { d: formatDuration(d.uptime) })}</>}
+                {t('server v{v}', { v: d.version })}
+                {d.uptime != null && runtime() !== 'workers' && <> · {t('up {d}', { d: formatDuration(d.uptime) })}</>}
               </>
             )}
           </p>
@@ -114,22 +114,22 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
         <div class="hero__stats">
           <button type="button" class="hero__stat" onClick={() => go('displays')}>
             <strong>{d ? online : '–'}</strong>
-            <span>{t('conectadas')}</span>
+            <span>{t('connected')}</span>
           </button>
           <button type="button" class="hero__stat" onClick={() => go('screens')}>
             <strong>{full.screens.length}</strong>
-            <span>{full.screens.length === 1 ? t('pantalla') : t('pantallas')}</span>
+            <span>{full.screens.length === 1 ? t('screen') : t('screens')}</span>
           </button>
           <button type="button" class="hero__stat" onClick={() => go('status')}>
             <strong class={srcErr.length ? 'err-text' : ''}>{d ? `${d.sources.filter((s) => s.ok).length}/${d.sources.length}` : '–'}</strong>
-            <span>{t('calendarios OK')}</span>
+            <span>{t('calendars OK')}</span>
           </button>
         </div>
       </div>
 
       <WelcomeCard me={me} dash={d} go={go} onShown={setWelcome} />
 
-      {err && !d && <Callout kind="error">{t('No se pudo cargar el resumen')}: {err}</Callout>}
+      {err && !d && <Callout kind="error">{t('Could not load the summary')}: {err}</Callout>}
       {d?.warnings.map((w) => {
         const info = WARN_TEXT[w];
         // The welcome card already says how to put the screen on a TV.
@@ -144,24 +144,24 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
       })}
 
       {(cmdsOn || annOn || privOn) && (
-        <Card title={t('Acciones rápidas')} icon="zap">
+        <Card title={t('Quick actions')} icon="zap">
           {cmdsOn && (
             <>
               <div class="quick-actions">
-                <Button icon="refresh" loading={busy === 'reload'} onClick={() => cmd('reload', () => api.refreshDisplays(), t('Pantallas recargándose…'))}>
-                  {t('Refrescar pantallas')}
+                <Button icon="refresh" loading={busy === 'reload'} onClick={() => cmd('reload', () => api.refreshDisplays(), t('Screens reloading…'))}>
+                  {t('Refresh displays')}
                 </Button>
-                <Button icon="target" loading={busy === 'identify'} onClick={() => cmd('identify', () => api.displayCommand({ action: 'identify' }), t('Identificando pantallas'))}>
-                  {t('Identificar')}
+                <Button icon="target" loading={busy === 'identify'} onClick={() => cmd('identify', () => api.displayCommand({ action: 'identify' }), t('Identifying screens'))}>
+                  {t('Identify')}
                 </Button>
-                <div class="btn-group" role="group" aria-label={t('Modo noche')}>
-                  <Button icon="moon" loading={busy === 'night-on'} onClick={() => night('on')} title={t('Modo noche ahora en todas las pantallas')}>
-                    {t('Noche')}
+                <div class="btn-group" role="group" aria-label={t('Night mode')}>
+                  <Button icon="moon" loading={busy === 'night-on'} onClick={() => night('on')} title={t('Night mode now on all screens')}>
+                    {t('Night')}
                   </Button>
-                  <Button icon="sun" loading={busy === 'night-off'} onClick={() => night('off')} title={t('Quitar el modo noche ahora')}>
-                    {t('Día')}
+                  <Button icon="sun" loading={busy === 'night-off'} onClick={() => night('off')} title={t('Turn night mode off now')}>
+                    {t('Day')}
                   </Button>
-                  <Button icon="clock" loading={busy === 'night-auto'} onClick={() => night('auto')} title={t('Volver al horario automático')}>
+                  <Button icon="clock" loading={busy === 'night-auto'} onClick={() => night('auto')} title={t('Back to the automatic schedule')}>
                     {t('Auto')}
                   </Button>
                 </div>
@@ -174,8 +174,8 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
               <div class="quick-privacy">
                 <div class="quick-privacy__label">
                   <Icon name="lock" size={15} />
-                  <strong>{t('Modo privado')}</strong>
-                  <span class="muted small">{full.screens.length > 1 ? t('en todas las pantallas') : t('en la pantalla')}</span>
+                  <strong>{t('Private mode')}</strong>
+                  <span class="muted small">{full.screens.length > 1 ? t('on all screens') : t('on the screen')}</span>
                 </div>
                 <PrivacyActions active={!!privacy?.some((r) => r.active)} />
               </div>
@@ -190,11 +190,11 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
         <div class="dash-col">
           <Card
             class="dash-o1"
-            title={t('Pantallas')}
+            title={t('Screens')}
             icon="monitor"
             actions={
               <Button size="sm" variant="ghost" onClick={() => go('displays')}>
-                {t('Ver conectadas')}
+                {t('See connected')}
               </Button>
             }
           >
@@ -209,23 +209,23 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
                     <span class="dash-screens__sw" style={{ background: prof?.screen.accent ?? 'var(--accent)' }} />
                     <div class="dash-screens__main">
                       <strong>
-                        {s.name} {s.isDefault && <span class="star" title={t('Pantalla predeterminada')}>★</span>}
+                        {s.name} {s.isDefault && <span class="star" title={t('Default screen')}>★</span>}
                       </strong>
                       {saved.security?.displayAccess === 'open' && <span class="muted small mono">?screen={s.slug}</span>}
                       {priv?.active && (
                         <span class="privacy-pill" title={privacyUntilText(priv, tz)}>
-                          <Icon name="lock" size={12} /> {t('Privado')}
+                          <Icon name="lock" size={12} /> {t('Private')}
                         </span>
                       )}
                     </div>
                     <span class={`online-pill ${on ? 'is-on' : ''}`}>
-                      <StatusDot state={on ? 'ok' : 'idle'} /> {on ? t('{n} en línea', { n: on }) : t('sin conexión')}
+                      <StatusDot state={on ? 'ok' : 'idle'} /> {on ? t('{n} online', { n: on }) : t('offline')}
                     </span>
                     <PrivacyMenu screenId={s.id} row={priv} tz={tz} />
                     <button
                       type="button"
                       class="icon-btn"
-                      title={t('Editar esta pantalla')}
+                      title={t('Edit this screen')}
                       onClick={() => {
                         setScreenId(s.id);
                         go('layout');
@@ -234,7 +234,7 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
                       <Icon name="edit" size={15} />
                     </button>
                     {screenHref(saved, s.id, links) && (
-                      <a class="icon-btn" href={screenHref(saved, s.id, links)!} target="_blank" rel="noopener" title={t('Abrir pantalla')}>
+                      <a class="icon-btn" href={screenHref(saved, s.id, links)!} target="_blank" rel="noopener" title={t('Open screen')}>
                         <Icon name="external" size={15} />
                       </a>
                     )}
@@ -246,11 +246,11 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
 
           <Card
             class="dash-o3"
-            title={t('Próximos eventos')}
+            title={t('Upcoming events')}
             icon="calendar"
             actions={
               <Button size="sm" variant="ghost" onClick={() => go('filters')}>
-                {t('Filtrar')}
+                {t('Filter')}
               </Button>
             }
           >
@@ -261,7 +261,7 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
                 <div class="skeleton" />
               </div>
             ) : d.nextEvents.length === 0 ? (
-              <Empty icon="calendar" title={t('Nada en los próximos 7 días')} />
+              <Empty icon="calendar" title={t('Nothing in the next 7 days')} />
             ) : (
               <ul class="ev-list">
                 {d.nextEvents.map((e, i) => {
@@ -288,18 +288,18 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
 
           <Card
             class="dash-o6"
-            title={t('Actividad reciente')}
+            title={t('Recent activity')}
             icon="history"
             actions={
               <Button size="sm" variant="ghost" onClick={() => go('activity')}>
-                {t('Ver todo')}
+                {t('See all')}
               </Button>
             }
           >
             {!d ? (
               <div class="skeleton" />
             ) : d.activity.length === 0 ? (
-              <div class="muted small">{t('Sin actividad registrada.')}</div>
+              <div class="muted small">{t('No activity recorded.')}</div>
             ) : (
               <ul class="act-mini">
                 {d.activity.map((a) => {
@@ -321,12 +321,12 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
           </Card>
         </div>
         <div class="dash-col">
-          <Card class="dash-o2" title={t('Tiempo ahora')} icon="cloud">
+          <Card class="dash-o2" title={t('Weather now')} icon="cloud">
             {!d ? (
               <div class="skeleton" />
             ) : !d.weather ? (
-              <Empty icon="cloud" title={t('Sin datos del tiempo todavía')}>
-                {t('Se descargan cuando una pantalla los pide.')}
+              <Empty icon="cloud" title={t('No weather data yet')}>
+                {t('Fetched when a screen asks for them.')}
               </Empty>
             ) : (
               <div class="wx-now">
@@ -343,9 +343,9 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
                     {d.weather.windKmh != null && <> · 💨 {Math.round(d.weather.windKmh)} km/h</>}
                   </span>
                   <span class="muted small">
-                    {t('Actualizado {when}', { when: relTime(d.weather.updatedAt) })}
+                    {t('Updated {when}', { when: relTime(d.weather.updatedAt) })}
                     {' · '}
-                    {t('Datos de {source}', { source: [d.weather.source?.name ?? 'Open-Meteo', d.weather.source?.modelName].filter(Boolean).join(' · ') })}
+                    {t('Data from {source}', { source: [d.weather.source?.name ?? 'Open-Meteo', d.weather.source?.modelName].filter(Boolean).join(' · ') })}
                   </span>
                 </div>
               </div>
@@ -354,18 +354,18 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
 
           <Card
             class="dash-o4"
-            title={t('Salud de los calendarios')}
+            title={t('Calendar health')}
             icon="activity"
             actions={
               <Button size="sm" variant="ghost" onClick={() => go('status')}>
-                {t('Detalles')}
+                {t('Details')}
               </Button>
             }
           >
             {!d ? (
               <div class="skeleton" />
             ) : d.sources.length === 0 ? (
-              <Empty icon="calendar" title={t('No hay calendarios configurados')} />
+              <Empty icon="calendar" title={t('No calendars configured')} />
             ) : (
               <ul class="health-list">
                 {d.sources.map((s) => {
@@ -377,7 +377,7 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
                       <StatusDot state={state} />
                       <span class="dot-color" style={{ background: color }} />
                       <span class="health-list__name">{s.name}</span>
-                      <span class={`small ${s.ok ? 'muted' : 'err-text'}`}>{s.ok ? t('{n} eventos', { n: s.count }) : s.enabled === false ? t('Desactivado') : fetchErrorText(s.error) || t('Pendiente')}</span>
+                      <span class={`small ${s.ok ? 'muted' : 'err-text'}`}>{s.ok ? t('{n} events', { n: s.count }) : s.enabled === false ? t('Disabled') : fetchErrorText(s.error) || t('Pending')}</span>
                     </li>
                   );
                 })}
@@ -387,32 +387,32 @@ export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionPr
 
           <Card
             class="dash-o5"
-            title={t('Avisos')}
+            title={t('Alerts')}
             icon="megaphone"
             actions={
               <Button size="sm" variant="ghost" onClick={() => go('alerts')}>
-                {t('Gestionar')}
+                {t('Manage')}
               </Button>
             }
           >
             {!d ? (
               <div class="skeleton" />
             ) : d.announcements.length === 0 && d.schedulesNow.length === 0 ? (
-              <div class="muted small">{t('No hay avisos activos ni mensajes programados en este momento.')}</div>
+              <div class="muted small">{t('No active alerts or scheduled messages right now.')}</div>
             ) : (
               <ul class="mini-alerts">
                 {d.announcements.map((a) => (
                   <li class={`mini-alerts__a mini-alerts__a--${a.style}`}>
                     <span>{a.emoji || '🔔'}</span>
                     <strong>{a.title || a.body}</strong>
-                    <span class="muted small">{t('hasta {time}', { time: new Date(a.expiresAt).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) })}</span>
+                    <span class="muted small">{t('until {time}', { time: new Date(a.expiresAt).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) })}</span>
                   </li>
                 ))}
                 {d.schedulesNow.map((s) => (
                   <li class="mini-alerts__a mini-alerts__a--sched">
                     <span>{s.emoji || '🗓️'}</span>
                     <strong>{s.title}</strong>
-                    <span class="muted small">{t('programado · hasta {time}', { time: new Date(s.until).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) })}</span>
+                    <span class="muted small">{t('scheduled · until {time}', { time: new Date(s.until).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) })}</span>
                   </li>
                 ))}
               </ul>

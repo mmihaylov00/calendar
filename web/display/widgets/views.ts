@@ -76,8 +76,7 @@ function dayLabel(key: string, today: string): string {
   if (dd < 7) return relativeDayLabel(lang, key, today);
   const d = keyToUTC(key);
   const m = monthName(lang, d.getUTCMonth() + 1, 'short');
-  // Spanish and Portuguese write months in lower case ("23 oct", "8 nov")
-  return `${d.getUTCDate()} ${lang === 'en' ? m : m.toLowerCase()}`;
+  return `${d.getUTCDate()} ${m}`;
 }
 
 /**

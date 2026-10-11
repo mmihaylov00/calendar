@@ -26,10 +26,10 @@ export interface ConflictItem {
 
 const narrow = () => typeof matchMedia === 'function' && matchMedia('(max-width: 760px)').matches;
 const policyOptions = () => [
-  { value: 'replace' as const, label: t('Reemplazar'), icon: 'repeat' as const },
+  { value: 'replace' as const, label: t('Replace'), icon: 'repeat' as const },
   // phones: the outcome line under the name spells it out ("Se guardará como foto-2.jpg")
-  { value: 'rename' as const, label: narrow() ? t('Ambas') : t('Conservar ambas'), icon: 'copy' as const, title: t('Conservar ambas') },
-  { value: 'skip' as const, label: t('Omitir'), icon: 'x' as const },
+  { value: 'rename' as const, label: narrow() ? t('Both') : t('Keep both'), icon: 'copy' as const, title: t('Keep both') },
+  { value: 'skip' as const, label: t('Skip'), icon: 'x' as const },
 ];
 
 export function ConflictDialog(props: { items: ConflictItem[]; onDone: (choices: Record<string, PhotoConflictPolicy> | null) => void }) {
@@ -42,25 +42,25 @@ export function ConflictDialog(props: { items: ConflictItem[]; onDone: (choices:
   const skipping = values.filter((v) => v === 'skip').length;
   return (
     <Modal
-      title={n === 1 ? t('Ya existe una foto con ese nombre') : t('Ya existen {n} fotos con esos nombres', { n })}
+      title={n === 1 ? t('A photo with that name already exists') : t('{n} photos with those names already exist', { n })}
       icon="copy"
       size="lg"
       onClose={() => props.onDone(null)}
       footer={
         <>
           <Button variant="ghost" onClick={() => props.onDone(null)}>
-            {t('Cancelar subida')}
+            {t('Cancel upload')}
           </Button>
           <Button variant="primary" icon="upload" onClick={() => props.onDone(choices)}>
-            {skipping === n ? t('Continuar') : t('Continuar y subir')}
+            {skipping === n ? t('Continue') : t('Continue and upload')}
           </Button>
         </>
       }
     >
-      <p class="muted conflict__intro">{t('Elige qué hacer con cada una. Las demás fotos se subirán normalmente.')}</p>
+      <p class="muted conflict__intro">{t('Choose what to do with each one. The other photos will be uploaded as usual.')}</p>
       {n > 1 && (
         <div class="conflict__all">
-          <span class="conflict__all-label">{t('Aplicar a todas')}</span>
+          <span class="conflict__all-label">{t('Apply to all')}</span>
           <Segmented
             size="sm"
             value={all ?? ('' as PhotoConflictPolicy)}
@@ -82,15 +82,15 @@ export function ConflictDialog(props: { items: ConflictItem[]; onDone: (choices:
                   {it.target}
                 </strong>
                 <span class="muted small">
-                  {t('Nueva: {name} · {size}', { name: it.original, size: formatBytes(it.size) })}
-                  {it.existing && ` · ${t('actual: {size}', { size: formatBytes(it.existing.size) })}`}
+                  {t('New: {name} · {size}', { name: it.original, size: formatBytes(it.size) })}
+                  {it.existing && ` · ${t('current: {size}', { size: formatBytes(it.existing.size) })}`}
                 </span>
                 <span class={`conflict__outcome conflict__outcome--${c}`}>
                   {c === 'replace'
-                    ? t('Se sustituirá la foto actual')
+                    ? t('The current photo will be replaced')
                     : c === 'rename'
-                      ? t('Se guardará como {name}', { name: it.renamed || it.target })
-                      : t('No se subirá')}
+                      ? t('Will be saved as {name}', { name: it.renamed || it.target })
+                      : t('Will not be uploaded')}
                 </span>
               </div>
               <Segmented size="sm" value={c} options={policyOptions()} onChange={(v) => setChoices((s) => ({ ...s, [it.key]: v }))} />
@@ -144,7 +144,7 @@ export function FocusEditor(props: {
       const f = await autoFocus(img.current);
       setFocus({ x: f.focusX, y: f.focusY });
     } catch {
-      toast(t('No se pudo calcular el encuadre automático'), 'error');
+      toast(t('Could not compute the automatic framing'), 'error');
     } finally {
       setBusy(null);
     }
@@ -154,10 +154,10 @@ export function FocusEditor(props: {
     setBusy('save');
     try {
       const r = await api.setPhotoFocus(p.file, focus.x, focus.y);
-      toast(t('Encuadre guardado'));
+      toast(t('Framing saved'));
       props.onSaved(r);
     } catch (e) {
-      toast(`${t('No se pudo guardar')}: ${(e as ApiError).message}`, 'error');
+      toast(`${t('Could not save')}: ${(e as ApiError).message}`, 'error');
       setBusy(null);
     }
   };
@@ -193,7 +193,7 @@ export function FocusEditor(props: {
 
   return (
     <Modal
-      title={t('Encuadrar foto')}
+      title={t('Frame photo')}
       icon="target"
       size="xl"
       dirty={dirty && busy !== 'save'}
@@ -201,13 +201,13 @@ export function FocusEditor(props: {
       footer={
         <>
           <Button variant="ghost" icon="wand" class="focus-ed__auto" onClick={auto} loading={busy === 'auto'} disabled={!loaded || !!busy}>
-            {t('Automático')}
+            {t('Automatic')}
           </Button>
           <Button variant="ghost" onClick={props.onClose} disabled={busy === 'save'}>
-            {t('Cancelar')}
+            {t('Cancel')}
           </Button>
           <Button variant="primary" icon="check" onClick={save} loading={busy === 'save'} disabled={!!busy && busy !== 'save'}>
-            {t('Guardar')}
+            {t('Save')}
           </Button>
         </>
       }
@@ -220,7 +220,7 @@ export function FocusEditor(props: {
             style={{ aspectRatio: `${w} / ${h}`, width: `min(100%, calc(var(--focus-stage-h) * ${ratio.toFixed(4)}))` }}
             tabIndex={0}
             role="application"
-            aria-label={t('Punto de foco: toca la foto o usa las flechas')}
+            aria-label={t('Focal point: tap the photo or use the arrow keys')}
             onKeyDown={onKey}
             onPointerDown={(e) => {
               dragging.current = true;
@@ -253,7 +253,7 @@ export function FocusEditor(props: {
             )}
           </div>
           <p class="muted small focus-ed__hint">
-            <Icon name="target" size={14} /> {t('Toca o arrastra sobre la foto para elegir lo que debe verse siempre (por ejemplo, las caras).')}
+            <Icon name="target" size={14} /> {t('Tap or drag on the photo to choose what must always stay visible (faces, for example).')}
           </p>
         </div>
         <div class="focus-ed__previews">
@@ -280,7 +280,7 @@ export function FocusEditor(props: {
               {fr.blocks.length > 0 && (
                 <span class="focus-prev__legend">
                   <span class="focus-prev__hatch" />
-                  {t('Tapado por el reloj, los avisos y el tiempo: el punto de foco se coloca en la franja libre.')}
+                  {t('Covered by the clock, alerts and weather: the focal point is placed in the free band.')}
                 </span>
               )}
             </figcaption>
@@ -290,12 +290,12 @@ export function FocusEditor(props: {
             <figcaption>
               <span class="focus-prev__title">
                 <span class="focus-prev__swatch focus-prev__swatch--wide" />
-                {t('Pantalla completa 16:9')}
+                {t('Full screen 16:9')}
               </span>
             </figcaption>
           </figure>
           <a class="link-btn small focus-ed__open" href={p.url} target="_blank" rel="noopener">
-            <Icon name="external" size={13} /> {t('Ver original')}
+            <Icon name="external" size={13} /> {t('View original')}
             {p.w && p.h ? ` · ${p.w}×${p.h}` : ''} · {formatBytes(p.size)}
           </a>
         </div>

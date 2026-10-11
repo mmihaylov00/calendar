@@ -7,17 +7,17 @@ import { allSourceOptions } from '../util';
 import type { SectionProps } from './common';
 
 export const PRESETS: { id: LayoutPreset; name: string; desc: string; wizard?: boolean }[] = [
-  { id: 'bigCalendar', name: 'Calendario grande', desc: 'Mes completo a pantalla grande con reloj, tiempo y noticias en una columna lateral.', wizard: true },
-  { id: 'twoWeeks', name: 'Dos semanas', desc: 'Esta semana y la siguiente, con más sitio para cada día. Hoy se ve resaltado.' },
-  { id: 'leftRight', name: 'Izquierda / Derecha', desc: 'Foto a un lado; reloj, tiempo y agenda al otro. Ideal para pantallas horizontales.', wizard: true },
-  { id: 'topBottom', name: 'Arriba / Abajo', desc: 'Reloj y tiempo arriba, calendario abajo. Perfecto para pantallas verticales o tablets.', wizard: true },
-  { id: 'agenda', name: 'Agenda', desc: 'Lista de próximos eventos agrupados por día, legible desde lejos (móvil / tablet).', wizard: true },
-  { id: 'today', name: 'Hoy', desc: 'El día hora a hora con una línea de ahora, el próximo evento en grande y el tiempo de las próximas horas. Para la cocina por la mañana.' },
-  { id: 'people', name: 'Por persona', desc: 'Una columna por persona (por calendario) con lo de hoy y lo de mañana.' },
-  { id: 'board', name: 'Tablero', desc: 'Organización familiar: tareas, cuentas atrás, mensaje del día, próximos cumpleaños y una agenda corta.' },
-  { id: 'bigTime', name: 'Hora grande', desc: 'Reloj protagonista sobre la foto, con la agenda de hoy y mañana.', wizard: true },
-  { id: 'photoFrame', name: 'Marco de fotos', desc: 'La foto es la protagonista: solo un reloj pequeño, la temperatura y el próximo evento en una esquina. Ideal para un marco vertical.' },
-  { id: 'bedside', name: 'Mesilla', desc: 'Reloj enorme, el próximo evento y la temperatura con muy poco brillo, para el dormitorio. Se atenúa más por la noche.' },
+  { id: 'bigCalendar', name: 'Big calendar', desc: 'Full month on a big screen with clock, weather and news in a side column.', wizard: true },
+  { id: 'twoWeeks', name: 'Two weeks', desc: 'This week and the next, with more room for each day. Today is highlighted.' },
+  { id: 'leftRight', name: 'Left / Right', desc: 'Photo on one side; clock, weather and agenda on the other. Ideal for landscape screens.', wizard: true },
+  { id: 'topBottom', name: 'Top / Bottom', desc: 'Clock and weather on top, calendar below. Great for portrait screens or tablets.', wizard: true },
+  { id: 'agenda', name: 'Agenda', desc: 'Upcoming events grouped by day, readable from afar (mobile / tablet).', wizard: true },
+  { id: 'today', name: 'Today', desc: 'The day hour by hour with a line for now, the next event in large type and the weather for the coming hours. For the kitchen in the morning.' },
+  { id: 'people', name: 'Per person', desc: 'One column per person (per calendar) with today and tomorrow.' },
+  { id: 'board', name: 'Board', desc: 'Family organisation: to-dos, countdowns, message of the day, upcoming birthdays and a short agenda.' },
+  { id: 'bigTime', name: 'Big time', desc: 'Large clock over the photo, with today’s and tomorrow’s agenda.', wizard: true },
+  { id: 'photoFrame', name: 'Photo frame', desc: 'The photo is the hero: just a small clock, the temperature and the next event in a corner. Ideal for a portrait frame.' },
+  { id: 'bedside', name: 'Bedside', desc: 'A huge clock, the next event and the temperature in very low brightness, for the bedroom. It dims further at night.' },
 ];
 
 /** Tiny schematic drawing of each layout preset. */
@@ -181,8 +181,8 @@ export function Schematic({ id, side }: { id: LayoutPreset; side: 'left' | 'righ
 }
 
 export const STYLES: { id: DisplayStyle; name: string; desc: string }[] = [
-  { id: 'modern', name: 'Moderno', desc: 'Más minimalista, al estilo de Apple: tarjetas de cristal sobre la foto, reloj de pantalla de bloqueo y menos líneas.' },
-  { id: 'classic', name: 'Clásico', desc: 'El aspecto de siempre: reloj fino, tarjetas con borde y la cuadrícula completa.' },
+  { id: 'modern', name: 'Modern', desc: 'More minimal, Apple-like: glass cards over the photo, a Lock Screen clock and fewer lines.' },
+  { id: 'classic', name: 'Classic', desc: 'The original look: thin clock, outlined cards and the full grid.' },
 ];
 
 /** Tiny drawing of each display style (same scene: photo with clock + widgets, calendar on the right). */
@@ -257,8 +257,8 @@ export function StyleThumb({ id }: { id: DisplayStyle }) {
 
 /** The two sample photos of the glass preview (a dark dusk and a bright beach), with their measured stats. */
 const GLASS_SCENES: { id: string; label: string; stats: PhotoStats }[] = [
-  { id: 'dark', label: 'Foto oscura', stats: { tone: 0.18, rgb: [92, 70, 128] } },
-  { id: 'bright', label: 'Foto clara', stats: { tone: 0.85, rgb: [70, 150, 190] } },
+  { id: 'dark', label: 'Dark photo', stats: { tone: 0.18, rgb: [92, 70, 128] } },
+  { id: 'bright', label: 'Bright photo', stats: { tone: 0.85, rgb: [70, 150, 190] } },
 ];
 
 /** Live preview of the glass settings: the same maths as the screen, drawn over two sample photos. */
@@ -297,7 +297,7 @@ export function GlassPreview({ glass }: { glass: GlassConfig }) {
 }
 
 const opacityWord = (v: number) =>
-  v < 0.2 ? 'Muy transparente' : v < 0.42 ? 'Más transparente' : v <= 0.58 ? 'Equilibrado' : v <= 0.8 ? 'Más sólido' : 'Muy sólido';
+  v < 0.2 ? 'Very see-through' : v < 0.42 ? 'More see-through' : v <= 0.58 ? 'Balanced' : v <= 0.8 ? 'More solid' : 'Very solid';
 
 /** Glass options of the Modern style (like the iPhone's Liquid Glass settings). */
 export function GlassCard({ cfg, set }: Pick<SectionProps, 'cfg' | 'set'>) {
@@ -309,49 +309,49 @@ export function GlassCard({ cfg, set }: Pick<SectionProps, 'cfg' | 'set'>) {
     <Card
       id="layout-glass"
       scope="screen"
-      title={t('Cristal')}
+      title={t('Glass')}
       icon="sparkles"
-      desc={t('Cómo se ven las tarjetas de cristal del estilo Moderno en esta pantalla.')}
+      desc={t('How the glass cards of the Modern style look on this screen.')}
       actions={
         <Button size="sm" variant="ghost" disabled={isDefault} onClick={() => set((d) => void (d.screen.glass = { ...GLASS_DEFAULTS }))}>
-          {t('Restablecer')}
+          {t('Reset')}
         </Button>
       }
     >
       <div class="glass-set">
         <GlassPreview glass={g} />
         <div class="glass-set__controls">
-          <Field label={t('Apariencia')} hint={t('Automático se adapta a cada foto: más transparente sobre fotos oscuras, más tintado sobre fotos claras.')}>
+          <Field label={t('Appearance')} hint={t('Automatic adapts to each photo: clearer over dark photos, more tinted over bright ones.')}>
             <Segmented
               value={g.appearance}
               full
               options={[
-                { value: 'clear', label: t('Transparente') },
-                { value: 'tinted', label: t('Tintado') },
-                { value: 'auto', label: t('Automático') },
+                { value: 'clear', label: t('Clear') },
+                { value: 'tinted', label: t('Tinted') },
+                { value: 'auto', label: t('Automatic') },
               ]}
               onChange={(v) => put('appearance', v)}
             />
           </Field>
-          <Field label={t('Transparencia')}>
+          <Field label={t('Transparency')}>
             <Slider value={g.opacity} min={0} max={1} step={0.05} format={(v) => t(opacityWord(v))} onChange={(v) => put('opacity', v)} />
           </Field>
-          <Field label={t('Desenfoque')} hint={t('En la Raspberry Pi (modo ligero) no hay desenfoque y las tarjetas son sólidas.')}>
-            <Slider value={g.blur} min={0} max={40} step={1} format={(v) => (v ? `${v}` : t('Sin desenfoque'))} onChange={(v) => put('blur', v)} />
+          <Field label={t('Blur')} hint={t('On the Raspberry Pi (lite mode) there is no blur and the cards are solid.')}>
+            <Slider value={g.blur} min={0} max={40} step={1} format={(v) => (v ? `${v}` : t('No blur'))} onChange={(v) => put('blur', v)} />
           </Field>
-          <Field label={t('Tono')} hint={t('Con «De la foto», el cristal toma el color de la foto que se está mostrando, como en el iPhone.')}>
+          <Field label={t('Tint')} hint={t('With “From the photo”, the glass takes the colour of the photo on screen, as the iPhone does.')}>
             <Segmented
               value={g.tint}
               full
               options={[
-                { value: 'light', label: t('Claro') },
-                { value: 'dark', label: t('Oscuro') },
-                { value: 'photo', label: t('De la foto') },
+                { value: 'light', label: t('Light') },
+                { value: 'dark', label: t('Dark') },
+                { value: 'photo', label: t('From the photo') },
               ]}
               onChange={(v) => put('tint', v)}
             />
           </Field>
-          <ToggleRow label={t('Borde de luz')} hint={t('Una línea fina y brillante en el borde de cada tarjeta.')} checked={g.edge} onChange={(v) => put('edge', v)} />
+          <ToggleRow label={t('Edge highlight')} hint={t('A thin bright line along the edge of each card.')} checked={g.edge} onChange={(v) => put('edge', v)} />
         </div>
       </div>
     </Card>
@@ -359,10 +359,10 @@ export function GlassCard({ cfg, set }: Pick<SectionProps, 'cfg' | 'set'>) {
 }
 
 const CORNERS: { value: FrameCorner; label: string }[] = [
-  { value: 'tl', label: 'Arriba izquierda' },
-  { value: 'tr', label: 'Arriba derecha' },
-  { value: 'bl', label: 'Abajo izquierda' },
-  { value: 'br', label: 'Abajo derecha' },
+  { value: 'tl', label: 'Top left' },
+  { value: 'tr', label: 'Top right' },
+  { value: 'bl', label: 'Bottom left' },
+  { value: 'br', label: 'Bottom right' },
 ];
 
 /** Settings of the layouts that have any: the people columns (Por persona) and the corner (Marco de fotos). */
@@ -370,8 +370,8 @@ function PresetOptions({ cfg, set, full }: SectionProps) {
   const l = cfg.layout;
   if (l.preset === 'photoFrame') {
     return (
-      <Card id="layout-options" scope="screen" title={t('Marco de fotos')} icon="image" desc={t('Dónde va la tarjeta con la hora, la temperatura y el próximo evento.')}>
-        <Field label={t('Esquina')}>
+      <Card id="layout-options" scope="screen" title={t('Photo frame')} icon="image" desc={t('Where the card with the time, the temperature and the next event goes.')}>
+        <Field label={t('Corner')}>
           <Segmented full value={l.corner ?? 'br'} options={CORNERS.map((c) => ({ value: c.value, label: t(c.label) }))} onChange={(v) => set((d) => void (d.layout.corner = v))} />
         </Field>
       </Card>
@@ -390,18 +390,18 @@ function PresetOptions({ cfg, set, full }: SectionProps) {
       d.layout.people = opts.map((o) => o.id).filter((x) => next.has(x)).slice(0, 5);
     });
   return (
-    <Card id="layout-options" scope="screen" title={t('Columnas por persona')} icon="list" desc={t('Cada calendario elegido es una columna con lo de hoy y lo de mañana. Festivos y cumpleaños van en una línea común encima.')}>
+    <Card id="layout-options" scope="screen" title={t('Columns per person')} icon="list" desc={t('Each chosen calendar is a column with today and tomorrow. Holidays and birthdays go in a shared line above.')}>
       <Segmented
         full
         value={auto ? 'auto' : 'pick'}
         options={[
-          { value: 'auto', label: t('Automático') },
-          { value: 'pick', label: t('Elegir calendarios') },
+          { value: 'auto', label: t('Automatic') },
+          { value: 'pick', label: t('Choose calendars') },
         ]}
         onChange={(v) => set((d) => void (d.layout.people = v === 'auto' ? null : opts.filter((o) => !holidays.has(o.id)).slice(0, 5).map((o) => o.id)))}
       />
       {auto ? (
-        <p class="muted small">{t('Se usan los primeros cinco calendarios, sin festivos ni cumpleaños.')}</p>
+        <p class="muted small">{t('The first five calendars are used, without holidays or birthdays.')}</p>
       ) : (
         <>
           <ul class="gcal-list screen-src-list">
@@ -424,8 +424,8 @@ function PresetOptions({ cfg, set, full }: SectionProps) {
               );
             })}
           </ul>
-          <p class="muted small">{t('Hasta cinco columnas. Se ven en el orden de esta lista.')}</p>
-          {ids.length === 0 && <Callout kind="warn">{t('No has marcado ningún calendario: la pantalla pedirá que elijas alguno.')}</Callout>}
+          <p class="muted small">{t('Up to five columns, shown in the order of this list.')}</p>
+          {ids.length === 0 && <Callout kind="warn">{t('No calendar is ticked: the screen will ask you to choose one.')}</Callout>}
         </>
       )}
     </Card>
@@ -439,15 +439,15 @@ export function LayoutSection(props: SectionProps) {
   const style: DisplayStyle = cfg.screen.style === 'modern' ? 'modern' : 'classic';
   return (
     <>
-      <PageHeader title={t('Diseño')} scope="screen" desc={t('Elige cómo se distribuyen los elementos en la pantalla.')} />
+      <PageHeader title={t('Layout')} scope="screen" desc={t('Choose how elements are arranged on the screen.')} />
       <Card
         id="layout-style"
         scope="screen"
-        title={t('Estilo de la pantalla')}
+        title={t('Display style')}
         icon="palette"
-        desc={t('Independiente de la plantilla: cada pantalla puede tener su propio estilo.')}
+        desc={t('Independent of the layout: each screen can have its own style.')}
       >
-        <Field label={t('Estilo')}>
+        <Field label={t('Style')}>
           <Segmented
             value={style}
             options={STYLES.map((o) => ({ value: o.id, label: t(o.name) }))}
@@ -495,20 +495,20 @@ export function LayoutSection(props: SectionProps) {
         ))}
       </div>
       <PresetOptions {...props} />
-      <Card id="layout-side" scope="screen" title={t('Panel lateral')} icon="layout" desc={t('Solo para los diseños con columna lateral.')} muted={!hasSide}>
+      <Card id="layout-side" scope="screen" title={t('Side panel')} icon="layout" desc={t('Only for layouts with a side column.')} muted={!hasSide}>
         <div class="grid grid--2">
-          <Field label={t('Posición')}>
+          <Field label={t('Position')}>
             <Segmented
               value={l.sidePanel}
               disabled={!hasSide}
               options={[
-                { value: 'left', label: t('Izquierda') },
-                { value: 'right', label: t('Derecha') },
+                { value: 'left', label: t('Left') },
+                { value: 'right', label: t('Right') },
               ]}
               onChange={(v) => set((d) => void (d.layout.sidePanel = v))}
             />
           </Field>
-          <Field label={t('Anchura')}>
+          <Field label={t('Width')}>
             <Slider
               value={l.sideWidth}
               min={0.22}
