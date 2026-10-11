@@ -12,7 +12,7 @@ import { Button, Field, Modal, Segmented, Textarea } from './ui';
 
 const PLACEHOLDER: Record<FeedbackKind, string> = {
   problem: 'What you were doing, what you expected and what happened.',
-  idea: 'What you would like Marco to do and what you would use it for.',
+  idea: 'What you would like Calendar to do and what you would use it for.',
   other: 'Write whatever you want to tell us.',
 };
 

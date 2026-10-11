@@ -166,7 +166,7 @@ function sourceOptions(haOffered: boolean, current: WeatherProvider) {
       icon: 'key',
       title: 'Pirate Weather',
       badge: t('Free key'),
-      body: t('Needs your own free key (10,000 calls a month; Marco uses about 3,000). NOAA and ECMWF models.'),
+      body: t('Needs your own free key (10,000 calls a month; Calendar uses about 3,000). NOAA and ECMWF models.'),
     },
   ];
   if (haOffered || current === 'homeassistant') {
@@ -195,9 +195,9 @@ const LICENCE: Record<string, { name: string; site: string; url: string; licence
 const WX_ERRORS: Record<string, string> = {
   key_missing: 'The weather source key is missing.',
   key_invalid: 'The weather source does not accept the saved key. Check it.',
-  rate_limited: 'The weather source got too many requests. Marco will try again in a few minutes.',
+  rate_limited: 'The weather source got too many requests. Calendar will try again in a few minutes.',
   http: 'Could not reach the weather source. The screens show the latest data.',
-  bad_response: 'The weather source sent an answer Marco does not understand.',
+  bad_response: 'The weather source sent an answer Calendar does not understand.',
 };
 
 function WeatherSourceCard({ cfg, set, errors, haOffered, haOn }: Pick<SectionProps, 'cfg' | 'set' | 'errors'> & { haOffered: boolean; haOn: boolean }) {
@@ -239,7 +239,7 @@ function WeatherSourceCard({ cfg, set, errors, haOffered, haOn }: Pick<SectionPr
   const statusError = wxStatus && wxStatus.ok === false && (!wxStatus.provider || wxStatus.provider === (provider === 'homeassistant' ? 'open-meteo' : provider)) ? WX_ERRORS[wxStatus.errorCode || 'http'] : null;
 
   return (
-    <Card id="wx-source" scope="global" title={t('Data source')} icon="globe" desc={t('Where Marco gets the forecast. You can change it at any time.')}>
+    <Card id="wx-source" scope="global" title={t('Data source')} icon="globe" desc={t('Where Calendar gets the forecast. You can change it at any time.')}>
       <div class="access-mode wx-sources" role="radiogroup" aria-label={t('Data source')}>
         {opts.map((o) => (
           <button type="button" role="radio" aria-checked={provider === o.v} class={`access-mode__opt ${provider === o.v ? 'is-active' : ''}`} onClick={() => set((d) => void (d.weather.provider = o.v))}>

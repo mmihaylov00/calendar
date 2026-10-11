@@ -82,9 +82,9 @@ export function howToUpdate(install: UpdateInstall): UpdateHowTo {
     case 'checkout':
       return install.cli
         ? { commands: ['marco update'], where: 'On the server (over SSH or in its terminal):' }
-        : { commands: ['git pull', 'npm ci', 'npm run build'], where: 'In the Marco folder, then restart the server:' };
+        : { commands: ['git pull', 'npm ci', 'npm run build'], where: 'In the Calendar folder, then restart the server:' };
     case 'docker':
-      return { commands: ['git pull', 'docker compose up -d --build'], where: 'In the Marco folder, where docker-compose.yml is:' };
+      return { commands: ['git pull', 'docker compose up -d --build'], where: 'In the Calendar folder, where docker-compose.yml is:' };
     default:
       return { commands: ['curl -fsSL https://marcohome.app/install | bash'], where: 'On the server, or download the release from GitHub:' };
   }

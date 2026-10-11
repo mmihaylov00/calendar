@@ -5,7 +5,7 @@ All endpoints speak JSON. TypeScript types for every request and response live i
 
 In the Home Assistant app, prepend the current ingress path to these routes. Every ingress request needs
 an authenticated, active HA administrator, independently checked through the bundled Core integration.
-Marco's setup code and password login are used only by standalone deployments. HA calendar sources use
+Calendar's setup code and password login are used only by standalone deployments. HA calendar sources use
 the Supervisor-supplied Core API credential on the server; no HA or Google credential is returned to the browser.
 
 - **Display endpoints** need the screen's **display key** (private link), a **paired-device token** or an admin
@@ -222,7 +222,7 @@ a switch to private access takes its pollers off the list at once; their next po
 
 The Core integration separately serves `GET /api/marco/access?user_id=<id>` on Home Assistant itself.
 Only authenticated active-admin callers may use it. It returns `{ allowed: boolean }` for the requested
-user, allowing only an active, non-system administrator. The response is never cached. Marco's server
+user, allowing only an active, non-system administrator. The response is never cached. Calendar's server
 uses this endpoint to authorize Supervisor's forwarded ingress identity.
 
 The login and OAuth routes below remain available for standalone deployments.
@@ -292,7 +292,7 @@ Rules for the mutating setup endpoints:
 | `PUT /api/admin/config` | Validate + save (revision + 1, backup first, SSE `config`). Body = `StoredConfig` plus an optional `baseRevision`: the revision the admin loaded. When the config was saved since then (another tab or device, or the server itself, for example the first Google sign-in adding the allowed email) the answer is `409 { error: "conflict", revision }` and nothing is written; the admin then offers to load the saved version or to save its changes on top of it (parts it did not change keep the saved value) with the new `baseRevision`. Without `baseRevision` (or `null`) the last write wins, as before 0.5. `400 { error, details: [{ path, message }] }` when invalid |
 | `PUT /api/admin/password` | `{ current, next }`: same password rules as the setup wizard (`400 { code: too_short \| too_common \| too_long }`); also logs out other sessions |
 | `GET /api/admin/screens/template?name=` | New `ScreenProfile` with defaults and a free slug |
-| `GET /api/admin/geocode?q=&lang=` | Place search for the weather location, through this server (Open-Meteo geocoding) so the browser only talks to Marco → `{ results: [{ name, admin1, country, countryCode, lat, lon, timezone }] }` (at most 8; `q` shorter than 2 characters gives `[]`). Also open to the setup wizard while no password exists, with the same token rules as `/api/setup/*` (`x-setup-token`). `429 { error: "rate_limited" }` after 60 searches per address in 10 minutes (600 overall); answers are cached for a day; `502 { error: "geocode_unavailable" }` when Open-Meteo cannot be reached |
+| `GET /api/admin/geocode?q=&lang=` | Place search for the weather location, through this server (Open-Meteo geocoding) so the browser only talks to Calendar → `{ results: [{ name, admin1, country, countryCode, lat, lon, timezone }] }` (at most 8; `q` shorter than 2 characters gives `[]`). Also open to the setup wizard while no password exists, with the same token rules as `/api/setup/*` (`x-setup-token`). `429 { error: "rate_limited" }` after 60 searches per address in 10 minutes (600 overall); answers are cached for a day; `502 { error: "geocode_unavailable" }` when Open-Meteo cannot be reached |
 | `POST /api/admin/events/preview` | Body `{ from?, days? (1..60), screen?, eventRules?, iconRules?, localEvents?, birthdays? }` (draft values) → every event incl. hidden ones with `applied[]` rules and `ruleHits` |
 | `GET /api/admin/countdowns?screen=` | Same answer as `GET /api/countdowns` for the screen with that id or slug (unknown → default screen); used by the Countdowns page |
 | `POST /api/admin/birthdays/parse-csv` | `{ text }`: one `name;dd/mm[/yyyy]` per line (`;`, `,` or tab) → parsed rows, duplicates, errors with line numbers |
@@ -352,7 +352,7 @@ Rules for the mutating setup endpoints:
 |---|---|
 | `GET /api/admin/backups` · `POST /api/admin/backups` | List / create a manual backup |
 | `GET /api/admin/backups/:id` · `POST /api/admin/backups/:id/restore` · `DELETE /api/admin/backups/:id` | Download / restore (current config backed up first) / delete |
-| `POST /api/admin/export` | `{ includeSecrets }` → `marco-YYYY-MM-DD.json` (secrets = password hash, HA token, Google accounts, API tokens, display keys, paired devices (token hashes); never the session secret) |
+| `POST /api/admin/export` | `{ includeSecrets }` → `calendar-YYYY-MM-DD.json` (secrets = password hash, HA token, Google accounts, API tokens, display keys, paired devices (token hashes); never the session secret) |
 | `POST /api/admin/import/preview` | `{ bundle, lang? }` (export bundle or a bare config) → per-section summary in `lang` (es/en/pt; default: `Accept-Language`, else English), `displayAccess` (the current mode, which the import keeps) and `secretsImpact: { linksChanged, devicesRemoved, devicesAdded } \| null` (what importing the bundle's secrets would change); nothing saved |
 | `POST /api/admin/import/apply` | `{ bundle, sections?, includeSecrets? }` → `{ ok, config, loggedOut? }`. `security.displayAccess` is never taken from the bundle (restores keep it too). Imported keys / devices close the streams of replaced keys and dropped devices |
 | `GET /api/admin/activity?type=&level=&q=&actor=&before=&limit=` | Newest first, paged with `before=<id>` |
@@ -448,7 +448,7 @@ Create a token in *API & webhooks*, then in `configuration.yaml`:
 ```yaml
 rest_command:
   marco_privacy:
-    url: "http://192.168.1.50:3000/api/hooks/privacy"   # the address of your Marco server
+    url: "http://192.168.1.50:3000/api/hooks/privacy"   # the address of your Calendar server
     method: POST
     headers:
       Authorization: "Bearer TOKEN"
@@ -456,7 +456,7 @@ rest_command:
     payload: '{"mode": "{{ mode }}"{% if hours is defined %}, "hours": {{ hours }}{% endif %}}'
 
 automation:
-  - alias: "Marco: private mode while there are guests"
+  - alias: "Calendar: private mode while there are guests"
     triggers:
       - trigger: state
         entity_id: input_boolean.guests
@@ -471,7 +471,7 @@ automation:
 ```yaml
 sensor:
   - platform: rest
-    name: "Marco private mode"
+    name: "Calendar private mode"
     resource: "http://192.168.1.50:3000/api/hooks/privacy"
     headers:
       Authorization: "Bearer TOKEN"
@@ -496,7 +496,7 @@ values of *Admin → Home Assistant → Doorbell and camera* (`homeassistant.doo
   (it never gets shorter), and the screens chime again.
 - `{ ok, action: "ring", delivered, screens: [slug], expiresAt }`; `{ ok, action: "dismiss", delivered, screens }`
   lists the screens that were ringing. Each call is logged in *Activity* (`display.doorbell`).
-- The screens fetch `GET /api/display/doorbell/frame` 1 to 2 times a second while the ring lasts. Marco asks Home
+- The screens fetch `GET /api/display/doorbell/frame` 1 to 2 times a second while the ring lasts. Calendar asks Home
   Assistant for `/api/camera_proxy/<camera>` with the stored token and hands the picture to the screen; displays that
   ask within 500 ms share one picture, so Home Assistant gets about two requests a second whatever the number of
   screens. Pictures are kept in memory only for those 500 ms and never written to disk. The token and the camera
@@ -532,7 +532,7 @@ rest_command:
     payload: '{"action":"{{ action | default(''ring'') }}","seconds":{{ seconds | default(60) }}}'
 
 automation:
-  - alias: "Doorbell on the Marco screens"
+  - alias: "Doorbell on the Calendar screens"
     trigger:
       - platform: state
         entity_id: binary_sensor.front_door_doorbell

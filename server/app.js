@@ -136,7 +136,7 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
     });
   } else {
     app.get('/', (req, res) => res.type('text/plain').send(
-      'Marco API running. Frontend not built: run `npm run build` (production) or `npm run dev` (vite on :5173).'));
+      'Calendar API running. Frontend not built: run `npm run build` (production) or `npm run dev` (vite on :5173).'));
   }
 
   // --- errors ---

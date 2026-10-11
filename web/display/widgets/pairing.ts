@@ -14,7 +14,7 @@ import { clearCaches, saveDeviceToken } from '../identity';
 const TEXT: Record<Lang, Record<string, string>> = {
   en: {
     pairTitle: 'Pair this screen',
-    pairLead: 'This screen is private. Link it to your Marco from your phone or computer:',
+    pairLead: 'This screen is private. Link it to your Calendar from your phone or computer:',
     invalidTitle: 'This link is no longer valid',
     invalidLead: 'Its private link was replaced or this device was removed. Open the admin to get the new link, or pair this screen again:',
     s1: 'Open the admin → Connected screens → Pair a screen',
@@ -154,7 +154,7 @@ export function showPairing(kind: 'pair' | 'invalid', lang: Lang): void {
     <div class="wl-bg" aria-hidden="true"><span class="wl-blob wl-blob--a"></span><span class="wl-blob wl-blob--b"></span><span class="wl-blob wl-blob--c"></span></div>
     <div class="wl-card">
       <div class="wl-main">
-        <div class="wl-brand">${logoSvg('wl-logo')}Marco</div>
+        <div class="wl-brand">${logoSvg('wl-logo')}Calendar</div>
         ${kind === 'invalid' ? '<div class="wl-badge" aria-hidden="true">!</div>' : ''}
         <h1>${esc(title)}</h1>
         <p class="wl-lead">${esc(kind === 'invalid' ? T.invalidLead : T.pairLead)}</p>

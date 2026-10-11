@@ -94,7 +94,8 @@ class AuthorizationTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(await panel.async_setup(hass, {"marco": {"addon_slug": "local_marco"}}))
         kwargs = frontend.async_register_built_in_panel.call_args.kwargs
         self.assertEqual(kwargs["component_name"], "app")
-        self.assertEqual(kwargs["frontend_url_path"], "marco")
+        self.assertEqual(kwargs["frontend_url_path"], "calendar-dashboard")
+        self.assertEqual(kwargs["sidebar_title"], "Calendar")
         self.assertEqual(kwargs["config"], {"addon": "local_marco"})
         self.assertTrue(kwargs["require_admin"])
         self.assertIsInstance(hass.http.register_view.call_args.args[0], panel.MarcoAccessView)
@@ -129,6 +130,19 @@ class InstallerTests(unittest.TestCase):
         self.assertTrue((backup / "marco/__init__.py").is_file())
         self.assertTrue(self.config.read_bytes().startswith(self.original))
         self.assertEqual(self.config.read_text().count("marco:\n"), 1)
+
+    def test_existing_marco_installation_keeps_its_identity_and_updates_calendar_panel(self):
+        installer.install(self.root, "7cc5cd13_marco")
+        target = self.root / "custom_components/marco"
+        panel_path = target / "__init__.py"
+        previous = panel_path.read_text().replace('PANEL_PATH = "calendar-dashboard"', 'PANEL_PATH = "marco"').replace('sidebar_title="Calendar"', 'sidebar_title="Marco"')
+        panel_path.write_text(previous)
+        backup = installer.install(self.root, "7cc5cd13_marco")
+        self.assertEqual((backup / "marco/__init__.py").read_text(), previous)
+        self.assertIn('PANEL_PATH = "calendar-dashboard"', panel_path.read_text())
+        self.assertIn('sidebar_title="Calendar"', panel_path.read_text())
+        self.assertEqual((target / installer.MARKER).read_text(), "Marco Home Assistant panel\n")
+        self.assertIn("marco:\n  addon_slug: 7cc5cd13_marco\n", self.config.read_text())
 
     def test_concurrent_configuration_edit_is_preserved_and_integration_is_rolled_back(self):
         copy = installer.shutil.copy2

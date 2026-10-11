@@ -434,7 +434,7 @@ const header = (res, name) => (typeof res.headers?.get === 'function' ? res.head
  * @param {ReturnType<typeof weatherRequest>} r
  * @param {{ fetch: (url: string, init?: any) => Promise<any>, userAgent?: string, prev?: any, now?: () => Date }} deps
  */
-export async function fetchWeather(r, { fetch, userAgent = 'Marco (+https://github.com/mr-reb00t/marco)', prev = null, now = () => new Date() }) {
+export async function fetchWeather(r, { fetch, userAgent = 'Calendar (+https://github.com/mmihaylov00/calendar)', prev = null, now = () => new Date() }) {
   const headers = { Accept: 'application/json', 'User-Agent': userAgent };
   let url;
   if (r.provider === 'met-norway') {

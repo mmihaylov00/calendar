@@ -124,7 +124,7 @@ export function SecuritySection({ cfg, set, errors, me, saved, go }: SectionProp
   return (
     <>
       <PageHeader title={t('Security')} desc={t('Who can sign in to this panel.')} />
-      {homeAssistant && <Callout>{t('Home Assistant controls access to Marco. Your Home Assistant administrator account opens this panel without a separate password or pairing code.')}</Callout>}
+      {homeAssistant && <Callout>{t('Home Assistant controls access to Calendar. Your Home Assistant administrator account opens this panel without a separate password or pairing code.')}</Callout>}
       {me.user && (
         <Card>
           <div class="who">
@@ -229,7 +229,7 @@ function DisplayAccessCard({ mode, savedMode, onChange, go }: { mode: 'private' 
       icon: 'key',
       title: t('Private'),
       badge: t('Recommended'),
-      body: t('Each screen gets in with its private link (/d/…) or by pairing it with a code. Without a key nothing is shown: safe on shared networks or when Marco is reachable from the Internet.'),
+      body: t('Each screen gets in with its private link (/d/…) or by pairing it with a code. Without a key nothing is shown: safe on shared networks or when Calendar is reachable from the Internet.'),
     },
     {
       v: 'open',

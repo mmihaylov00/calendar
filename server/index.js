@@ -1,4 +1,4 @@
-// Marco server entry point: store, password bootstrap, the Express app (app.js), listen, refresher, shutdown.
+// Calendar server entry point: store, password bootstrap, the Express app (app.js), listen, refresher, shutdown.
 import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -72,7 +72,7 @@ const server = app.listen(PORT, process.env.HOST || '0.0.0.0', (err) => {
     console.error(`[server] cannot listen on port ${PORT}: ${err.code || err.message}`);
     process.exit(1);
   }
-  console.log(`[server] Marco v${pkg.version} on http://localhost:${PORT} (data: ${paths.data})`);
+  console.log(`[server] Calendar v${pkg.version} on http://localhost:${PORT} (data: ${paths.data})`);
   logSetupHint(PORT);
   startRefresher();
   // Privacy periods that end and schedule rules that start while the server runs (server/privacy.js)

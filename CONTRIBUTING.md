@@ -4,7 +4,7 @@ This fork targets our Home Assistant installation. Keep the UI English-only and 
 
 ## Setup and checks
 
-Clone `https://github.com/mmihaylov00/marco` and run `npm ci` with Node.js 22. Python 3 is required for the native HA panel's installation and authorization tests. Existing development services use automatic refresh; do not start or restart them without an explicit request.
+Clone `https://github.com/mmihaylov00/calendar` and run `npm ci` with Node.js 22. Python 3 is required for the native HA panel's installation and authorization tests. Existing development services use automatic refresh; do not start or restart them without an explicit request.
 
 Before submitting a change, run:
 

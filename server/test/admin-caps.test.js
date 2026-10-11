@@ -183,7 +183,7 @@ test('feedback form: limits, the details it sends and nothing else', () => {
   assert.deepEqual(fb.feedbackBody('idea', '  More colors ', meta, true), { kind: 'idea', message: 'More colors', meta });
   assert.deepEqual(fb.feedbackBody('problem', 'Broken', meta, false), { kind: 'problem', message: 'Broken', meta: null });
   assert.equal(fb.feedbackBody('weird', 'Hi there', meta, false).kind, 'other');
-  assert.equal(fb.GITHUB_ISSUES_URL, 'https://github.com/mmihaylov00/marco/issues/new');
+  assert.equal(fb.GITHUB_ISSUES_URL, 'https://github.com/mmihaylov00/calendar/issues/new');
 
 });
 

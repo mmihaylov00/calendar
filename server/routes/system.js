@@ -115,7 +115,7 @@ export function systemRouter({ version = getServerVersion() } = {}) {
     const includeSecrets = req.body?.includeSecrets === true;
     const bundle = makeBundle(getConfig(), { appVersion: version, secrets: includeSecrets ? getSecrets() : null });
     logActivity('config.exported', { req, level: includeSecrets ? 'warn' : 'info', data: { secrets: includeSecrets } });
-    res.set('content-disposition', `attachment; filename="marco-${localDate(new Date(), getConfig().datetime.timezone)}.json"`);
+    res.set('content-disposition', `attachment; filename="calendar-${localDate(new Date(), getConfig().datetime.timezone)}.json"`);
     res.json(bundle);
   });
 

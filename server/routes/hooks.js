@@ -23,7 +23,7 @@ export function bearerAuth(req, res, next) {
   const t = m ? findToken(m[1]) : null;
   if (!t) {
     recordRejection({ ip: req.ip, endpoint, reason: m ? 'invalid' : 'missing' });
-    res.set('www-authenticate', 'Bearer realm="marco"');
+    res.set('www-authenticate', 'Bearer realm="Calendar"');
     return res.status(401).json({ error: 'unauthorized' });
   }
   const rl = checkRate(t.id);

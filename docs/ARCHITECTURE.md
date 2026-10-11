@@ -24,7 +24,7 @@ This fork runs as a Home Assistant app. Node.js and Express serve the API and bu
 
 ## Storage and configuration
 
-Home Assistant supplies `/data`; Marco stores its files in `/data/marco`. Startup checks this path, creates it with private permissions, makes it writable by the `node` user and drops to that user before serving requests. The app uses cold backups for a consistent snapshot.
+Home Assistant supplies `/data`; Calendar stores its files in `/data/marco`. Startup checks this path, creates it with private permissions, makes it writable by the `node` user and drops to that user before serving requests. The app uses cold backups for a consistent snapshot.
 
 | File | Content |
 | --- | --- |
@@ -58,9 +58,9 @@ The admin edits a local configuration draft and saves it explicitly. Photo prepa
 
 ## Deployment and security
 
-The app exposes no LAN port. Supervisor proxies authenticated HA requests to internal port 3000. Browser assets, API calls and live streams use the ingress path. The native `/marco` panel requires an administrator, and the server independently verifies Supervisor's forwarded user against the Core integration on each request. The Core endpoint allows only authenticated active-admin callers and returns access only for active, non-system administrator users. Missing authorization denies access; credentials are never sent to the browser.
+The app exposes no LAN port. Supervisor proxies authenticated HA requests to internal port 3000. Browser assets, API calls and live streams use the ingress path. The native `/calendar-dashboard` panel requires an administrator, and the server independently verifies Supervisor's forwarded user against the Core integration on each request. The Core endpoint allows only authenticated active-admin callers and returns access only for active, non-system administrator users. Missing authorization denies access; credentials are never sent to the browser.
 
-HA calendar sources use Supervisor's server-side Core API credential. Google authorization is managed by HA's Google Calendar integration, and Marco reads its calendar entities. Standalone deployments retain the original password/setup protections and environment-configured direct OAuth.
+HA calendar sources use Supervisor's server-side Core API credential. Google authorization is managed by HA's Google Calendar integration, and Calendar reads its calendar entities. Standalone deployments retain the original password/setup protections and environment-configured direct OAuth.
 
 Home Assistant owns updates; the app disables the upstream update checker. The repository has no standalone installer, systemd/kiosk deployment, demo runtime or release-tarball pipeline.
 

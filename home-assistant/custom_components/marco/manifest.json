@@ -1,10 +1,10 @@
 {
   "domain": "marco",
-  "name": "Marco",
-  "version": "0.6.1-ha.3",
+  "name": "Calendar",
+  "version": "0.6.1-ha.4",
   "integration_type": "service",
   "dependencies": ["frontend", "hassio"],
   "requirements": [],
   "codeowners": [],
-  "documentation": "https://github.com/mmihaylov00/marco"
+  "documentation": "https://github.com/mmihaylov00/calendar"
 }

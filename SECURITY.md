@@ -16,14 +16,14 @@ Install and update this fork through Home Assistant's app store. The app builds 
 upstream update checks are disabled so they cannot replace it with an upstream release.
 
 The app exposes no LAN port. Home Assistant ingress provides the user's login and forwards requests to the
-internal server. Marco independently verifies the forwarded user through the bundled Core integration:
+internal server. Calendar independently verifies the forwarded user through the bundled Core integration:
 only active, non-system administrator users are accepted, and unavailable authorization denies access.
 The integration's authorization endpoint itself requires an authenticated active-admin caller. The
 Supervisor API credential stays on the server and is never returned to the browser. Sidebar visibility
 is an additional restriction, not the access check.
 
 The container starts as root only to prepare its private `/data/marco` directory, then drops to the
-`node` user before loading the server. Home Assistant owns Google calendar authorization; Marco reads
+`node` user before loading the server. Home Assistant owns Google calendar authorization; Calendar reads
 calendar entities with Supervisor's supplied credential. Existing calendar tokens, passwords and display
 keys are stored in `secrets.json` with mode 600. Keep app backups private.
 
@@ -33,7 +33,7 @@ The protections below also apply to standalone deployments. In the Home Assistan
 requires an active HA administrator before serving any of these routes; standalone login and first-run
 setup are not used through ingress.
 
-Marco was designed for a **home network (LAN)**. Since 0.3 the displays are **private by default**, so it can also be
+Calendar was designed for a **home network (LAN)**. Since 0.3 the displays are **private by default**, so it can also be
 used on shared networks or behind an HTTPS reverse proxy on the Internet:
 
 - **Display access** (`config.security.displayAccess`, *Admin → Security → Display access*):

@@ -159,8 +159,8 @@ test('met-norway fetch: identifying User-Agent, Expires honoured, If-Modified-Si
   const lastModified = 'Sat, 10 Oct 2026 13:47:21 GMT';
   const f = fakeFetch((url, init) => (init.headers['If-Modified-Since'] ? { status: 304, headers: { expires } } : { body, headers: { expires, 'last-modified': lastModified } }));
   const r = weatherRequest({ provider: 'met-norway', lat: 59.9139, lon: 10.7522, units: 'metric' }, { tz: 'Europe/Oslo', forecastDays: 5 });
-  const e = await fetchWeather(r, { fetch: f, userAgent: 'Marco/test (+https://github.com/mr-reb00t/marco)', now: () => now });
-  assert.match(f.calls[0].headers['User-Agent'], /^Marco\/test/);
+  const e = await fetchWeather(r, { fetch: f, userAgent: 'Calendar/test (+https://github.com/mmihaylov00/calendar)', now: () => now });
+  assert.match(f.calls[0].headers['User-Agent'], /^Calendar\/test/);
   assert.equal(f.calls[0].url, 'https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=59.91&lon=10.75');
   assert.equal(e.lastModified, lastModified);
   assert.equal(e.expiresAt, Date.parse(expires) - (Date.parse(expires) % 1000)); // Expires is longer than the 10 min minimum
@@ -325,7 +325,7 @@ test('server/weather.js: one call for every language, cached until expiry, stale
     assert.equal(f.calls.length, 1);
     assert.equal(es.source.provider, 'met-norway');
     assert.equal(es.current.description, en.current.description);
-    assert.match(f.calls[0].headers['User-Agent'], /^Marco\/\d/);
+    assert.match(f.calls[0].headers['User-Agent'], /^Calendar\/\d/);
     // force (the admin) still waits for MET Norway's Expires
     await weather.getWeather({ lang: 'es', force: true });
     assert.equal(f.calls.length, 1);

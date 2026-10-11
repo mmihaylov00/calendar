@@ -328,7 +328,7 @@ export function ScreensSection({ full, setFull, saved, screenId, setScreenId, go
         </Callout>
       )}
       <Card title={t('How to assign a screen to a device')} icon="info" muted={false}>
-        {homeAssistant && <Callout>{t('Open Marco from the Home Assistant sidebar, then use the screen’s Open button. Home Assistant handles sign-in; no separate pairing code is needed.')}</Callout>}
+        {homeAssistant && <Callout>{t('Open Calendar from the Home Assistant sidebar, then use the screen’s Open button. Home Assistant handles sign-in; no separate pairing code is needed.')}</Callout>}
         {!openMode ? (
           <ol class="howto">
             <li>

@@ -174,7 +174,7 @@ test('checker: one GET to the public API, ETag reuse, daily schedule, retry afte
   let info = await u.check();
   assert.equal(gh.calls.length, 1);
   assert.equal(gh.calls[0].url, DEFAULT_LATEST_URL);
-  assert.equal(gh.calls[0].headers['User-Agent'], 'Marco', 'no version or id in the request');
+  assert.equal(gh.calls[0].headers['User-Agent'], 'Calendar', 'no version or id in the request');
   assert.equal(gh.calls[0].headers['If-None-Match'], undefined);
   assert.equal(info.available, true);
   assert.equal(info.latest.version, '0.5.1');

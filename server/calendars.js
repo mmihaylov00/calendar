@@ -24,7 +24,7 @@ import { LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_ID } from './core/defaults.js';
 const DAY = 86_400_000;
 const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 const ICS_HEADERS = {
-  'user-agent': `Mozilla/5.0 (X11; Linux x86_64) Marco/${VERSION} (+https://github.com/mr-reb00t/marco)`,
+  'user-agent': `Mozilla/5.0 (X11; Linux x86_64) Calendar/${VERSION} (+https://github.com/mmihaylov00/calendar)`,
   accept: 'text/calendar, text/plain, */*',
 };
 

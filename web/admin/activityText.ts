@@ -128,12 +128,12 @@ export function describeActivity(e: ActivityEntry): { icon: IconName; text: stri
       return { icon: 'download', text: d.by === 'auto' ? t('Automatic update to {v} started', { v: str(d.to) }) : t('Update to {v} started', { v: str(d.to) }) };
     case 'update.finished':
       return d.state === 'current'
-        ? { icon: 'check', text: t('Marco already had the latest version ({v})', { v: str(d.to) }) }
-        : { icon: 'sparkles', text: t('Marco updated: {from} → {to}', { from: str(d.from), to: str(d.to) }) };
+        ? { icon: 'check', text: t('Calendar already had the latest version ({v})', { v: str(d.to) }) }
+        : { icon: 'sparkles', text: t('Calendar updated: {from} → {to}', { from: str(d.from), to: str(d.to) }) };
     case 'update.failed':
       return {
         icon: 'alert',
-        text: (d.target ? t('The update to {v} failed', { v: str(d.target) }) : t('The update failed')) + (d.rolledBack ? ` · ${t('Marco went back to version {v}', { v: str(d.from) })}` : ''),
+        text: (d.target ? t('The update to {v} failed', { v: str(d.target) }) : t('The update failed')) + (d.rolledBack ? ` · ${t('Calendar went back to version {v}', { v: str(d.from) })}` : ''),
       };
     case 'update.settings':
       return { icon: 'settings', text: d.auto ? t('Automatic updates on ({from}–{to})', { from: str(d.from), to: str(d.to) }) : t('Update settings saved') };

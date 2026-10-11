@@ -1,4 +1,4 @@
-"""Open Marco through Home Assistant's authenticated app panel."""
+"""Open Calendar through Home Assistant's authenticated app panel."""
 
 import voluptuous as vol
 from aiohttp import web
@@ -10,6 +10,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
 DOMAIN = "marco"
+PANEL_PATH = "calendar-dashboard"
 CONF_ADDON_SLUG = "addon_slug"
 DEFAULT_ADDON_SLUG = "7cc5cd13_marco"
 CONFIG_SCHEMA = vol.Schema(
@@ -51,8 +52,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     frontend.async_register_built_in_panel(
         hass,
         component_name="app",
-        frontend_url_path=DOMAIN,
-        sidebar_title="Marco",
+        frontend_url_path=PANEL_PATH,
+        sidebar_title="Calendar",
         sidebar_icon="mdi:calendar-month",
         config={"addon": config[DOMAIN][CONF_ADDON_SLUG]},
         require_admin=True,

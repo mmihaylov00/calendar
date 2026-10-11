@@ -199,7 +199,7 @@ function microsoftErrorMessage(code: string): string {
     microsoft_exchange_failed: 'Could not talk to Microsoft. Try again.',
     microsoft_temporarily_unavailable: 'Microsoft is not answering right now. Try again in a few minutes.',
     microsoft_access_denied: 'You cancelled access with Microsoft.',
-    microsoft_consent_required: 'Your organization has to approve Marco before you can link this account.',
+    microsoft_consent_required: 'Your organization has to approve Calendar before you can link this account.',
   };
   return map[code] ? t(map[code]) : `${t('Microsoft error')}: ${code.slice('microsoft_'.length)}`;
 }
@@ -324,7 +324,7 @@ export function App() {
         return;
       }
       setMe((m) => (m ? { ...m, user: null } : m));
-      setLoginErr(homeAssistantMode(meRef.current) ? t('Sign in to Home Assistant and reopen Marco.') : t('Your session expired. Please sign in again.'));
+      setLoginErr(homeAssistantMode(meRef.current) ? t('Sign in to Home Assistant and reopen Calendar.') : t('Your session expired. Please sign in again.'));
       loadMe();
     };
     window.addEventListener(UNAUTHORIZED_EVENT, on);
@@ -734,7 +734,7 @@ export function App() {
         <div class="boot" style={rootStyle}>
           <div class="boot__err">
             <Icon name="shield" size={28} />
-            <h2>{t('Sign in to Home Assistant and reopen Marco.')}</h2>
+            <h2>{t('Sign in to Home Assistant and reopen Calendar.')}</h2>
           </div>
           <ToastHost />
         </div>
@@ -816,7 +816,7 @@ export function App() {
         <div class="brand">
           <BrandMark size={34} />
           <div>
-            <strong class="wordmark" aria-label="Marco">marco</strong>
+            <strong class="wordmark" aria-label="Calendar">calendar</strong>
             <span class="muted small">{t('Control panel')}</span>
           </div>
         </div>

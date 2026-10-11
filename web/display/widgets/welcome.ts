@@ -54,7 +54,7 @@ export function showWelcome(status: SetupStatus, lang: Lang): void {
     <div class="wl-bg" aria-hidden="true"><span class="wl-blob wl-blob--a"></span><span class="wl-blob wl-blob--b"></span><span class="wl-blob wl-blob--c"></span></div>
     <div class="wl-card">
       <div class="wl-main">
-        <div class="wl-brand">${logoSvg('wl-logo')}Marco</div>
+        <div class="wl-brand">${logoSvg('wl-logo')}Calendar</div>
         <h1>${esc(T.hello)}</h1>
         <p class="wl-lead">${esc(T.ready)}</p>
         <div class="wl-url">${esc(url)}</div>

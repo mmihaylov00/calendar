@@ -1,18 +1,18 @@
-# Marco for Home Assistant
+# Calendar for Home Assistant
 
-Personal Home Assistant fork of [mr-reb00t/marco](https://github.com/mr-reb00t/marco), maintained at [mmihaylov00/marco](https://github.com/mmihaylov00/marco).
+Personal Home Assistant fork of [mr-reb00t/marco](https://github.com/mr-reb00t/marco), maintained at [mmihaylov00/calendar](https://github.com/mmihaylov00/calendar).
 
-Marco displays family calendars, weather, photos, local events, birthdays and Home Assistant announcements in a browser. Each screen has its own layout. This fork uses English throughout and starts without sample calendars, news feeds or demo data.
+Calendar displays family calendars, weather, photos, local events, birthdays and Home Assistant announcements in a browser. Each screen has its own layout. This fork uses English throughout and starts without sample calendars, news feeds or demo data.
 
 ## Install in Home Assistant
 
-Add `https://github.com/mmihaylov00/marco` to **Settings → Apps → App store → ⋮ → Repositories**, install **Marco**, then follow [the setup guide](DOCS.md). The app supports 64-bit Raspberry Pi and x86 systems.
+Keep the registered HA repository URL `https://github.com/mmihaylov00/marco`, which redirects to the renamed Calendar repository. This preserves the installed app's ID and data. For a new installation, add this compatibility URL to **Settings → Apps → App store → ⋮ → Repositories**, install **Calendar**, then follow [the setup guide](DOCS.md). The app supports 64-bit Raspberry Pi and x86 systems.
 
-Marco opens at `/marco` through Home Assistant ingress and uses your HA login. Active HA administrators can access the panel; no separate port, setup code or Marco password is needed. Configuration, photos and credentials live in the app's private `/data/marco` storage and are included in Home Assistant app backups. Manage updates through Home Assistant.
+Calendar opens at `/calendar-dashboard` through Home Assistant ingress and uses your HA login. Active HA administrators can access the panel; no separate port, setup code or Calendar password is needed. Configuration, photos and credentials live in the app's private `/data/marco` storage and are included in Home Assistant app backups. Manage updates through Home Assistant.
 
 ## Connecting Google Calendar
 
-Add Google's calendar integration in Home Assistant, then choose its calendar entities under Marco's **Calendars → Home Assistant calendars** and click **Save**. Marco reads upcoming events through the HA API without handling Google OAuth credentials. Other HA calendars and private iCal feeds are also supported.
+Add Google's calendar integration in Home Assistant, then choose its calendar entities under Calendar's **Calendars → Home Assistant calendars** and click **Save**. Calendar reads upcoming events through the HA API without handling Google OAuth credentials. Other HA calendars and private iCal feeds are also supported.
 
 The [connection and installation guide](DOCS.md) explains the bundled HA integration required for the native panel and per-request user authorization. Standalone deployments retain direct Google OAuth through environment configuration. Keep OAuth credentials and private iCal URLs out of this repository.
 

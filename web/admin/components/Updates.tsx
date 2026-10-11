@@ -107,10 +107,10 @@ export function UpdateBanner() {
     <div class={`update-banner update-banner--${b.kind}`} role="status">
       <Icon name={b.kind === 'failed' ? 'alert' : b.kind === 'updated' ? 'check' : b.kind === 'updating' ? 'refresh' : 'sparkles'} size={16} />
       <span class="update-banner__text">
-        {b.kind === 'available' && t('Marco {v} is available', { v: b.version })}
-        {b.kind === 'updating' && t('Updating Marco to {v}…', { v: b.version })}
-        {b.kind === 'updated' && t('Marco has been updated to {v}. Reload the admin to use the new version.', { v: b.version })}
-        {b.kind === 'failed' && t('Could not update to {v}. Marco is still on {cur}.', { v: b.version, cur: s.info?.current ?? '' })}
+        {b.kind === 'available' && t('Calendar {v} is available', { v: b.version })}
+        {b.kind === 'updating' && t('Updating Calendar to {v}…', { v: b.version })}
+        {b.kind === 'updated' && t('Calendar has been updated to {v}. Reload the admin to use the new version.', { v: b.version })}
+        {b.kind === 'failed' && t('Could not update to {v}. Calendar is still on {cur}.', { v: b.version, cur: s.info?.current ?? '' })}
       </span>
       <span class="update-banner__actions">
         {b.kind === 'updated' ? (
@@ -194,15 +194,15 @@ function Progress({ info, phase }: { info: UpdateInfo; phase: Phase }) {
       )}
       {phase === 'done' && (
         <Callout kind="ok">
-          {t('Marco has been updated to {v}.', { v: st?.to || info.current })} {reloadable && t('The admin reloads in a few seconds.')}
+          {t('Calendar has been updated to {v}.', { v: st?.to || info.current })} {reloadable && t('The admin reloads in a few seconds.')}
         </Callout>
       )}
-      {phase === 'current' && <Callout kind="ok">{t('Marco already had the latest version ({v}).', { v: info.current })}</Callout>}
+      {phase === 'current' && <Callout kind="ok">{t('Calendar already had the latest version ({v}).', { v: info.current })}</Callout>}
       {phase === 'failed' && (
         <Callout kind="error">
           {st?.rolledBack
-            ? t('The new version did not start and Marco went back to version {v}. Nothing was lost.', { v: st.from || info.current })
-            : t('The update could not finish. Marco is still on version {v}.', { v: info.current })}
+            ? t('The new version did not start and Calendar went back to version {v}. Nothing was lost.', { v: st.from || info.current })
+            : t('The update could not finish. Calendar is still on version {v}.', { v: info.current })}
         </Callout>
       )}
       {phase === 'stalled' && (
@@ -238,7 +238,7 @@ function UpdateDialog({ info, unreachable, started, onClose }: { info: UpdateInf
         code === 'busy'
           ? t('An update is already running.')
           : code === 'up_to_date'
-            ? t('Marco already has the latest version.')
+            ? t('Calendar already has the latest version.')
             : code === 'not_supported'
               ? t('This server cannot be updated from the admin.')
               : err.message,
@@ -252,7 +252,7 @@ function UpdateDialog({ info, unreachable, started, onClose }: { info: UpdateInf
 
   return (
     <Modal
-      title={rel ? t('Marco {v}', { v: rel.version }) : t('Updates')}
+      title={rel ? t('Calendar {v}', { v: rel.version }) : t('Updates')}
       icon="sparkles"
       size="lg"
       onClose={onClose}
@@ -281,7 +281,7 @@ function UpdateDialog({ info, unreachable, started, onClose }: { info: UpdateInf
       {showProgress && <Progress info={info} phase={phase} />}
       {canStart && !showProgress && (
         <Callout kind="info">
-          {t('The new version is downloaded, checked and switched to in a moment. If it does not start, Marco goes back to the current version by itself. Your data is not touched and the screens reload by themselves.')}
+          {t('The new version is downloaded, checked and switched to in a moment. If it does not start, Calendar goes back to the current version by itself. Your data is not touched and the screens reload by themselves.')}
         </Callout>
       )}
       {!info.install.canApply && info.available && <HowTo info={info} />}
@@ -314,7 +314,7 @@ export function UpdatesCard() {
       const next = await api.updateCheck();
       setState({ info: next });
       if (next.error) toast(t('Could not reach GitHub. It will try again later.'), 'error');
-      else toast(next.available ? t('Marco {v} is available', { v: next.latest?.version ?? '' }) : t('You have the latest version.'), next.available ? 'info' : 'ok');
+      else toast(next.available ? t('Calendar {v} is available', { v: next.latest?.version ?? '' }) : t('You have the latest version.'), next.available ? 'info' : 'ok');
     } catch (e) {
       toast((e as ApiError).message, 'error');
     } finally {
@@ -342,7 +342,7 @@ export function UpdatesCard() {
         <div class="stack">
           {info.available && info.latest ? (
             <Callout kind="info">
-              <span>{t('Marco {v} is available', { v: info.latest.version })}</span>{' '}
+              <span>{t('Calendar {v} is available', { v: info.latest.version })}</span>{' '}
               <button type="button" class="link-btn" onClick={openUpdateDialog}>
                 {canApply ? t('See what’s new and update') : t('See what’s new')}
               </button>
@@ -361,7 +361,7 @@ export function UpdatesCard() {
           ) : (
             <ToggleRow
               label={t('Check for updates')}
-              hint={t('Once a day, Marco asks GitHub which version is the latest. No data is sent.')}
+              hint={t('Once a day, Calendar asks GitHub which version is the latest. No data is sent.')}
               checked={info.settings.check}
               onChange={(v) => save({ check: v })}
             />
@@ -441,7 +441,7 @@ export function WhatsNewHost() {
     setNotes(null);
   };
   return (
-    <Modal title={t('What’s new in Marco {v}', { v: version })} icon="sparkles" size="lg" onClose={close} footer={<Button variant="primary" onClick={close}>{t('Got it')}</Button>}>
+    <Modal title={t('What’s new in Calendar {v}', { v: version })} icon="sparkles" size="lg" onClose={close} footer={<Button variant="primary" onClick={close}>{t('Got it')}</Button>}>
       <Notes md={notes} />
     </Modal>
   );

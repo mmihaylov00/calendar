@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Marco: multi-stage image (build the web UI, then a slim runtime with production deps only).
+# Calendar: multi-stage image (build the web UI, then a slim runtime with production deps only).
 
 # ---- build ---------------------------------------------------------------------------------
 FROM node:22-alpine AS build
@@ -17,11 +17,11 @@ ARG MARCO_RUNTIME_USER=node
 # SETUP_REQUIRE_TOKEN: inside a container the client address is not reliable (docker-proxy, Docker Desktop,
 # rootless networking and same-host reverse proxies all show up as a private gateway address), so the setup
 # wizard always asks for the one-time token printed in the log (Home Assistant app Log tab).
-LABEL org.opencontainers.image.title="Marco" \
+LABEL org.opencontainers.image.title="Calendar" \
       org.opencontainers.image.description="Your family's day, framed. Self-hosted family wall calendar and dashboard." \
-      org.opencontainers.image.source="https://github.com/mmihaylov00/marco" \
+      org.opencontainers.image.source="https://github.com/mmihaylov00/calendar" \
       org.opencontainers.image.licenses="MIT"
-# Container updates are managed outside Marco; the admin never offers an in-process update button.
+# Container updates are managed outside Calendar; the admin never offers an in-process update button.
 ENV NODE_ENV=production \
     MARCO_INSTALL=docker \
     PORT=3000 \

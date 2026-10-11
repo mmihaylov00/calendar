@@ -295,7 +295,7 @@ function microsoftProvider(me: SectionProps['me']): Provider {
     configured: has('microsoftCalendar') && !!me.microsoftConfigured,
     leaveBody: 'You are about to go to Microsoft to link the account. Save your pending changes first?',
     disconnectBody:
-      'Its calendars will no longer show on the screen and Marco will delete its access. To remove the permission at Microsoft too, go to account.live.com/consent/Manage (personal account) or myapps.microsoft.com (work or school account).',
+      'Its calendars will no longer show on the screen and Calendar will delete its access. To remove the permission at Microsoft too, go to account.live.com/consent/Manage (personal account) or myapps.microsoft.com (work or school account).',
     connectPath: '/auth/microsoft/connect',
     accounts: () => api.microsoftAccounts(),
     calendars: async (email) =>
@@ -523,7 +523,7 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
       )}
       {hasMicrosoft && (
         <p class="muted small">
-          {t('Marco only reads your calendars. To remove the permission at Microsoft too:')}{' '}
+          {t('Calendar only reads your calendars. To remove the permission at Microsoft too:')}{' '}
           <a href="https://account.live.com/consent/Manage" target="_blank" rel="noopener noreferrer">
             {t('personal account')}
           </a>

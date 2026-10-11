@@ -422,7 +422,7 @@ export function PhotosSection({ cfg, set }: SectionProps) {
     <>
       <PageHeader
         title={t('Gallery')}
-        desc={cloud ? t('Your photos for the screen background. They are stored in your Marco account.') : t('Your photos for the screen background. Stored on the server itself.')}
+        desc={cloud ? t('Your photos for the screen background. They are stored in your Calendar account.') : t('Your photos for the screen background. Stored on the server itself.')}
       />
       {cfg.background.source === 'stock' && (
         <Callout>

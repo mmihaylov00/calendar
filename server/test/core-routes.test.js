@@ -171,7 +171,7 @@ test('admin routes: backups, restore, export/import with secrets → logged out,
 
     // export without / with secrets
     const ex = await call('POST', '/api/admin/export', { includeSecrets: false });
-    assert.match(ex.headers.get('content-disposition'), /attachment; filename="marco-\d{4}-\d{2}-\d{2}\.json"/);
+    assert.match(ex.headers.get('content-disposition'), /attachment; filename="calendar-\d{4}-\d{2}-\d{2}\.json"/);
     assert.equal(ex.json.secrets, undefined);
     const exs = await call('POST', '/api/admin/export', { includeSecrets: true });
     assert.ok(exs.json.secrets.passwordHash);

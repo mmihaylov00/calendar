@@ -126,7 +126,7 @@ export function sanitizeImportedSecrets(s) {
 /** Validate an import bundle → { ok, errors, value, fromVersion, … } (value = sanitised v2 config). */
 export function parseImport(bundle) {
   const u = unwrapBundle(bundle);
-  if (!u) return { ok: false, errors: [{ path: '', message: 'not a marco backup or config' }] };
+  if (!u) return { ok: false, errors: [{ path: '', message: 'not a Calendar backup or config' }] };
   const fromVersion = isV1(u.raw) ? 1 : Number(u.raw.version) || 2;
   const { ok, errors, value } = validateConfig(mergeDefaults(structuredClone(u.raw)));
   return { ok, errors, value, fromVersion, secrets: u.secrets, appVersion: u.appVersion, exportedAt: u.exportedAt };

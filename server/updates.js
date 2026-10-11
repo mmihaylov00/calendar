@@ -319,7 +319,7 @@ export function createUpdater(o) {
     if (inflight) return inflight;
     inflight = (async () => {
       const prev = cache();
-      const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'Marco' };
+      const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'Calendar' };
       // A 304 answer only means "unchanged" while the stored release is still there.
       if (prev.etag && prev.latest && !force) headers['If-None-Match'] = prev.etag;
       const next = { ...prev, checkedAt: new Date(now()).toISOString() };
@@ -349,7 +349,7 @@ export function createUpdater(o) {
       }
       const latest = next.latest?.version;
       if (!next.error && latest && isNewer(latest, o.version) && prev.latest?.version !== latest) {
-        console.log(`[updates] Marco ${latest} is available (running ${o.version})`);
+        console.log(`[updates] Calendar ${latest} is available (running ${o.version})`);
       }
       return info();
     })().finally(() => {

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.1-ha.4]
+
+- Rename the app, sidebar, interface and repository to Calendar.
+- Use `/calendar-dashboard` without conflicting with Home Assistant's built-in `/calendar` page.
+- Preserve installed app IDs, stored settings and backup compatibility.
+
 ## [0.6.1-ha.3]
 
 - Open Marco through Home Assistant's native `/marco` panel and private ingress, with no exposed LAN port or separate setup code/password.

@@ -451,7 +451,7 @@ export function SetupWizard({ status: initial, onDone }: { status: SetupStatus; 
   let lead = '';
 
   if (step === 0) {
-    title = t('Welcome to Marco');
+    title = t('Welcome to Calendar');
     lead = t('A family wall calendar inspired by DAKboard that runs on your own server: your calendars, photos and settings stay at home.');
     content = (
       <>
@@ -926,7 +926,7 @@ export function SetupWizard({ status: initial, onDone }: { status: SetupStatus; 
       <header class="wz-top">
         <div class="wz-brand">
           <BrandMark size={36} />
-          <span>Marco</span>
+          <span>Calendar</span>
         </div>
         <span class="wz-top__step">{t('Step {n} of {total}', { n: step + 1, total: STEPS.length })}</span>
       </header>
@@ -976,7 +976,7 @@ export function SetupWizard({ status: initial, onDone }: { status: SetupStatus; 
         </footer>
       </form>
       <p class="wz-foot muted small">
-        {t('Marco v{v} · open source (MIT) · inspired by DAKboard, not affiliated with it', { v: status.version })}
+        {t('Calendar v{v} · open source (MIT) · inspired by DAKboard, not affiliated with it', { v: status.version })}
       </p>
     </div>
   );

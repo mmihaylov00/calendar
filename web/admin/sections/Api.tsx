@@ -258,7 +258,7 @@ shell_command:
   marco_doorbell_clean: rm -f /config/www/doorbell.jpg
 
 automation:
-  - alias: "${t('Doorbell on the Marco screens')}"
+  - alias: "${t('Doorbell on the Calendar screens')}"
     triggers:
       - trigger: state
         entity_id: binary_sensor.front_door_doorbell

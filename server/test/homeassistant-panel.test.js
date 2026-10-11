@@ -17,5 +17,8 @@ test('Home Assistant app uses private admin ingress and matches the panel versio
   }
   assert.doesNotMatch(config, /^ports:|^webui:|^host_network:/m);
   assert.ok(config.includes(`version: "${JSON.parse(read('package.json')).version}"`));
-  assert.equal(JSON.parse(read('home-assistant/custom_components/marco/manifest.json')).version, JSON.parse(read('package.json')).version);
+  const manifest = JSON.parse(read('home-assistant/custom_components/marco/manifest.json'));
+  assert.equal(manifest.version, JSON.parse(read('package.json')).version);
+  assert.equal(manifest.name, 'Calendar');
+  assert.equal(manifest.domain, 'marco');
 });

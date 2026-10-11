@@ -126,7 +126,7 @@ export function ICloudGuide({
             <li key={s}>{t(s)}</li>
           ))}
         </ol>
-        <Callout kind="info">{t('Anyone who has the link can see the calendar, but it is long and impossible to guess. Changes you make in iCloud reach Marco within a few minutes.')}</Callout>
+        <Callout kind="info">{t('Anyone who has the link can see the calendar, but it is long and impossible to guess. Changes you make in iCloud reach Calendar within a few minutes.')}</Callout>
         <Field label={t('Calendar link')} error={error || undefined}>
           <TextInput
             mono

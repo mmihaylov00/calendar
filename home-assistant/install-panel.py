@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install Marco's native Home Assistant panel without restarting services."""
+"""Install Calendar's native Home Assistant panel without restarting services."""
 
 from __future__ import annotations
 
@@ -44,20 +44,20 @@ def install(configuration: Path, addon_slug: str) -> Path | None:
         marker = target / MARKER
         if (not target.is_dir() or marker.is_symlink() or not marker.is_file()
                 or marker.read_text() != MARKER_CONTENT):
-            raise ValueError("The existing marco integration is unmanaged; review it before replacing it")
+            raise ValueError("The existing Calendar integration (marco) is unmanaged; review it before replacing it")
     original = config.read_bytes()
     text = original.decode()
     entry = f"marco:\n  addon_slug: {addon_slug}\n"
     matches = list(re.finditer(r"(?m)^marco[ \t]*:.*(?:\n[ \t]+[^\n]*)*\n?", text))
     if len(matches) > 1:
-        raise ValueError("Home Assistant configuration contains duplicate marco entries")
+        raise ValueError("Home Assistant configuration contains duplicate Calendar integration entries (marco)")
     if matches:
         old_entry = matches[0].group()
         if not re.fullmatch(r"marco[ \t]*:[ \t]*(?:\n[ \t]+addon_slug:[ \t]*[a-z0-9_-]+[ \t]*)?\n?", old_entry):
-            raise ValueError("Review the existing marco configuration manually before installing")
+            raise ValueError("Review the existing Calendar integration configuration (marco) manually before installing")
         updated = (text[:matches[0].start()] + entry + text[matches[0].end():]).encode()
     else:
-        updated = original + (b"" if original.endswith(b"\n") else b"\n") + b"\n# Marco sidebar panel\n" + entry.encode()
+        updated = original + (b"" if original.endswith(b"\n") else b"\n") + b"\n# Calendar sidebar panel\n" + entry.encode()
     source = Path(__file__).parent / "custom_components" / "marco"
     files = {name: (source / name).read_bytes() for name in ("__init__.py", "manifest.json")}
     if updated == original and target.is_dir() and all(
@@ -103,10 +103,10 @@ def main() -> None:
     except (OSError, ValueError) as error:
         parser.exit(1, f"Panel installation failed: {error}\n")
     if backup is None:
-        print("Marco's panel is already installed with this configuration")
+        print("Calendar's panel is already installed with this configuration")
     else:
-        print(f"Marco's panel is installed; previous configuration saved in {backup}")
-        print("Validate Home Assistant's configuration before restarting Core to activate /marco")
+        print(f"Calendar's panel is installed; previous configuration saved in {backup}")
+        print("Validate Home Assistant's configuration before restarting Core to activate /calendar-dashboard")
 
 
 if __name__ == "__main__":

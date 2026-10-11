@@ -21,9 +21,9 @@ export function importNoteText(n: ImportNote): string {
     case 'secrets':
       return t('The file has secrets (password, tokens, private links, paired devices). They are not imported here: your screens keep their links and devices.');
     case 'homeassistant':
-      return t('Home Assistant is not imported: Marco Cloud cannot reach your home network. The weather comes from Open-Meteo.');
+      return t('Home Assistant is not imported: Calendar Cloud cannot reach your home network. The weather comes from Open-Meteo.');
     case 'signIn':
-      return t('The admin password and Google sign-in are not imported: here you sign in with your Marco account.');
+      return t('The admin password and Google sign-in are not imported: here you sign in with your Calendar account.');
     case 'openDisplayAccess':
       return t('Open display access is not imported: here each screen uses its private link or a paired device.');
     case 'insecureTls':
@@ -94,7 +94,7 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
       const withSecrets = secretsOn && secrets;
       const b = await api.exportConfig(withSecrets);
       const day = new Date().toISOString().slice(0, 10);
-      downloadJson(b, `marco-${day}${withSecrets ? '-secrets' : ''}.json`);
+      downloadJson(b, `calendar-${day}${withSecrets ? '-secrets' : ''}.json`);
       toast(t('Backup downloaded'));
     } catch (e) {
       toast(`${t('Could not export')}: ${(e as ApiError).message}`, 'error');
@@ -256,7 +256,7 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
       const blob = new Blob(zipParts(entries) as BlobPart[], { type: 'application/zip' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `marco-photos-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.download = `calendar-photos-${new Date().toISOString().slice(0, 10)}.zip`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -303,7 +303,7 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
           {secretsOn && secrets && <Callout kind="warn">{t('With secrets, anyone holding the file could access your Google calendars and Home Assistant. Keep it somewhere safe.')}</Callout>}
           {!secretsOn && !isSelfHosted() && (
             <p class="muted small">
-              {t('It also moves you to a Marco installed at home: import it in its admin. It has no private links, paired devices, API tokens or Google accounts, so afterwards pair the screens again and reconnect Google Calendar.')}{' '}
+              {t('It also moves you to a Calendar installation at home: import it in its admin. It has no private links, paired devices, API tokens or Google accounts, so afterwards pair the screens again and reconnect Google Calendar.')}{' '}
               {t('It has the addresses of your calendars: keep it somewhere safe.')}
             </p>
           )}

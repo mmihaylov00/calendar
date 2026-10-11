@@ -22,7 +22,7 @@ export function ingressMiddleware({ authorize = authorizeUser, streamCheckMs = 2
     if (!homeAssistantMode()) return next();
     const peer = req.socket.remoteAddress?.replace(/^::ffff:/, '');
     if (req.method === 'GET' && req.path === '/api/health' && ['127.0.0.1', '::1'].includes(peer)) return next();
-    if (peer !== INGRESS_PEER) return res.status(403).json({ error: 'Open Marco through Home Assistant.' });
+    if (peer !== INGRESS_PEER) return res.status(403).json({ error: 'Open Calendar through Home Assistant.' });
     const basePath = req.get('x-ingress-path');
     const userId = req.get('x-remote-user-id');
     if (!INGRESS_PATH.test(basePath || '') || !USER_ID.test(userId || '')) {
@@ -35,7 +35,7 @@ export function ingressMiddleware({ authorize = authorizeUser, streamCheckMs = 2
     } catch (err) {
       if (req.aborted || res.destroyed || res.writableEnded) return;
       console.warn('[ingress] Home Assistant authorization unavailable:', err.message);
-      return res.status(503).json({ error: 'Load the Marco integration in Home Assistant before opening this app.' });
+      return res.status(503).json({ error: 'Load the Calendar integration in Home Assistant before opening this app.' });
     }
     req.homeAssistant = {
       basePath,

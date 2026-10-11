@@ -202,8 +202,8 @@ export function DoorbellCard({ cfg, set, errors, full, snapshot = false, example
     <Card id={snapshot ? 'api-doorbell' : 'ha-doorbell'} title={snapshot ? t('Doorbell') : t('Doorbell and camera')} icon="bell">
       <p class="muted small">
         {snapshot
-          ? t('When someone rings, Home Assistant sends Marco a picture from the camera and the screens show it full screen for a few seconds, with a door chime. It also wakes screens in night mode while it lasts.')
-          : t('When someone rings, Home Assistant tells Marco and the screens show the camera full screen for a few seconds, with a door chime. It also wakes screens in night mode while it lasts.')}
+          ? t('When someone rings, Home Assistant sends Calendar a picture from the camera and the screens show it full screen for a few seconds, with a door chime. It also wakes screens in night mode while it lasts.')
+          : t('When someone rings, Home Assistant tells Calendar and the screens show the camera full screen for a few seconds, with a door chime. It also wakes screens in night mode while it lasts.')}
       </p>
       {snapshot ? (
         timeField
@@ -229,7 +229,7 @@ export function DoorbellCard({ cfg, set, errors, full, snapshot = false, example
       </div>
       <Callout>
         {snapshot
-          ? t('From Home Assistant: POST /api/hooks/doorbell with an API token and the camera picture (JPEG, PNG or WebP, 2 MB at most). Marco keeps only the latest picture while the doorbell rings, 10 minutes at most, and then deletes it. Only the screens that are ringing see it.')
+          ? t('From Home Assistant: POST /api/hooks/doorbell with an API token and the camera picture (JPEG, PNG or WebP, 2 MB at most). Calendar keeps only the latest picture while the doorbell rings, 10 minutes at most, and then deletes it. Only the screens that are ringing see it.')
           : t('From Home Assistant: POST /api/hooks/doorbell with an API token ("API & webhooks"). The picture goes through this server: the Home Assistant token never reaches the screens and no picture is stored.')}
       </Callout>
       {example}

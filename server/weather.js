@@ -18,7 +18,7 @@ const VERSION = (() => {
   }
 })();
 /** MET Norway asks for an identifying User-Agent with a way to reach the app. */
-export const USER_AGENT = `Marco/${VERSION} (+https://github.com/mr-reb00t/marco)`;
+export const USER_AGENT = `Calendar/${VERSION} (+https://github.com/mmihaylov00/calendar)`;
 
 const cache = new Map(); // weatherCacheKey → { base, fetchedAt, expiresAt, lastModified }
 const inflight = new Map(); // weatherCacheKey → Promise<entry>

@@ -303,7 +303,7 @@ function PairDialog({ initialCode, saved, defaultScreenId, onClose, onPaired }: 
           <p class="muted small">
             {pairAddress
               ? t('On the TV, open {url}. It shows a code with {n} characters. Type it here.', { url: pairAddress, n: len })
-              : t('Open Marco on the new screen (or the /pair address): it shows a code of {n} characters. Type it here.', { n: len })}
+              : t('Open Calendar on the new screen (or the /pair address): it shows a code of {n} characters. Type it here.', { n: len })}
           </p>
           <Field label={t('Screen code')} error={err || undefined}>
             <input
@@ -398,7 +398,7 @@ export function PairedDevicesCard({ saved, onChanged }: { saved: StoredConfig; o
         <div class="skeleton skeleton--card" />
       ) : devices.length === 0 ? (
         <Empty icon="link" title={t('No paired devices')}>
-          {t('Open Marco on a tablet or TV without a private link: it shows a code. Press “Pair a screen” and type it.')}
+          {t('Open Calendar on a tablet or TV without a private link: it shows a code. Press “Pair a screen” and type it.')}
         </Empty>
       ) : (
         <ul class="dev-list">
