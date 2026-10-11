@@ -25,6 +25,7 @@ function changelogSection(version: string): string {
 // Multi-page build: / -> display (Raspberry Pi screen), /admin/ -> management panel.
 export default defineConfig({
   root: 'web',
+  base: './',
   plugins: [preact()],
   // Build identity reported by displays (docs/ARCHITECTURE.md), declared in web/shared/env.d.ts.
   define: {

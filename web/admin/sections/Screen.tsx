@@ -10,10 +10,12 @@ import { cssBytes, EMAIL_RE } from '../util';
 import { MIN_PASSWORD, passwordProblem } from '../../shared/password';
 import type { SectionProps } from './common';
 import { PrivacyCard } from './Privacy';
+import { homeAssistantMode } from '../authRedirect';
+import { appUrl } from '../../shared/path';
 
 const kb = (n: number) => (Math.round((n / 1024) * 10) / 10).toLocaleString(locale());
 
-export function ScreenSection({ cfg, set, errors, screenId, saved, go }: SectionProps) {
+export function ScreenSection({ cfg, set, errors, screenId, saved, go, me }: SectionProps) {
   const s = cfg.screen;
   const cssMax = limit('customCssBytes');
   const nm = s.nightMode;
@@ -42,7 +44,7 @@ export function ScreenSection({ cfg, set, errors, screenId, saved, go }: Section
           </Field>
         </div>
       </Card>
-      <PrivateLinkCard screenId={screenId} saved={saved} mode={saved.security?.displayAccess ?? 'open'} go={go} />
+      {!homeAssistantMode(me) && <PrivateLinkCard screenId={screenId} saved={saved} mode={saved.security?.displayAccess ?? 'open'} go={go} />}
       <Card id="scr-look" scope="screen" title={t('Appearance')} icon="palette">
         <div class="grid grid--2">
           <Field label={t('Theme')}>
@@ -116,11 +118,13 @@ export function SecuritySection({ cfg, set, errors, me, saved, go }: SectionProp
     }
   };
   const emailErr = Object.keys(errors).find((k) => k.startsWith('auth.allowedGoogleEmails'));
-  const pwOn = has('passwordLogin');
-  const googleOn = offers('googleLogin');
+  const homeAssistant = homeAssistantMode(me);
+  const pwOn = !homeAssistant && has('passwordLogin');
+  const googleOn = !homeAssistant && offers('googleLogin');
   return (
     <>
       <PageHeader title={t('Security')} desc={t('Who can sign in to this panel.')} />
+      {homeAssistant && <Callout>{t('Home Assistant controls access to Marco. Your Home Assistant administrator account opens this panel without a separate password or pairing code.')}</Callout>}
       {me.user && (
         <Card>
           <div class="who">
@@ -128,13 +132,13 @@ export function SecuritySection({ cfg, set, errors, me, saved, go }: SectionProp
             <div>
               <strong>{me.user.name || me.user.email}</strong>
               <div class="muted small">
-                {me.user.email} · {me.user.method === 'google' ? t('signed in with Google') : me.user.method === 'account' ? t('signed in with your account') : t('signed in with password')}
+                {me.user.email} · {homeAssistant ? t('signed in with Home Assistant') : me.user.method === 'google' ? t('signed in with Google') : me.user.method === 'account' ? t('signed in with your account') : t('signed in with password')}
               </div>
             </div>
           </div>
         </Card>
       )}
-      {has('openDisplayAccess') && (
+      {!homeAssistant && has('openDisplayAccess') && (
         <DisplayAccessCard mode={cfg.security?.displayAccess ?? 'open'} savedMode={saved.security?.displayAccess ?? 'open'} onChange={(v) => set((d) => void (d.security = { ...(d.security ?? {}), displayAccess: v }))} go={go} />
       )}
       {googleOn && (
@@ -148,7 +152,7 @@ export function SecuritySection({ cfg, set, errors, me, saved, go }: SectionProp
             <Chips values={a.allowedGoogleEmails} placeholder="name@example.com" validate={(v) => EMAIL_RE.test(v)} onChange={(v) => set((d) => void (d.auth.allowedGoogleEmails = v))} />
           </Field>
           {me.googleConfigured && (
-            <a class="btn btn--default" href="/auth/google/login">
+            <a class="btn btn--default" href={appUrl('/auth/google/login')}>
               <GoogleG size={16} />
               <span>{t('Link my Google account to sign in')}</span>
             </a>

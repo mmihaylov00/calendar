@@ -1,3 +1,4 @@
+import { appUrl } from '../shared/path';
 // First-run setup wizard (shown instead of the login while the server has no admin password).
 // Steps: welcome → admin password → location → calendars → look → done (display URL + QR).
 // Server side: server/setup.js (POST /api/setup/complete creates the password + settings and logs in).
@@ -418,9 +419,9 @@ export function SetupWizard({ status: initial, onDone }: { status: SetupStatus; 
   const portPart = location.port ? `:${location.port}` : '';
   const origin = lanIp ? `${location.protocol}//${lanIp}${portPart}` : location.origin;
   // Private display access (fresh installs): the Done step shows the screen's private link instead of the bare URL.
-  const displayUrl = done?.displayPath ? `${origin}${done.displayPath}` : `${origin}/`;
+  const displayUrl = `${origin}${appUrl(done?.displayPath || '/')}`;
   const privateLink = !!done?.displayPath;
-  const adminUrl = `${origin}/admin/`;
+  const adminUrl = `${origin}${appUrl('/admin/')}`;
   const now = new Date();
   const timePreview = (() => {
     try {

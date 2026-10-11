@@ -1,3 +1,4 @@
+import { appPath, appUrl } from '../../shared/path';
 // Private display access (docs/API.md "Display access"): a display that has no valid key shows
 //   - 'pair':    "Pair this screen" + a code (6 characters self-hosted, pairCodeLength in /api/health) + QR to
 //                /admin/#pair=<code> (private mode, no key yet)
@@ -45,7 +46,7 @@ async function post<T>(url: string, body: unknown): Promise<{ status: number; js
   const ctl = new AbortController();
   const tm = setTimeout(() => ctl.abort(), 8000);
   try {
-    const r = await fetch(url, {
+    const r = await fetch(appUrl(url), {
       method: 'POST', cache: 'no-store', signal: ctl.signal,
       headers: { 'content-type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body ?? {}),
     });
@@ -69,11 +70,11 @@ const kioskHint = () => new URLSearchParams(location.search).has('client');
  */
 const PROBE_MS = 30_000;
 function probeAccess(kind: 'pair' | 'invalid'): void {
-  if (kind !== 'pair' || location.pathname === '/pair' || probing) return;
+  if (kind !== 'pair' || appPath() === '/pair' || probing) return;
   probing = true;
   setInterval(async () => {
     try {
-      const r = await fetch(`/api/display/config${location.search}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
+      const r = await fetch(appUrl(`/api/display/config${location.search}`), { cache: 'no-store', headers: { Accept: 'application/json' } });
       if (r.status === 200) location.reload();
     } catch { /* offline: keep showing the code */ }
   }, PROBE_MS);
@@ -110,11 +111,11 @@ export function adminTarget(h: PairHealth, loc: { protocol: string; host: string
     } catch { /* keep this origin */ }
   } else if (isLocalHost(loc.hostname)) {
     const ip = Array.isArray(h.lanAddresses) ? h.lanAddresses.find((a) => typeof a === 'string' && /^[0-9a-f.:]+$/i.test(a)) : undefined;
-    if (!ip) return { where: '', url: `${loc.origin}/admin/` };
+    if (!ip) return { where: '', url: `${loc.origin}${appUrl('/admin/')}` };
     const host = ip.includes(':') ? `[${ip}]` : ip;
     origin = `${loc.protocol}//${host}${loc.port ? `:${loc.port}` : ''}`;
   }
-  return { where: `${new URL(origin).host}/admin`, url: `${origin}/admin/` };
+  return { where: `${new URL(origin).host}/admin`, url: `${origin}${appUrl('/admin/')}` };
 }
 
 /**
@@ -125,8 +126,8 @@ export function afterPairUrl(h: Pick<HealthResponse, 'edition'> = {}, loc: { pat
   const q = new URLSearchParams(loc.search);
   q.delete('k');
   const s = q.toString();
-  const home = loc.pathname === '/pair' || (h.edition != null && h.edition !== 'self-hosted') ? '/pair' : '/';
-  return `${home}${s ? `?${s}` : ''}`;
+  const home = appPath(loc.pathname) === '/pair' || (h.edition != null && h.edition !== 'self-hosted') ? '/pair' : '/';
+  return appUrl(`${home}${s ? `?${s}` : ''}`);
 }
 
 /** Sets the code text and its length (the CSS sizes the code so it always fits its column). */

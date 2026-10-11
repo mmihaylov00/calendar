@@ -1,3 +1,4 @@
+import { homeAssistantMode } from '../authRedirect';
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import type { TestHomeAssistantResponse } from '../../shared/types';
@@ -22,7 +23,7 @@ export function HomeAssistantSection(props: SectionProps) {
   );
 }
 
-function HomeAssistantMain({ cfg, set, errors }: SectionProps) {
+function HomeAssistantMain({ cfg, set, errors, me }: SectionProps) {
   const ha = cfg.homeassistant;
   const w = cfg.weather;
   const [token, setToken] = useState('');
@@ -57,56 +58,63 @@ function HomeAssistantMain({ cfg, set, errors }: SectionProps) {
   return (
     <>
       <PageHeader title="Home Assistant" desc={t('Use your home sensors (indoor temperature and humidity, weather station).')} />
-      <Card id="ha-conn" title={t('Connection')} icon="home">
-        <ToggleRow label={t('Enable Home Assistant')} checked={ha.enabled} onChange={(v) => set((d) => void (d.homeassistant.enabled = v))} />
-        <div class={`stack ${ha.enabled ? '' : 'is-disabled'}`}>
-          <Field label="URL" error={errors['homeassistant.url']} hint={t('Local address, e.g. http://homeassistant.local:8123')}>
-            <TextInput mono value={ha.url} error={!!errors['homeassistant.url']} placeholder="http://homeassistant.local:8123" onValue={(v) => set((d) => void (d.homeassistant.url = v))} prefix={<Icon name="link" size={14} />} />
-          </Field>
-          <Field
-            label={t('Long-lived access token')}
-            hint={t('Create it in Home Assistant → your profile → Security → Long-lived access tokens. It is stored only on the server and never shown again.')}
-          >
-            <div class="search-row">
-              <div class="input-group">
-                <span class="input-group__addon">
-                  <Icon name="key" size={14} />
-                </span>
-                <input
-                  class="input input--mono"
-                  type={(show ? 'text' : 'password') as 'password'}
-                  value={token}
-                  autocomplete="off"
-                  placeholder={t('•••••••• (unchanged)')}
-                  onInput={(e) => setToken(e.currentTarget.value)}
-                />
-                <button type="button" class="input-group__btn" onClick={() => setShow(!show)} aria-label={t('Show')}>
-                  <Icon name={show ? 'eyeOff' : 'eye'} size={15} />
-                </button>
+      {homeAssistantMode(me) ? (
+        <Card id="ha-conn" title={t('Connection')} icon="home">
+          <Callout>{t('Connected through Home Assistant. No server address or access token is needed.')}</Callout>
+          <ToggleRow label={t('Enable Home Assistant sensors')} checked={ha.enabled} onChange={(v) => set((d) => void (d.homeassistant.enabled = v))} />
+        </Card>
+      ) : (
+        <Card id="ha-conn" title={t('Connection')} icon="home">
+          <ToggleRow label={t('Enable Home Assistant')} checked={ha.enabled} onChange={(v) => set((d) => void (d.homeassistant.enabled = v))} />
+          <div class={`stack ${ha.enabled ? '' : 'is-disabled'}`}>
+            <Field label="URL" error={errors['homeassistant.url']} hint={t('Local address, e.g. http://homeassistant.local:8123')}>
+              <TextInput mono value={ha.url} error={!!errors['homeassistant.url']} placeholder="http://homeassistant.local:8123" onValue={(v) => set((d) => void (d.homeassistant.url = v))} prefix={<Icon name="link" size={14} />} />
+            </Field>
+            <Field
+              label={t('Long-lived access token')}
+              hint={t('Create it in Home Assistant → your profile → Security → Long-lived access tokens. It is stored only on the server and never shown again.')}
+            >
+              <div class="search-row">
+                <div class="input-group">
+                  <span class="input-group__addon">
+                    <Icon name="key" size={14} />
+                  </span>
+                  <input
+                    class="input input--mono"
+                    type={(show ? 'text' : 'password') as 'password'}
+                    value={token}
+                    autocomplete="off"
+                    placeholder={t('•••••••• (unchanged)')}
+                    onInput={(e) => setToken(e.currentTarget.value)}
+                  />
+                  <button type="button" class="input-group__btn" onClick={() => setShow(!show)} aria-label={t('Show')}>
+                    <Icon name={show ? 'eyeOff' : 'eye'} size={15} />
+                  </button>
+                </div>
+                <Button variant="primary" disabled={!token.trim()} loading={savingTok} onClick={saveToken}>
+                  {t('Save token')}
+                </Button>
               </div>
-              <Button variant="primary" disabled={!token.trim()} loading={savingTok} onClick={saveToken}>
-                {t('Save token')}
+            </Field>
+            <div class="row-actions">
+              <Button icon="play" loading={test.loading} onClick={runTest} disabled={!ha.url}>
+                {t('Test connection')}
               </Button>
+              {test.res &&
+                (test.res.ok ? (
+                  <span class="ok-text">
+                    <Icon name="check" size={15} /> {t('Connected')} {test.res.version && `· Home Assistant ${test.res.version}`}
+                  </span>
+                ) : (
+                  <span class="err-text">
+                    <Icon name="alert" size={15} /> {fetchErrorText(test.res.error) || t('Could not connect')}
+                  </span>
+                ))}
             </div>
-          </Field>
-          <div class="row-actions">
-            <Button icon="play" loading={test.loading} onClick={runTest} disabled={!ha.url}>
-              {t('Test connection')}
-            </Button>
-            {test.res &&
-              (test.res.ok ? (
-                <span class="ok-text">
-                  <Icon name="check" size={15} /> {t('Connected')} {test.res.version && `· Home Assistant ${test.res.version}`}
-                </span>
-              ) : (
-                <span class="err-text">
-                  <Icon name="alert" size={15} /> {fetchErrorText(test.res.error) || t('Could not connect')}
-                </span>
-              ))}
+            <Callout>{t('Remember to save the configuration (bottom bar) after changing the URL or enabling the integration.')}</Callout>
           </div>
-          <Callout>{t('Remember to save the configuration (bottom bar) after changing the URL or enabling the integration.')}</Callout>
-        </div>
-      </Card>
+        </Card>
+      )}
       <Card
         title={t('Entities')}
         icon="activity"

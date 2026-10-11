@@ -1,3 +1,4 @@
+import { appBase } from '../../shared/path';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { DisplayInfo, DisplaysResponse, NightCommand } from '../../shared/types';
 import { api, ApiError } from '../api';
@@ -206,9 +207,11 @@ export function DisplaysSection({ saved, go }: SectionProps) {
   return (
     <>
       <PageHeader title={t('Connected screens')} desc={t('Devices showing the calendar right now. Updates every 5 s.')}>
-        <Button variant="primary" icon="link" onClick={() => openPairDialog()}>
-          {t('Pair a screen')}
-        </Button>
+        {!appBase() && (
+          <Button variant="primary" icon="link" onClick={() => openPairDialog()}>
+            {t('Pair a screen')}
+          </Button>
+        )}
         {has('displayCommands') && (
           <>
             <Button icon="refresh" onClick={() => run('_all', { action: 'reload', ...target }, label('reload'))} loading={busy._all === 'reload'} disabled={!onlineHere.length}>
@@ -221,7 +224,7 @@ export function DisplaysSection({ saved, go }: SectionProps) {
         )}
       </PageHeader>
 
-      {saved.security?.displayAccess === 'open' && <OpenModeCallout go={go} />}
+      {!appBase() && saved.security?.displayAccess === 'open' && <OpenModeCallout go={go} />}
 
       {outdated.length > 0 && (
         <Callout kind="warn">
@@ -278,7 +281,7 @@ export function DisplaysSection({ saved, go }: SectionProps) {
       ) : list.length === 0 ? (
         <Card>
           <Empty icon="monitor" title={t('No screen connected')}>
-            {saved.security?.displayAccess === 'open' ? (
+            {appBase() || saved.security?.displayAccess === 'open' ? (
               <>
                 {t('Open')} <code>{absUrl(screenHref(saved, filter || saved.defaultScreen, links))}</code> {t('on the device and it will appear here.')}
               </>
@@ -301,7 +304,7 @@ export function DisplaysSection({ saved, go }: SectionProps) {
           ))}
         </div>
       )}
-      <PairedDevicesCard saved={saved} onChanged={load} />
+      {!appBase() && <PairedDevicesCard saved={saved} onChanged={load} />}
       <p class="muted small center">
         <StatusDot state={online.length ? 'ok' : 'idle'} /> {t('{n} online', { n: online.length })} · {t('server v{v}', { v: data?.serverVersion ?? '–' })}
       </p>

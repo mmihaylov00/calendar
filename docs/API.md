@@ -3,6 +3,11 @@
 All endpoints speak JSON. TypeScript types for every request and response live in
 [`web/shared/types.ts`](../web/shared/types.ts). See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model.
 
+In the Home Assistant app, prepend the current ingress path to these routes. Every ingress request needs
+an authenticated, active HA administrator, independently checked through the bundled Core integration.
+Marco's setup code and password login are used only by standalone deployments. HA calendar sources use
+the Supervisor-supplied Core API credential on the server; no HA or Google credential is returned to the browser.
+
 - **Display endpoints** need the screen's **display key** (private link), a **paired-device token** or an admin
   session, unless display access is set to *open* (legacy LAN mode). See [Display access](#display-access). They
   never return calendar URLs, Google accounts, tokens or Home Assistant credentials.
@@ -215,6 +220,13 @@ a switch to private access takes its pollers off the list at once; their next po
 
 ## Authentication
 
+The Core integration separately serves `GET /api/marco/access?user_id=<id>` on Home Assistant itself.
+Only authenticated active-admin callers may use it. It returns `{ allowed: boolean }` for the requested
+user, allowing only an active, non-system administrator. The response is never cached. Marco's server
+uses this endpoint to authorize Supervisor's forwarded ingress identity.
+
+The login and OAuth routes below remain available for standalone deployments.
+
 | Method & path | Notes |
 |---|---|
 | `GET /api/auth/me` | `{ user: { email, name, picture, method } \| null, needsSetup, googleConfigured, passwordLoginEnabled, mustChangePassword, passwordFromEnv }`. `method` is `'password'` or `'google'` here; Marco Cloud answers `'account'` and adds `account: { loginUrl, accountUrl, sessionsUrl, deleteUrl, household: { name, role } }` and `microsoftConfigured` (Microsoft calendars on for this account; a self-hosted server sends it too, true when `MICROSOFT_CLIENT_ID` and `MICROSOFT_CLIENT_SECRET` are set) |
@@ -228,6 +240,8 @@ a switch to private access takes its pollers off the list at once; their next po
 
 ## Setup (first run)
 
+This setup applies to standalone deployments. The Home Assistant app uses the existing HA login.
+
 A fresh install has **no admin password** (and no default one): until the setup wizard completes, the admin panel
 shows the wizard and the display shows a welcome screen. Installs that already have a password hash never enter
 setup. When `ADMIN_PASSWORD` is set and no hash exists yet, it becomes the initial password at startup (headless
@@ -239,7 +253,7 @@ installs) and setup is skipped; the panel then offers to change it (`passwordFro
 | `POST /api/setup/test-ics` | `{ url }` → `TestIcsResponse` (the wizard's "Test" button). Unauthenticated, so it refuses loopback, link-local / cloud-metadata, multicast and unspecified destinations (also after redirects) and returns only generic errors (`address not allowed`, `HTTP <status>`, `could not load the calendar`) |
 | `POST /api/setup/complete` | `SetupRequest` → `{ ok, user, screen: { id, slug, name, displayPath }, displayAccess }` and a session cookie (logged in). `displayPath` = the screen's private link `/d/<key>` |
 
-`SetupRequest`: `{ password, passwordConfirm, language: es|en|pt, screenName, location?: { name, lat, lon, timezone },
+`SetupRequest`: `{ password, passwordConfirm, language: en, screenName, location?: { name, lat, lon, timezone },
 timezone? (when the location is skipped), units?: metric|imperial, format24?, calendars?: [{ name, url, kind: holidays|generic }] (≤ 20), photos?: { source:
 stock|gallery|mixed }, layout?: { preset }, accent?: #rrggbb, ambient?: aurora|particles|none, theme?: dark|light }`.
 The password must have at least 10 characters, must not be a common password or a trivial pattern (`1234567890`,
@@ -551,4 +565,3 @@ curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/jso
 curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"action":"dismiss"}' http://marco.local:3000/api/hooks/doorbell
 ```
-

@@ -5,6 +5,7 @@ import { googleConfigured, googleLoginEnabled } from './google.js';
 import { getConfig } from './store.js';
 import { microsoftConfigured } from './microsoft.js';
 import { CODE_LENGTH } from './pairing.js';
+import { homeAssistantMode } from './ingress.js';
 
 /** Every feature key, in the order docs/API.md lists them. */
 export const FEATURE_KEYS = Object.freeze([
@@ -27,6 +28,16 @@ export function selfHostedFeatures() {
   out.accountMenu = false;
   out.feedback = false;
   out.microsoftCalendar = microsoftConfigured();
+  if (homeAssistantMode()) {
+    out.setupWizard = false;
+    out.passwordLogin = false;
+    out.googleLogin = false;
+    out.googleCalendar = false;
+    out.microsoftCalendar = false;
+    out.openDisplayAccess = false;
+    out.apiTokens = false;
+    out.webhooks = false;
+  }
   return out;
 }
 

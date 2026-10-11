@@ -9,7 +9,7 @@ export type LayoutPreset =
 /** Corner of the clock card in the 'photoFrame' layout: top-left, top-right, bottom-left, bottom-right. */
 export type FrameCorner = 'tl' | 'tr' | 'bl' | 'br';
 export type SourceKind = 'generic' | 'airbnb' | 'birthdays' | 'holidays';
-export type SourceType = 'ics' | 'google' | 'microsoft';
+export type SourceType = 'ics' | 'google' | 'microsoft' | 'homeassistant';
 export type DateFormat = 'weekday_month_d' | 'weekday_d_month' | 'weekday_d_dot_month' | 'weekday_month_d_y' | 'weekday_mdy' | 'weekday_dmy' | 'weekday_iso' | 'custom';
 /** Every date format, in the order the admin offers them. */
 export const DATE_FORMATS: DateFormat[] = ['weekday_d_month', 'weekday_month_d', 'weekday_d_dot_month', 'weekday_month_d_y', 'weekday_mdy', 'weekday_dmy', 'weekday_iso', 'custom'];
@@ -94,6 +94,7 @@ export interface CalendarSource {
   /** Microsoft Graph calendar id (Outlook.com, Hotmail, Microsoft 365). Marco Cloud only for now. */
   microsoftCalendarId?: string; // microsoft only
   microsoftAccount?: string; // microsoft only
+  entityId?: string; // Home Assistant calendar entity
   color: string;
   emoji?: string;
   kind: SourceKind;
@@ -810,7 +811,7 @@ export interface AuthUser {
   email: string;
   name: string;
   picture?: string;
-  method: 'password' | 'google' | 'account';
+  method: 'password' | 'google' | 'account' | 'homeassistant';
 }
 
 /** Marco Cloud: where the account pages live and which household the admin edits. */
@@ -829,6 +830,8 @@ export interface HouseholdInfo {
 
 export interface AuthMeResponse {
   user: AuthUser | null;
+  /** The panel uses Home Assistant's authenticated admin session. */
+  homeAssistant?: boolean;
   googleConfigured: boolean;
   /** Sign in with Google is offered (self-hosted: off unless the server relies on it or MARCO_GOOGLE_LOGIN=1). */
   googleLoginEnabled?: boolean;
@@ -843,6 +846,11 @@ export interface AuthMeResponse {
   account?: AccountInfo;
   /** Marco Cloud: the admin shows the Microsoft accounts card when it is true (Microsoft calendars on for this account). */
   microsoftConfigured?: boolean;
+}
+
+export interface HaCalendarListItem {
+  entity_id: string;
+  name: string;
 }
 
 /** GET /api/setup/status */

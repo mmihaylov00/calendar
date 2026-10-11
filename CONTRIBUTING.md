@@ -4,7 +4,7 @@ This fork targets our Home Assistant installation. Keep the UI English-only and 
 
 ## Setup and checks
 
-Clone `https://github.com/mmihaylov00/marco` and run `npm ci` with Node.js 22. Existing development services use automatic refresh; do not start or restart them without an explicit request.
+Clone `https://github.com/mmihaylov00/marco` and run `npm ci` with Node.js 22. Python 3 is required for the native HA panel's installation and authorization tests. Existing development services use automatic refresh; do not start or restart them without an explicit request.
 
 Before submitting a change, run:
 
@@ -15,7 +15,7 @@ node scripts/gen-contract.mjs --check
 npm run build
 ```
 
-Update both `config.yaml` and the package version for Home Assistant releases. The app's Docker build uses `--build-arg MARCO_RUNTIME_USER=root`; startup prepares `/data/marco` and drops privileges before loading the server.
+Update `config.yaml`, the package version and `home-assistant/custom_components/marco/manifest.json` for Home Assistant releases. The app's Docker build uses `--build-arg MARCO_RUNTIME_USER=root`; startup prepares `/data/marco` and drops privileges before loading the server. The panel installer never restarts Core; validate HA configuration before activating changed integration files.
 
 ## Conventions
 

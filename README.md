@@ -8,16 +8,13 @@ Marco displays family calendars, weather, photos, local events, birthdays and Ho
 
 Add `https://github.com/mmihaylov00/marco` to **Settings → Apps → App store → ⋮ → Repositories**, install **Marco**, then follow [the setup guide](DOCS.md). The app supports 64-bit Raspberry Pi and x86 systems.
 
-Marco serves its dashboard on port `3000` and its admin panel at `/admin/`. It uses its own admin password. Configuration, photos and credentials live in the app's private `/data/marco` storage and are included in Home Assistant app backups. Manage updates through Home Assistant.
+Marco opens at `/marco` through Home Assistant ingress and uses your HA login. Active HA administrators can access the panel; no separate port, setup code or Marco password is needed. Configuration, photos and credentials live in the app's private `/data/marco` storage and are included in Home Assistant app backups. Manage updates through Home Assistant.
 
 ## Connecting Google Calendar
 
-Choose either of these read-only connections:
+Add Google's calendar integration in Home Assistant, then choose its calendar entities under Marco's **Calendars → Home Assistant calendars** and click **Save**. Marco reads upcoming events through the HA API without handling Google OAuth credentials. Other HA calendars and private iCal feeds are also supported.
 
-- **Private iCal URL:** copy the calendar's secret iCal address from Google Calendar settings and add it in Marco's Calendars page. No OAuth client or public domain is needed.
-- **Google OAuth:** configure a Google Cloud Web application client and a stable HTTPS origin, then link your Google account and select its calendars. Multiple accounts and automatic token refresh are supported.
-
-The [Google connection guide](DOCS.md#connect-google-calendars) covers both paths and the required app options. Keep OAuth credentials and private iCal URLs out of this repository.
+The [connection and installation guide](DOCS.md) explains the bundled HA integration required for the native panel and per-request user authorization. Standalone deployments retain direct Google OAuth through environment configuration. Keep OAuth credentials and private iCal URLs out of this repository.
 
 ## Display
 

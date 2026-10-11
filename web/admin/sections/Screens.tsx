@@ -1,3 +1,4 @@
+import { appBase, appUrl } from '../../shared/path';
 import { useEffect, useState } from 'preact/hooks';
 import { slugify, SLUG_RE } from '../../shared/screens';
 import type { DisplayInfo, ScreenProfile } from '../../shared/types';
@@ -102,7 +103,8 @@ export function ScreensSection({ full, setFull, saved, screenId, setScreenId, go
   }, []);
   // Private mode (default): a device opens its screen's private link or is paired; ?screen= only works in open mode
   // (and in this admin's own previews).
-  const openMode = saved.security?.displayAccess === 'open';
+  const homeAssistant = !!appBase();
+  const openMode = homeAssistant || saved.security?.displayAccess === 'open';
   const linkState = useDisplayLinks(saved);
   const links = linkState.data;
   const screens = full.screens;
@@ -188,7 +190,7 @@ export function ScreensSection({ full, setFull, saved, screenId, setScreenId, go
   return (
     <>
       <PageHeader title={t('Screens')} desc={
-          openMode
+          homeAssistant ? t('Each screen has its own layout and widgets. Open a screen from Home Assistant using your administrator account.') : openMode
             ? t('Each screen (living room, kitchen, hall…) has its own layout and widgets. Open /?screen=<address> on each device.')
             : t('Each screen (living room, kitchen, hallway…) has its own layout and widgets. Each device opens its screen’s private link or is paired with a code.')
         }>
@@ -208,7 +210,7 @@ export function ScreensSection({ full, setFull, saved, screenId, setScreenId, go
           const on = ds.filter((d) => d.connected).length;
           const link = linkOf(s.id);
           // Copy: open mode → the ?screen= address; private → the screen's private link (none until saved).
-          const url = openMode ? `${origin}/?screen=${s.slug}` : link ? `${origin}${link.path}` : '';
+          const url = openMode ? `${origin}${appUrl('/')}?screen=${s.slug}` : link ? `${origin}${appUrl(link.path)}` : '';
           return (
             <section class={`screen-card ${s.id === screenId ? 'is-current' : ''}`} style={{ '--sc': s.screen.accent } as any} key={s.id}>
               <div class="screen-card__thumb" aria-hidden="true">
@@ -326,6 +328,7 @@ export function ScreensSection({ full, setFull, saved, screenId, setScreenId, go
         </Callout>
       )}
       <Card title={t('How to assign a screen to a device')} icon="info" muted={false}>
+        {homeAssistant && <Callout>{t('Open Marco from the Home Assistant sidebar, then use the screen’s Open button. Home Assistant handles sign-in; no separate pairing code is needed.')}</Callout>}
         {!openMode ? (
           <ol class="howto">
             <li>
@@ -349,7 +352,7 @@ export function ScreensSection({ full, setFull, saved, screenId, setScreenId, go
         ) : (
         <ol class="howto">
           <li>
-            {t('Open in the device browser')} <code>{origin}/?screen={t('kitchen')}</code> {t('(replace “{slug}” with the screen address).', { slug: t('kitchen') })}
+            {t('Open in the device browser')} <code>{origin}{appUrl('/')}?screen={t('kitchen')}</code> {t('(replace “{slug}” with the screen address).', { slug: t('kitchen') })}
           </li>
           <li>
             {t('Without ?screen= the default screen (★) is shown. Check what each device shows in')}{' '}

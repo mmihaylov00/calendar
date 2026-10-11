@@ -242,6 +242,23 @@ test('validateAll: Home Assistant rules apply only with the feature', () => {
   assert.ok(!('weather.haWeatherEntity' in cl.global));
 });
 
+test('validateAll: managed HA sensors and calendar sources need no manual server URL', () => {
+  const original = globalThis.location;
+  globalThis.location = { pathname: '/api/hassio_ingress/app-token/admin/' };
+  try {
+    const cfg = baseConfig();
+    cfg.homeassistant = { ...cfg.homeassistant, enabled: true, url: '' };
+    cfg.calendar.sources = [{ id: 'c_ha', type: 'homeassistant', entityId: 'calendar.family', name: 'Family', color: '#336699', emoji: '', kind: 'generic', enabled: true, refreshMin: 5 }];
+    const valid = util.validateAll(cfg, selfHosted());
+    assert.equal(valid.total, 0, JSON.stringify(valid));
+    cfg.calendar.sources[0].entityId = 'sensor.family';
+    assert.ok('source.c_ha.entityId' in util.validateAll(cfg, selfHosted()).global);
+  } finally {
+    if (original === undefined) delete globalThis.location;
+    else globalThis.location = original;
+  }
+});
+
 test('validateAll: going over a limit is flagged', () => {
   const cfg = baseConfig();
   const screen = cfg.screens[0];

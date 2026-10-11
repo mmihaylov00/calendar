@@ -1,3 +1,4 @@
+import { appPath, appUrl } from '../shared/path';
 // Wall display entry point: wires config, data polling, SSE, the ticker, widgets and WebGL layers.
 // Self-hosted fonts (bundled by Vite): the display must render with no Internet.
 import '@fontsource-variable/inter';
@@ -72,7 +73,7 @@ const identify = new IdentifyOverlay($('#identify'));
 /** Doorbell frames: GET /api/display/doorbell/frame (a counter keeps every answer fresh).
  *  404 and lost access mean there is nothing more to show for this ring. */
 const doorbellFrames: FrameSource = async (n, signal) => {
-  const r = await fetch(withScreen(`/api/display/doorbell/frame?n=${n}`), { headers: authHeaders(), cache: 'no-store', signal });
+  const r = await fetch(appUrl(withScreen(`/api/display/doorbell/frame?n=${n}`)), { headers: authHeaders(), cache: 'no-store', signal });
   if (r.status === 404 || r.status === 401 || r.status === 403) return null;
   if (!r.ok || !(r.headers.get('content-type') || '').startsWith('image/')) throw new Error(`frame: HTTP ${r.status}`);
   return r.blob();
@@ -867,7 +868,7 @@ async function boot(): Promise<void> {
     return;
   }
   // /pair always shows the pairing screen for a browser without a key (also in open mode).
-  if (location.pathname === '/pair' && !credential) {
+  if (appPath() === '/pair' && !credential) {
     heartbeat.stop();
     showPairing('pair', pairingLang(params));
     return;
@@ -1061,7 +1062,7 @@ setInterval(async () => {
   const t = current();
   if (t.parts.hour !== 4 || t.parts.minute > 10) return;
   try {
-    const r = await fetch('/api/health', { cache: 'no-store' });
+    const r = await fetch(appUrl('/api/health'), { cache: 'no-store' });
     if (r.ok) location.reload();
   } catch { /* offline: try again later */ }
 }, 5 * 60_000);

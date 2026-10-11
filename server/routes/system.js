@@ -21,6 +21,7 @@ import { schedulesNow } from '../core/schedules.js';
 import { getEvents, sourceStatus } from '../calendars.js';
 import { cachedWeather } from '../weather.js';
 import { localDate, addDays } from '../core/lib/tz.js';
+import { homeAssistantMode } from '../ingress.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const LEVELS = ['info', 'warn', 'error'];
@@ -34,10 +35,10 @@ const keepSecurity = (cur, incoming) => ({ ...(incoming?.security || {}), ...str
 /** Dashboard warnings (§7.1). */
 export function dashboardWarnings({ secrets, sources, displays, cfg }) {
   const w = [];
-  if (secrets.passwordIsDefault && cfg.auth.passwordLoginEnabled) w.push('default_password');
-  else if (secrets.passwordFromEnv && cfg.auth.passwordLoginEnabled) w.push('env_password'); // ADMIN_PASSWORD: offer to change it
+  if (!homeAssistantMode() && secrets.passwordIsDefault && cfg.auth.passwordLoginEnabled) w.push('default_password');
+  else if (!homeAssistantMode() && secrets.passwordFromEnv && cfg.auth.passwordLoginEnabled) w.push('env_password'); // ADMIN_PASSWORD: offer to change it
   // Upgraded installs keep display access 'open' (no key): recommend private links + pairing.
-  if (cfg.security?.displayAccess === 'open') w.push('display_access_open');
+  if (!homeAssistantMode() && cfg.security?.displayAccess === 'open') w.push('display_access_open');
   if (sources.some((s) => s.enabled !== false && s.ok === false)) w.push('source_errors');
   if (!displays.some((d) => d.connected)) w.push('no_displays');
   if (displays.some((d) => d.connected && d.outdated)) w.push('outdated_displays');

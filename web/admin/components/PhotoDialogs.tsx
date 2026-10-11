@@ -1,3 +1,4 @@
+import { appUrl } from '../../shared/path';
 // Gallery dialogs: duplicate-name resolution before an upload, and the focal-point editor.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { coverPosition, coverWindow, hasFocus, type PhotoFrame } from '../../shared/focus';
@@ -75,7 +76,7 @@ export function ConflictDialog(props: { items: ConflictItem[]; onDone: (choices:
           return (
             <li class="conflict__row" key={it.key}>
               <div class="conflict__thumb">
-                {it.existing ? <img src={it.existing.thumbUrl || it.existing.url} alt="" loading="lazy" decoding="async" /> : <Icon name="image" size={20} />}
+                {it.existing ? <img src={appUrl(it.existing.thumbUrl || it.existing.url)} alt="" loading="lazy" decoding="async" /> : <Icon name="image" size={20} />}
               </div>
               <div class="conflict__info">
                 <strong class="conflict__name" title={it.target}>
@@ -178,7 +179,7 @@ export function FocusEditor(props: {
     return { left: `${(c.cx - c.sx / 2) * 100}%`, top: `${(c.cy - c.sy / 2) * 100}%`, width: `${c.sx * 100}%`, height: `${c.sy * 100}%` };
   };
   const bg = (bw: number, bh: number, ty = 0.5) => ({
-    backgroundImage: `url("${p.url}")`,
+    backgroundImage: `url("${appUrl(p.url)}")`,
     backgroundPosition: coverPosition(w, h, bw, bh, focus.x, focus.y, 0.5, ty),
   });
   const panelWin = coverWindow(w, h, fr.aspect, 1, focus.x, focus.y, 0.5, fr.targetY);
@@ -233,7 +234,7 @@ export function FocusEditor(props: {
           >
             <img
               ref={img}
-              src={p.url}
+              src={appUrl(p.url)}
               alt={p.file}
               draggable={false}
               decoding="async"
@@ -294,7 +295,7 @@ export function FocusEditor(props: {
               </span>
             </figcaption>
           </figure>
-          <a class="link-btn small focus-ed__open" href={p.url} target="_blank" rel="noopener">
+          <a class="link-btn small focus-ed__open" href={appUrl(p.url)} target="_blank" rel="noopener">
             <Icon name="external" size={13} /> {t('View original')}
             {p.w && p.h ? ` · ${p.w}×${p.h}` : ''} · {formatBytes(p.size)}
           </a>

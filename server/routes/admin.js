@@ -5,6 +5,7 @@ import { requireAuth, changePasswordHandler } from '../auth.js';
 import * as google from '../google.js';
 import * as microsoft from '../microsoft.js';
 import * as ha from '../homeassistant.js';
+import * as haCalendars from '../haCalendars.js';
 import { testIcs, sourceStatus } from '../calendars.js';
 import { testFeed, status as newsStatus } from '../news.js';
 import { status as weatherStatus, weatherKey, checkWeatherKey } from '../weather.js';
@@ -111,6 +112,13 @@ export function adminRouter({ onConfigSaved } = {}) {
     const domain = /^[a-z_]+$/.test(req.query.domain || '') ? req.query.domain : '';
     try {
       res.json(await ha.listEntities(domain));
+    } catch (err) {
+      res.status(502).json({ error: err.message });
+    }
+  }));
+  r.get('/homeassistant/calendars', wrap(async (req, res) => {
+    try {
+      res.json(await haCalendars.listCalendars());
     } catch (err) {
       res.status(502).json({ error: err.message });
     }

@@ -14,6 +14,8 @@ import { applyEventRules } from './eventRules.js';
 import { expandLocalEvents, expandBirthdays, localSource, birthdaysSource } from './localEvents.js';
 import * as google from './google.js';
 import * as microsoft from './microsoft.js';
+import * as haCalendars from './haCalendars.js';
+import { haSettings } from './homeassistant.js';
 import { getConfig, paths } from './store.js';
 import { defaultScreen, screenSourceIds } from './core/screens.js';
 import { logActivity } from './activity.js';
@@ -33,10 +35,11 @@ const inflight = new Map();
 const sourceKey = (s) =>
   s.type === 'google' ? `google|${s.googleAccount}|${s.googleCalendarId}`
     : s.type === 'microsoft' ? `microsoft|${s.microsoftAccount}|${s.microsoftCalendarId}`
+      : s.type === 'homeassistant' ? `homeassistant|${haSettings().url}|${s.entityId}`
       : `ics|${s.url}|${s.insecureTls ? 1 : 0}`;
 
 /** Change signature of a Google or Microsoft event list. */
-const itemsSig = (source, items) => (source.type === 'microsoft' ? hash(items) : hash(items.map((i) => [i.id, i.etag, i.updated])));
+const itemsSig = (source, items) => (source.type === 'microsoft' || source.type === 'homeassistant' ? hash(items) : hash(items.map((i) => [i.id, i.etag, i.updated])));
 
 const cacheFile = (id) => path.join(paths.cache, `src_${id.replace(/[^A-Za-z0-9_-]/g, '_')}.json`);
 
@@ -97,7 +100,9 @@ async function doRefresh(source, needWindow) {
       const from = zonedMidnight(w.from, tz);
       const to = zonedMidnight(addDays(w.to, 1), tz);
       let items;
-      if (source.type === 'microsoft') {
+      if (source.type === 'homeassistant') {
+        items = await haCalendars.listEvents(source.entityId, from, to);
+      } else if (source.type === 'microsoft') {
         // Needs the server's own Entra app (MICROSOFT_CLIENT_ID / MICROSOFT_CLIENT_SECRET, server/microsoft.js).
         if (!microsoft.microsoftConfigured()) throw new Error('Microsoft is not configured on this server (MICROSOFT_CLIENT_ID / MICROSOFT_CLIENT_SECRET)');
         items = await microsoft.listEvents(source.microsoftAccount, source.microsoftCalendarId, from, to);
@@ -115,7 +120,7 @@ async function doRefresh(source, needWindow) {
   } catch (err) {
     entry.ok = false;
     entry.error = err.message || String(err);
-    entry.errorCode = err.code === 'auth_failed' || /Google account|Google token|refresh token|invalid_grant|HTTP 401|HTTP 403/.test(entry.error)
+    entry.errorCode = err.code === 'auth_failed' || err.status === 401 || err.status === 403 || /Google account|Google token|refresh token|invalid_grant|HTTP 401|HTTP 403/.test(entry.error)
       ? 'auth_failed' : err.code === 'parse_failed' || /parse|ical/i.test(entry.error) ? 'parse_failed' : 'fetch_failed';
     console.warn(`[calendars] ${source.name} (${source.id}): ${entry.error}`);
   }
@@ -315,6 +320,7 @@ export function eventsHash(events) {
 function rawForSource(source, entry, fromDate, toDate) {
   if (source.type === 'ics') return entry.vevents ? expandEvents(entry.vevents, fromDate, toDate) : [];
   if (source.type === 'microsoft') return (entry.items || []).map(microsoft.graphToRaw).filter(Boolean);
+  if (source.type === 'homeassistant') return (entry.items || []).map(haCalendars.calendarToRaw);
   return (entry.items || []).map(googleToRaw).filter(Boolean);
 }
 

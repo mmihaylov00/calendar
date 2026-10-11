@@ -2,6 +2,7 @@
 // localStorage, or nothing: open mode / admin session), which screen profile it shows (?screen=, ignored with a
 // key or device token, which are bound to a screen) and a stable client id (?client= from the kiosk, else
 // persisted in localStorage, else generated).
+import { appBase, appPath, appUrl } from '../shared/path';
 
 const params = new URLSearchParams(location.search);
 
@@ -14,7 +15,7 @@ export const isPreview = params.get('preview') === '1';
 
 /** Private-link key from the path (/d/<key>); '' when the page was opened at / or /pair. */
 export const linkKey = (() => {
-  const m = /^\/d\/([^/?#]+)/.exec(location.pathname);
+  const m = /^\/d\/([^/?#]+)/.exec(appPath());
   try {
     return m ? decodeURIComponent(m[1]).trim().slice(0, 64) : '';
   } catch {
@@ -25,7 +26,7 @@ export const linkKey = (() => {
 const DEVICE_LS = 'marco.deviceToken';
 /** Paired-device token (stored by the pairing screen). */
 export function storedDeviceToken(): string {
-  if (isPreview) return '';
+  if (isPreview || appBase()) return '';
   try {
     const v = localStorage.getItem(DEVICE_LS) || '';
     return /^md_[A-Za-z0-9_-]{43}$/.test(v) ? v : '';
@@ -34,13 +35,13 @@ export function storedDeviceToken(): string {
   }
 }
 export function saveDeviceToken(token: string): void {
-  if (isPreview) return;
+  if (isPreview || appBase()) return;
   try {
     localStorage.setItem(DEVICE_LS, token);
   } catch { /* storage disabled: the screen pairs again after a reload */ }
 }
 export function clearDeviceToken(): void {
-  if (isPreview) return;
+  if (isPreview || appBase()) return;
   try {
     localStorage.removeItem(DEVICE_LS);
   } catch { /* ignore */ }
@@ -73,8 +74,10 @@ export const authHeaders = (): Record<string, string> => (credential ? { 'X-Marc
 
 /** Same-origin media URL with ?k= (an <img> / WebGL texture cannot send headers). Other URLs unchanged. */
 export function mediaUrl(url: string): string {
-  if (!credential || !url.startsWith('/media/')) return url;
-  return `${url}${url.includes('?') ? '&' : '?'}k=${encodeURIComponent(credential)}`;
+  const scoped = appUrl(url);
+  const localMedia = url.startsWith('/media/') || (!!appBase() && url.startsWith(`${appBase()}/media/`));
+  if (!credential || !localMedia) return scoped;
+  return `${scoped}${scoped.includes('?') ? '&' : '?'}k=${encodeURIComponent(credential)}`;
 }
 
 const CLIENT_RE = /^[A-Za-z0-9_-]{8,64}$/;

@@ -9,6 +9,7 @@ import * as microsoft from './microsoft.js';
 import { logActivity, logActivityThrottled } from './activity.js';
 import { passwordProblem, PASSWORD_MESSAGES } from './lib/password.js';
 import { isPrivateIp, isLanClient, ipBucket, hostAllowed, hostnameOf } from './lib/net.js';
+import { homeAssistantMode, homeAssistantUser } from './ingress.js';
 
 export { isPrivateIp, isLanClient };
 
@@ -48,7 +49,7 @@ export async function verifyPassword(password, stored) {
 const WEAK_DEFAULTS = new Set(['', 'admin', 'password', 'change-me']);
 
 /** Fresh install: no admin password has been set yet → the admin shows the setup wizard (server/setup.js). */
-export const needsSetup = () => !getSecrets().passwordHash;
+export const needsSetup = () => !homeAssistantMode() && !getSecrets().passwordHash;
 
 /**
  * Startup: make sure a session epoch exists and, when ADMIN_PASSWORD is set and no password hash exists yet
@@ -86,14 +87,23 @@ export function sessionMiddleware() {
   // Secure flag decided per request: https requests (directly or via a trusted proxy) get a Secure cookie,
   // plain-http LAN access (http://<pi-ip>:3000/admin/) still works. COOKIE_SECURE=0 disables it, =1 forces it.
   const mode = process.env.COOKIE_SECURE;
-  return (req, res, next) => mw(req, res, () => {
-    if (req.sessionOptions) req.sessionOptions.secure = mode === '1' ? true : mode === '0' ? false : Boolean(req.secure);
-    next();
-  });
+  return (req, res, next) => {
+    const user = homeAssistantUser(req);
+    if (user) {
+      req.session = { user, sid: user.email };
+      return next();
+    }
+    return mw(req, res, () => {
+      if (req.sessionOptions) req.sessionOptions.secure = mode === '1' ? true : mode === '0' ? false : Boolean(req.secure);
+      next();
+    });
+  };
 }
 
 /** Server-side validity of a cookie session: epoch (revocation), login method still allowed, Google email still allowed. */
 export function sessionValid(req) {
+  if (homeAssistantUser(req)) return true;
+  if (homeAssistantMode()) return false;
   if (needsSetup()) return false;
   const u = req.session?.user;
   if (!u) return false;
@@ -158,7 +168,7 @@ export function csrfGuard({ multipartPaths = [] } = {}) {
     if (origin && origin !== 'null') {
       let host;
       try { host = new URL(origin).host; } catch { host = ''; }
-      if (!host || !hostAllowed(hostnameOf(host))) return res.status(403).json({ error: 'bad origin' });
+      if (!host || (!homeAssistantUser(req) && !hostAllowed(hostnameOf(host)))) return res.status(403).json({ error: 'bad origin' });
       const allowed = new Set([req.get('host'), req.get('x-forwarded-host')].filter(Boolean));
       if (process.env.PUBLIC_URL) { try { allowed.add(new URL(process.env.PUBLIC_URL).host); } catch { /* ignore */ } }
       if (!allowed.has(host)) return res.status(403).json({ error: 'bad origin' });
@@ -243,16 +253,17 @@ export function meHandler(req, res) {
   const sec = getSecrets();
   res.json({
     user: valid ? sessionUser(req.session.user) : null,
+    homeAssistant: Boolean(homeAssistantUser(req)),
     needsSetup: needsSetup(),
     mustChangePassword: Boolean(valid && req.session.user.method === 'password' && sec.passwordIsDefault),
     // Initial password came from ADMIN_PASSWORD (headless/Docker install): the panel offers to change it.
-    passwordFromEnv: Boolean(valid && sec.passwordFromEnv),
-    googleConfigured: google.googleConfigured(),
+    passwordFromEnv: Boolean(valid && !homeAssistantMode() && sec.passwordFromEnv),
+    googleConfigured: !homeAssistantMode() && google.googleConfigured(),
     // Sign in with Google (off by default on self-hosted, see google.googleLoginEnabled)
-    googleLoginEnabled: google.googleLoginEnabled(getConfig()),
+    googleLoginEnabled: !homeAssistantMode() && google.googleLoginEnabled(getConfig()),
     // Microsoft calendars with the server's own Entra app (MICROSOFT_CLIENT_ID / MICROSOFT_CLIENT_SECRET).
-    microsoftConfigured: microsoft.microsoftConfigured(),
-    passwordLoginEnabled: getConfig().auth.passwordLoginEnabled,
+    microsoftConfigured: !homeAssistantMode() && microsoft.microsoftConfigured(),
+    passwordLoginEnabled: !homeAssistantMode() && getConfig().auth.passwordLoginEnabled,
   });
 }
 

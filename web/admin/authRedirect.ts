@@ -6,11 +6,17 @@
 // to `next` (path + hash, for example "/admin/#/calendars") after a successful login.
 import type { AuthMeResponse } from '../shared/types';
 import type { Caps } from './caps';
+import { appBase, appPath, appUrl } from '../shared/path';
 
 const DEFAULT_LOGIN = '/login';
 
+export function homeAssistantMode(me: AuthMeResponse | null): boolean {
+  return !!appBase() || !!me?.homeAssistant || me?.user?.method === 'homeassistant';
+}
+
 /** True when sign-in is handled by the account pages rather than the admin's own login screen. */
 export function accountMode(me: AuthMeResponse | null, caps: Caps): boolean {
+  if (homeAssistantMode(me)) return false;
   if (me?.user?.method === 'account' || !!me?.account) return true;
   return caps.edition === 'cloud' && caps.tenancy === 'multi';
 }
@@ -21,9 +27,9 @@ const isLocalPath = (v: string) => v.startsWith('/') && !v.startsWith('//') && !
 
 /** Keep only a same-site admin path for `next`; anything else falls back to "/admin/". */
 export function safeNext(pathAndHash: string): string {
-  const v = String(pathAndHash || '');
-  if (!v.startsWith('/admin/') || v.includes('//') || !isLocalPath(v)) return '/admin/';
-  return v;
+  const v = appPath(String(pathAndHash || ''));
+  if (!v.startsWith('/admin/') || v.includes('//') || !isLocalPath(v)) return appUrl('/admin/');
+  return appUrl(v);
 }
 
 /** Login URL with `next`, or null when the admin shows its own login screen. */
@@ -38,19 +44,19 @@ export function authRedirect(me: AuthMeResponse | null, caps: Caps, pathAndHash:
 export function logoutRedirect(me: AuthMeResponse | null, caps: Caps, res: unknown): string | null {
   if (!accountMode(me, caps)) return null;
   const next = res && typeof res === 'object' ? (res as { next?: unknown }).next : undefined;
-  if (typeof next === 'string' && isLocalPath(next)) return next;
+  if (typeof next === 'string' && isLocalPath(next)) return appUrl(next);
   return loginUrlOf(me);
 }
 
 /** The server's login page when it is a safe link, else "/login". */
 function loginUrlOf(me: AuthMeResponse | null): string {
-  return safeAccountUrl(me?.account?.loginUrl) || DEFAULT_LOGIN;
+  return safeAccountUrl(me?.account?.loginUrl) || appUrl(DEFAULT_LOGIN);
 }
 
 /** Account page links from /api/auth/me: a path on this site or an http(s) URL; anything else is dropped. */
 export function safeAccountUrl(v: unknown): string | null {
   if (typeof v !== 'string' || !v) return null;
-  if (isLocalPath(v)) return v;
+  if (isLocalPath(v)) return appUrl(v);
   if (/[\s\u0000-\u001f\u007f\\]/.test(v)) return null;
   try {
     const u = new URL(v);

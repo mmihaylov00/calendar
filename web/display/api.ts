@@ -6,6 +6,7 @@ import type {
   PhotosResponse, PollResponse, WeatherResponse,
 } from '../shared/types';
 import { authHeaders, withScreen } from './identity';
+import { appUrl } from '../shared/path';
 
 export class ApiError extends Error {
   constructor(message: string, public status = 0, public code = '') {
@@ -17,7 +18,7 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 1500
   const ctl = new AbortController();
   const tm = setTimeout(() => ctl.abort(), timeoutMs);
   try {
-    const r = await fetch(path, {
+    const r = await fetch(appUrl(path), {
       ...init, signal: ctl.signal, cache: 'no-store', headers: { Accept: 'application/json', ...authHeaders(), ...(init.headers || {}) },
     });
     if (!r.ok) {

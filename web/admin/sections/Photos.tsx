@@ -1,3 +1,4 @@
+import { appUrl } from '../../shared/path';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { coverPosition, freeBand, hasFocus, type PhotoFrame } from '../../shared/focus';
 import type { AdminPhoto, AppConfig, DisplayInfo, PhotoConflictPolicy } from '../../shared/types';
@@ -313,7 +314,7 @@ export function PhotosSection({ cfg, set }: SectionProps) {
       const id = items[k].id;
       try {
         patch(id, { status: 'optimizing', pct: 0.05 });
-        const res = await fetch(p.url, { credentials: 'same-origin' });
+        const res = await fetch(appUrl(p.url), { credentials: 'same-origin' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const blob = await res.blob();
         const file = new File([blob], p.file, { type: blob.type || 'image/jpeg' });
@@ -590,7 +591,7 @@ export function PhotosSection({ cfg, set }: SectionProps) {
                         aria-pressed={selecting ? sel : undefined}
                       >
                         <img
-                          src={p.thumbUrl || p.url}
+                          src={appUrl(p.thumbUrl || p.url)}
                           alt={p.file}
                           width={Math.round(w * s)}
                           height={Math.round(h * s)}

@@ -1,3 +1,4 @@
+import { appUrl } from '../../shared/path';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { AdminPhoto, BackupInfo, ImportNote, ImportPreview } from '../../shared/types';
 import { api, ApiError, downloadJson } from '../api';
@@ -244,7 +245,7 @@ export function BackupsSection({ dirty, replaceConfig }: SectionProps) {
     try {
       for (const [i, p] of list.entries()) {
         try {
-          const r = await fetch(p.url, { credentials: 'same-origin' });
+          const r = await fetch(appUrl(p.url), { credentials: 'same-origin' });
           if (!r.ok) throw new Error(String(r.status));
           entries.push({ name: names[i], data: new Uint8Array(await r.arrayBuffer()), date: p.uploadedAt ? new Date(p.uploadedAt) : undefined });
         } catch {

@@ -2,6 +2,7 @@
 // The per-event checks live in live.ts (dispatch), shared with the poll channel.
 import { dispatch, type StreamHandlers } from './live';
 import { clientId, credential, isPreview, screenKey } from './identity';
+import { appUrl } from '../shared/path';
 
 export type { StreamHandlers } from './live';
 
@@ -12,7 +13,7 @@ export function streamUrl(): string {
   if (isPreview) q.set('preview', '1');
   // EventSource cannot send headers: the credential travels as ?k= (never logged by the server).
   if (credential) q.set('k', credential);
-  return `/api/stream?${q.toString()}`;
+  return appUrl(`/api/stream?${q.toString()}`);
 }
 
 /** Events the stream listens for (besides `revoked` and `ping`). */

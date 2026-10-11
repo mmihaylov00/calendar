@@ -1,33 +1,24 @@
 name: Marco
-version: "0.6.1-ha.2"
+version: "0.6.1-ha.3"
 slug: marco
-description: Family calendar and wall dashboard with Google Calendar and private iCal feeds.
+description: Family calendar and wall dashboard using Home Assistant calendars and login.
 url: https://github.com/mmihaylov00/marco
 arch:
   - aarch64
   - amd64
 startup: application
 boot: auto
-webui: http://[HOST]:[PORT:3000]/admin/
-ports:
-  3000/tcp: 3000
-ports_description:
-  3000/tcp: Marco dashboard and admin panel
+ingress: true
+ingress_port: 3000
+ingress_entry: admin/
+ingress_stream: true
+panel_title: Marco
+panel_icon: mdi:calendar-month
+panel_admin: true
+homeassistant_api: true
 backup: cold
 environment:
   MARCO_HOME_ASSISTANT: "1"
   MARCO_UPDATE_CHECK: "0"
-options:
-  public_url: ""
-  google_client_id: ""
-  google_client_secret: ""
-  allowed_hosts: ""
-  trust_proxy: ""
-  lan_address: ""
-schema:
-  public_url: str
-  google_client_id: str
-  google_client_secret: password
-  allowed_hosts: str
-  trust_proxy: str
-  lan_address: str
+options: {}
+schema: {}

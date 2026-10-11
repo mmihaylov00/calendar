@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1-ha.3]
+
+- Open Marco through Home Assistant's native `/marco` panel and private ingress, with no exposed LAN port or separate setup code/password.
+- Check active Home Assistant administrator access on requests and live streams; keep standalone authentication outside HA.
+- Read calendar entities managed by Home Assistant, including Google calendars, without copying OAuth credentials into Marco.
+- Preserve ingress paths for assets, API requests, photos, live events and display previews.
+
 ## [0.6.1-ha.2]
 
 - Make the admin, display and server messages English-only; normalize saved Spanish and Portuguese language settings without changing calendar data.

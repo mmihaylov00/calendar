@@ -1,3 +1,4 @@
+import { appUrl } from '../../shared/path';
 // Display access UI: per-screen private link card, "Pair a screen" dialog (opened from anywhere through
 // openPairDialog(), e.g. the QR on a waiting display → /admin/#pair=<code>), paired devices list and the
 // open-mode recommendation. Server side: server/displayAccess.js, server/pairing.js; docs/API.md "Display access".
@@ -57,7 +58,7 @@ export function PrivateLinkCard({ screenId, saved, mode, go }: { screenId: strin
   const origin = shareOrigin(data);
   // What other devices open / scan ("Open" below stays on this browser's own origin, or the
   // display origin when the server has one).
-  const url = link ? `${origin || location.origin}${link.path}` : '';
+  const url = link ? `${origin || location.origin}${appUrl(link.path)}` : '';
 
   const regenerate = async () => {
     if (!link) return;
@@ -120,7 +121,7 @@ export function PrivateLinkCard({ screenId, saved, mode, go }: { screenId: strin
                 <Callout kind="warn">{t('You are on “localhost” and this server’s network address is unknown: open the admin with its IP or name (or set LAN_ADDRESS) to get the QR code.')}</Callout>
               )}
               <div class="plink__actions">
-                <a class="btn btn--default btn--sm" href={`${displayOriginOf(data) ?? ''}${link.path}`} target="_blank" rel="noopener noreferrer">
+                <a class="btn btn--default btn--sm" href={`${displayOriginOf(data) ?? ''}${appUrl(link.path)}`} target="_blank" rel="noopener noreferrer">
                   <Icon name="external" size={15} />
                   <span>{t('Open')}</span>
                 </a>
@@ -181,7 +182,7 @@ function PrivateLinkAlt({ saved, screenId }: { saved: StoredConfig; screenId: st
   const link = links.data?.links.find((l) => l.screenId === screenId);
   if (!usesPrivateLinks(saved) || !link) return null;
   const origin = shareOrigin(links.data);
-  const url = `${origin || location.origin}${link.path}`;
+  const url = `${origin || location.origin}${appUrl(link.path)}`;
   return (
     <details class="pair-alt">
       <summary>{t('Or open the screen’s private link')}</summary>

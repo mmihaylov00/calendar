@@ -22,7 +22,7 @@ import { Preview } from './Preview';
 import { SETTINGS_INDEX } from './searchIndex';
 import { caps as currentCaps, has, hasFeature, loadCaps, type Caps } from './caps';
 import { accountNav, filterActions, filterNav, filterSettings, NAV_ITEMS, type NavMeta } from './navFilter';
-import { accountLinks, accountMode, authRedirect, logoutRedirect } from './authRedirect';
+import { accountLinks, accountMode, authRedirect, homeAssistantMode, logoutRedirect } from './authRedirect';
 import { ActivitySection } from './sections/Activity';
 import { AlertsSection } from './sections/Alerts';
 import { ApiSection } from './sections/Api';
@@ -220,6 +220,7 @@ function flashAnchor(id: string, tries = 12) {
 
 export function App() {
   const [me, setMe] = useState<AuthMeResponse | null>(null);
+  const homeAssistant = homeAssistantMode(me);
   const [caps, setCapsState] = useState<Caps>(() => currentCaps());
   const [setup, setSetup] = useState<SetupStatus | null>(null);
   const [bootErr, setBootErr] = useState('');
@@ -254,7 +255,7 @@ export function App() {
       // Capabilities and the session in parallel; a server without /api/health keeps every feature on.
       const [c, m] = await Promise.all([loadCaps(api.health), api.me()]);
       setCapsState(c);
-      if (m.needsSetup && hasFeature(c, 'setupWizard')) {
+      if (!homeAssistantMode(m) && m.needsSetup && hasFeature(c, 'setupWizard')) {
         // Fresh install: the wizard replaces the login.
         const st = await api.setupStatus();
         if (st.needsSetup) {
@@ -323,7 +324,7 @@ export function App() {
         return;
       }
       setMe((m) => (m ? { ...m, user: null } : m));
-      setLoginErr(t('Your session expired. Please sign in again.'));
+      setLoginErr(homeAssistantMode(meRef.current) ? t('Sign in to Home Assistant and reopen Marco.') : t('Your session expired. Please sign in again.'));
       loadMe();
     };
     window.addEventListener(UNAUTHORIZED_EVENT, on);
@@ -351,6 +352,7 @@ export function App() {
   /* ---------- pairing deep link: the QR on a waiting display opens /admin/#pair=<code> */
   useEffect(() => {
     const take = () => {
+      if (homeAssistantMode(meRef.current)) return false;
       const m = /^#\/?pair=([A-Za-z0-9 -]{1,12})/.exec(location.hash);
       if (!m) return false;
       history.replaceState(null, '', `${location.pathname}${location.search}#/displays`);
@@ -651,7 +653,7 @@ export function App() {
       { id: 'a-theme', group: gActions, icon: 'moon', label: t('Change panel theme'), run: () => setAdminTheme((x) => (x === 'dark' ? 'light' : x === 'light' ? '' : 'dark')) },
       { id: 'a-feedback', group: gActions, icon: 'help', label: t('Help and feedback'), run: () => setFeedbackOpen(true) },
     ];
-    items.push(...filterActions(actions, caps));
+    items.push(...filterActions(actions, caps).filter((a) => !homeAssistant || a.id !== 'a-pair'));
     if (dirty) items.unshift({ id: 'a-save', group: gActions, icon: 'check', label: t('Save changes'), run: () => save() });
     for (const s of draft.screens) {
       items.push({
@@ -675,7 +677,7 @@ export function App() {
     for (const b of draft.birthdays.items) items.push({ id: `b-${b.id}`, group: t('Birthdays'), emoji: b.emoji || draft.birthdays.emoji || '🎂', label: b.name, hint: `${String(b.day).padStart(2, '0')}/${String(b.month).padStart(2, '0')}`, run: run('birthdays') });
     for (const e of draft.localEvents.items) items.push({ id: `l-${e.id}`, group: t('Local events'), emoji: e.emoji || '📅', label: e.title, hint: e.date, run: run('local') });
     return items;
-  }, [draft, saved, screenId, dirty, savedSlug, viewUrl, nav, caps]);
+  }, [draft, saved, screenId, dirty, savedSlug, viewUrl, nav, caps, homeAssistant]);
 
   /* ---------- render */
   const accent = view?.screen.accent && /^#[0-9a-f]{6}$/i.test(view.screen.accent) ? view.screen.accent : '#ff5a4e';
@@ -700,7 +702,7 @@ export function App() {
     );
   }
 
-  if (setup && me.needsSetup) {
+  if (!homeAssistant && setup && me.needsSetup) {
     return (
       <div style={rootStyle}>
         <SetupWizard
@@ -727,6 +729,17 @@ export function App() {
   }
 
   if (!me.user) {
+    if (homeAssistant) {
+      return (
+        <div class="boot" style={rootStyle}>
+          <div class="boot__err">
+            <Icon name="shield" size={28} />
+            <h2>{t('Sign in to Home Assistant and reopen Marco.')}</h2>
+          </div>
+          <ToastHost />
+        </div>
+      );
+    }
     return (
       <div style={rootStyle}>
         <Login
@@ -992,9 +1005,11 @@ export function App() {
                         <Icon name={accountPage ? 'user' : 'shield'} size={16} /> {t(accountPage ? 'Account' : 'Security')}
                       </a>
                     )}
-                    <button type="button" class="menu__item menu__item--danger" onClick={logout}>
-                      <Icon name="logout" size={16} /> {t('Sign out')}
-                    </button>
+                    {!homeAssistant && (
+                      <button type="button" class="menu__item menu__item--danger" onClick={logout}>
+                        <Icon name="logout" size={16} /> {t('Sign out')}
+                      </button>
+                    )}
                   </div>
                 </>
               )}
@@ -1045,7 +1060,7 @@ export function App() {
         </div>
       )}
       {palette && <CommandPalette items={paletteItems} onClose={() => setPalette(false)} />}
-      <PairDialogHost saved={saved} defaultScreenId={screenId} onPaired={() => window.dispatchEvent(new Event('marco:paired'))} />
+      {!homeAssistant && <PairDialogHost saved={saved} defaultScreenId={screenId} onPaired={() => window.dispatchEvent(new Event('marco:paired'))} />}
       <UpdateDialogHost />
       <WhatsNewHost />
       {feedbackOpen && feedback && (

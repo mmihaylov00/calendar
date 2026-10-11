@@ -1,9 +1,10 @@
-// Where a screen is opened from the admin ("Ver pantalla", the preview iframe, the screen cards).
-// Plain TypeScript with no imports, so the server tests can load it.
+// Where a screen is opened from the admin ("View screen", the preview iframe, the screen cards).
 //
 // - Display links loaded (Marco Cloud, or a self-hosted server in private mode): the screen's private link,
 //   on the display origin when there is one, else on the admin's own origin.
 // - Otherwise (self-hosted open mode, or links not loaded yet): "/?screen=<slug>".
+// - Home Assistant ingress uses the current authenticated session and screen slug.
+import { appBase, appUrl } from '../shared/path';
 
 export interface ScreenUrlInput {
   /** the screen's saved slug (null = screen not saved yet) */
@@ -20,6 +21,12 @@ export interface ScreenUrlInput {
 
 /** URL of a screen, or null when there is nothing to open yet. */
 export function screenUrl({ slug, linkKey, displayOrigin, origin, preview }: ScreenUrlInput): string | null {
+  if (appBase()) {
+    if (slug == null) return null;
+    const q = new URLSearchParams({ screen: slug });
+    if (preview) q.set('preview', '1');
+    return appUrl(`/?${q.toString()}`);
+  }
   if (linkKey) {
     const base = (displayOrigin || origin).replace(/\/+$/, '');
     return `${base}/d/${encodeURIComponent(linkKey)}${preview ? '?preview=1' : ''}`;

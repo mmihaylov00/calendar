@@ -21,22 +21,23 @@ import { geocodeRouter } from './geocode.js';
 import { hostGuard } from './lib/net.js';
 import { redactSecrets } from './core/activityCore.js';
 import { displayAuth, mediaAuth } from './displayAccess.js';
+import { homeAssistantMode, ingressMiddleware, pageHtml } from './ingress.js';
 
 /** Display-facing JSON endpoints: private mode requires a display key, a device token or an admin session. */
 export const DISPLAY_API_PATHS = ['/api/display', '/api/events', '/api/weather', '/api/news', '/api/photos', '/api/countdowns'];
 
 /**
- * @param {{ version: string, dist?: string, updater?: object }} opts  dist = built frontend directory (default
+ * @param {{ version: string, dist?: string, updater?: object, ingressAuthorize?: (userId: string) => Promise<boolean> }} opts  dist = built frontend directory (default
  *   <repo>/dist); updater = update checker (server/updates.js; default: the server's own, created on first use)
  */
-export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = null }) {
+export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = null, ingressAuthorize }) {
   const app = express();
   app.disable('x-powered-by');
   // TRUST_PROXY: Express "trust proxy" value (default loopback). Set it to the address the reverse proxy connects
   // from whenever that is not loopback: a proxy on another host (TRUST_PROXY=192.168.1.10), or any proxy in front
   // of the Docker container (it connects from the bridge gateway: TRUST_PROXY=172.16.0.0/12), so
   // X-Forwarded-Proto/For are honoured (secure cookies, real client IP, LAN checks). See lib/net.js isLanClient.
-  const trustProxy = process.env.TRUST_PROXY?.trim();
+  const trustProxy = homeAssistantMode() ? '172.30.32.2' : process.env.TRUST_PROXY?.trim();
   app.set('trust proxy', !trustProxy ? 'loopback' : trustProxy === 'true' ? true : /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy.split(',').map((x) => x.trim()));
 
   // Browser hardening on every response. Private display links live in the URL (/d/<key>): never leak them
@@ -50,8 +51,15 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
     next();
   });
   // DNS-rebinding guard: only LAN host names, IP literals, PUBLIC_URL and ALLOWED_HOSTS (lib/net.js).
-  app.use(hostGuard());
+  app.use(ingressMiddleware({ authorize: ingressAuthorize }));
+  if (!homeAssistantMode()) app.use(hostGuard());
   app.use(sessionMiddleware());
+  app.use((req, res, next) => {
+    if (homeAssistantMode() && (req.path.startsWith('/auth/') || /^\/api\/auth\/(login|logout|logout-all)$/.test(req.path) || req.path === '/api/admin/password')) {
+      return res.status(409).json({ error: 'Home Assistant manages login and connected calendar accounts.' });
+    }
+    next();
+  });
   // Route-specific body limits must come before the global parser (body-parser skips already-parsed bodies).
   app.use(['/api/admin/import/preview', '/api/admin/import/apply'], express.json({ limit: '5mb' }));
   app.use('/api/display/heartbeat', express.json({ limit: '4kb' }));
@@ -108,7 +116,7 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
 
   // --- frontend (production build) ---
   if (fs.existsSync(path.join(dist, 'index.html'))) {
-    app.use(express.static(dist, { index: false, maxAge: '1h', setHeaders: (res, p) => {
+    app.use(express.static(dist, { index: false, redirect: false, maxAge: '1h', setHeaders: (res, p) => {
       if (p.includes(`${path.sep}assets${path.sep}`)) res.set('cache-control', 'public, max-age=31536000, immutable');
       // The display and admin pages (also as /index.html, /admin/index.html) are never cached: a new build or a
       // revoked link takes effect on the next load.
@@ -116,7 +124,7 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
     } }));
     const sendHtml = (file, cache = 'no-store') => (req, res) => {
       res.set('cache-control', cache);
-      res.sendFile(path.join(dist, file));
+      res.type('html').send(pageHtml(fs.readFileSync(path.join(dist, file), 'utf8'), file, req));
     };
     app.get(['/admin', '/admin/', '/admin/*splat'], (req, res, next) =>
       fs.existsSync(path.join(dist, 'admin', 'index.html')) ? sendHtml('admin/index.html')(req, res) : next());

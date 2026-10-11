@@ -1,3 +1,4 @@
+import { has } from '../caps';
 // Screen settings → Privacy mode: photos, the lock, the schedule rules of this screen, and what each calendar shows
 // while a screen is private (that part is global). Quick actions live on Home (components/Privacy.tsx).
 import type { AppConfig, PrivacyMode, PrivacyRule, ScreenPrivacyConfig, SourceKind } from '../../shared/types';
@@ -131,7 +132,7 @@ export function PrivacyCard({ cfg, set, errors, go }: { cfg: AppConfig; set: (fn
           </li>
         ))}
       </ul>
-      <p class="muted small">
+      <p class="muted small" hidden={!has('webhooks')}>
         {t('To let Home Assistant turn it on, use the /api/hooks/privacy webhook.')}{' '}
         <a href="#api" onClick={(e) => (e.preventDefault(), go('api'))}>
           {t('API & webhooks')}

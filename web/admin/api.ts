@@ -1,3 +1,4 @@
+import { appUrl } from '../shared/path';
 import type {
   PrivacyChangeResponse,
   PrivacyRequest,
@@ -47,6 +48,7 @@ import type {
   MicrosoftAccount,
   MicrosoftCalendarListItem,
   HaEntity,
+  HaCalendarListItem,
   TestHomeAssistantResponse,
   WeatherKeyStatus,
   TestIcsResponse,
@@ -85,7 +87,7 @@ async function request<T>(method: string, url: string, body?: unknown, opts: { s
   }
   let res: Response;
   try {
-    res = await fetch(url, { method, headers, body: payload, credentials: 'same-origin' });
+    res = await fetch(appUrl(url), { method, headers, body: payload, credentials: 'same-origin' });
   } catch (e) {
     throw new ApiError(0, 'network');
   }
@@ -169,6 +171,7 @@ export const api = {
     request<TestHomeAssistantResponse>('POST', '/api/admin/test/homeassistant', token ? { url, token } : { url }),
   haEntities: (domain: 'sensor' | 'weather' | 'camera') =>
     request<HaEntity[]>('GET', `/api/admin/homeassistant/entities?domain=${domain}`),
+  haCalendars: () => request<HaCalendarListItem[]>('GET', '/api/admin/homeassistant/calendars'),
   setHaToken: (token: string) => request<unknown>('PUT', '/api/admin/homeassistant/token', { token }),
   /** Test ring (or dismiss) with the draft settings: the screens show the camera as the webhook would. */
   doorbell: (body: DoorbellRequest) => request<DoorbellResponse>('POST', '/api/admin/doorbell', body),
@@ -229,7 +232,7 @@ export const api = {
 
   backups: () => request<BackupInfo[]>('GET', '/api/admin/backups'),
   createBackup: () => request<BackupInfo>('POST', '/api/admin/backups', {}),
-  backupUrl: (id: string) => `/api/admin/backups/${encodeURIComponent(id)}`,
+  backupUrl: (id: string) => appUrl(`/api/admin/backups/${encodeURIComponent(id)}`),
   /** A backup file's content (a 401 here, as for every call, sends the admin through sign in again first). */
   backupFile: (id: string) => request<unknown>('GET', `/api/admin/backups/${encodeURIComponent(id)}`),
   restoreBackup: (id: string) => request<{ ok: true; config: StoredConfig; repaired?: string[] }>('POST', `/api/admin/backups/${encodeURIComponent(id)}/restore`, {}),
@@ -259,7 +262,7 @@ export function downloadJson(value: unknown, filename: string) {
 function xhrUpload<T>(method: string, url: string, fd: FormData, onProgress?: (fraction: number) => void): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open(method, url);
+    xhr.open(method, appUrl(url));
     xhr.setRequestHeader('Accept', 'application/json');
     xhr.setRequestHeader('X-Requested-With', 'fetch');
     xhr.withCredentials = true;

@@ -3,6 +3,7 @@ import { locale } from './i18n';
 import type { AppConfig, CalendarSource, IconRule, SourceKind, StoredConfig } from '../shared/types';
 import { findKeyword } from '../../server/lib/keywords.js';
 import { caps as currentCaps, hasFeature, limitOf, type Caps, type LimitName } from './caps';
+import { homeAssistantMode } from './authRedirect';
 
 export const uid = (prefix: string) =>
   `${prefix}_${Date.now().toString(36).slice(-4)}${Math.random().toString(36).slice(2, 7)}`;
@@ -137,6 +138,8 @@ export function validateConfig(c: AppConfig, caps: Caps = currentCaps()): Errors
       // A hidden URL (see CalendarSource.urlHidden) is still stored on the server: an empty field keeps it.
       const kept = src.urlHidden && !src.url;
       if (!kept && (!src.url || !isHttpUrl(src.url, true))) e[`${p}.url`] = 'Invalid URL (http, https or webcal)';
+    } else if (src.type === 'homeassistant') {
+      if (!/^calendar\.[a-z0-9_]+$/.test(src.entityId || '')) e[`${p}.entityId`] = 'Choose a Home Assistant calendar';
     } else if (src.type === 'microsoft') {
       if (!src.microsoftAccount || !src.microsoftCalendarId) e[`${p}.url`] = 'Missing Microsoft account or calendar';
     } else {
@@ -170,7 +173,7 @@ export function validateConfig(c: AppConfig, caps: Caps = currentCaps()): Errors
   });
   if (!(c.news.rotateSec >= 3)) e['news.rotateSec'] = 'Minimum 3 s';
   if (!(c.news.maxItems >= 1 && c.news.maxItems <= 200)) e['news.maxItems'] = 'Between 1 and 200';
-  if (ha && c.homeassistant.enabled && !isHttpUrl(c.homeassistant.url)) e['homeassistant.url'] = 'Invalid URL';
+  if (ha && !homeAssistantMode(null) && c.homeassistant.enabled && !isHttpUrl(c.homeassistant.url)) e['homeassistant.url'] = 'Invalid URL';
   c.auth.allowedGoogleEmails.forEach((m, i) => {
     if (!EMAIL_RE.test(m)) e[`auth.allowedGoogleEmails.${i}`] = 'Invalid email';
   });

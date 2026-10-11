@@ -1,3 +1,4 @@
+import { appUrl } from '../../shared/path';
 // Fresh install (server needs setup): a welcome screen with the admin URL + QR code instead of an empty dashboard.
 // Polls /api/setup/status and reloads the page as soon as the wizard is completed in the admin.
 import { logoSvg } from '../../shared/logo';
@@ -29,7 +30,7 @@ export function adminUrlFor(status: SetupStatus, loc: Location = location): stri
   const local = /^(localhost|127\.|\[::1\]$)/.test(loc.hostname);
   const ip = local ? status.lanAddresses?.[0] : undefined;
   const origin = ip ? `${loc.protocol}//${ip}${loc.port ? `:${loc.port}` : ''}` : loc.origin;
-  return `${origin}/admin/`;
+  return `${origin}${appUrl('/admin/')}`;
 }
 
 const isLocalUrl = (u: string) => /^https?:\/\/(localhost|127\.|\[::1\])/.test(u);
@@ -86,7 +87,7 @@ export async function checkSetup(): Promise<SetupStatus | null> {
   try {
     const ctl = new AbortController();
     const tm = setTimeout(() => ctl.abort(), 6000);
-    const r = await fetch('/api/setup/status', { cache: 'no-store', signal: ctl.signal, headers: { Accept: 'application/json' } });
+    const r = await fetch(appUrl('/api/setup/status'), { cache: 'no-store', signal: ctl.signal, headers: { Accept: 'application/json' } });
     clearTimeout(tm);
     if (!r.ok) return null;
     const s = (await r.json()) as SetupStatus;
@@ -100,7 +101,7 @@ export async function checkSetup(): Promise<SetupStatus | null> {
 export function waitForSetup(everyMs = 5000): void {
   const poll = async () => {
     try {
-      const r = await fetch('/api/setup/status', { cache: 'no-store' });
+      const r = await fetch(appUrl('/api/setup/status'), { cache: 'no-store' });
       if (r.ok && (await r.json()).needsSetup === false) return location.reload();
     } catch {
       /* server restarting: keep waiting */

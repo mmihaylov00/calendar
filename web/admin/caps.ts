@@ -1,3 +1,4 @@
+import { appUrl } from '../shared/path';
 // Server capabilities for the admin, read once from GET /api/health (docs/API.md "Health").
 // Plain TypeScript with type-only imports, so the server tests can load it.
 //
@@ -136,7 +137,7 @@ export async function loadCaps(fetchHealth: () => Promise<Partial<HealthResponse
 }
 
 async function defaultFetchHealth(): Promise<Partial<HealthResponse>> {
-  const r = await fetch('/api/health', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+  const r = await fetch(appUrl('/api/health'), { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return (await r.json()) as Partial<HealthResponse>;
 }

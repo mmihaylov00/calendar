@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { CalendarSource, GoogleCalendarListItem, MicrosoftCalendarListItem, SourceKind, TestIcsResponse } from '../../shared/types';
+import type { CalendarSource, GoogleCalendarListItem, HaCalendarListItem, MicrosoftCalendarListItem, SourceKind, TestIcsResponse } from '../../shared/types';
+import { appUrl } from '../../shared/path';
 import { api, ApiError, UNAUTHORIZED_EVENT } from '../api';
 import { fetchErrorText } from '../apiErrors';
 import { choiceDialog, confirmDialog, toast } from '../components/feedback';
@@ -113,7 +114,7 @@ function SourceRow({
           onValue={(v) => update((s) => void (s.name = v))}
         />
         <span class={`badge ${src.type !== 'ics' ? 'badge--google' : ''}`}>
-          {src.type === 'google' ? <GoogleG size={12} /> : src.type === 'microsoft' ? <MicrosoftLogo size={12} /> : 'ICS'}
+          {src.type === 'google' ? <GoogleG size={12} /> : src.type === 'microsoft' ? <MicrosoftLogo size={12} /> : src.type === 'homeassistant' ? 'HA' : 'ICS'}
         </span>
         <Toggle checked={src.enabled} onChange={(v) => update((s) => void (s.enabled = v))} label={t('Enabled')} />
         <ReorderButtons index={index} count={count} onMove={move} />
@@ -159,6 +160,12 @@ function SourceRow({
               }
             />
           </Field>
+        ) : src.type === 'homeassistant' ? (
+          <div class="src__google">
+            <Icon name="calendar" size={14} />
+            <span class="mono small muted">{src.entityId}</span>
+            {errors[`${p}.entityId`] && <span class="err-text">{errors[`${p}.entityId`]}</span>}
+          </div>
         ) : src.type === 'microsoft' ? (
           <div class="src__google">
             <MicrosoftLogo size={14} />
@@ -349,7 +356,7 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
       if (!ok) return;
       if (!(await save())) return;
     }
-    window.location.href = p.connectPath;
+    window.location.href = appUrl(p.connectPath);
   };
 
   /** Ask which provider (Apple iCloud is always there); with no account provider set up, straight to the iCloud guide. */
@@ -530,6 +537,56 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
   );
 }
 
+function HomeAssistantCalendars({ cfg, set }: SectionProps) {
+  const [calendars, setCalendars] = useState<HaCalendarListItem[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const load = async () => {
+    setLoading(true);
+    setError('');
+    try { setCalendars(await api.haCalendars()); } catch (err) { setError((err as ApiError).message); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { void load(); }, []);
+  const selected = (entityId: string) => cfg.calendar.sources.some((s) => s.type === 'homeassistant' && s.entityId === entityId);
+  const toggle = (calendar: HaCalendarListItem, on: boolean) => set((d) => {
+    if (!on) {
+      d.calendar.sources = d.calendar.sources.filter((s) => s.type !== 'homeassistant' || s.entityId !== calendar.entity_id);
+    } else if (!selected(calendar.entity_id) && !atLimit('sources', d.calendar.sources.length)) {
+      d.calendar.sources.push({
+        id: uid('c'), type: 'homeassistant', entityId: calendar.entity_id, name: calendar.name,
+        color: nextColor(d.calendar.sources), emoji: '', kind: guessKind(calendar.name), enabled: true, refreshMin: 5,
+      });
+    }
+  });
+  return (
+    <Card title={t('Home Assistant calendars')} id="cal-homeassistant" icon="calendar" scope="global"
+      desc={t('Choose calendars already connected in Home Assistant, including Google Calendar.')}
+      actions={<Button size="sm" loading={loading} onClick={() => void load()}>{t('Refresh')}</Button>}>
+      {error ? <Callout kind="error">{error}</Callout> : calendars === null ? <div class="skeleton" /> : calendars.length === 0 ? (
+        <Empty icon="calendar" title={t('No Home Assistant calendars yet')}>
+          {t('Set up Google Calendar in Home Assistant, then refresh this list.')}{' '}
+          <a href="https://www.home-assistant.io/integrations/google/" target="_blank" rel="noopener noreferrer">{t('Set up Google Calendar')}</a>
+        </Empty>
+      ) : (
+        <ul class="gcal-list">
+          {calendars.map((calendar) => {
+            const on = selected(calendar.entity_id);
+            return <li key={calendar.entity_id}>
+              <label class={`gcal ${on ? 'is-on' : ''}`}>
+                <input type="checkbox" checked={on} disabled={!on && atLimit('sources', cfg.calendar.sources.length)} onChange={(e) => toggle(calendar, e.currentTarget.checked)} />
+                <span class="check-box"><Icon name="check" size={12} /></span>
+                <span class="gcal__name">{calendar.name}</span>
+                <span class="mono small muted">{calendar.entity_id}</span>
+              </label>
+            </li>;
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
 /** Per-screen: which sources this screen shows (`calendar.sourceIds`: null = all, incl. new ones). */
 function ScreenSourcesCard({ cfg, set, full }: SectionProps) {
   const ids = cfg.calendar.sourceIds ?? null;
@@ -620,6 +677,8 @@ export function CalendarsSection(props: SectionProps) {
               : t('Connect iCal calendars and decide how they are shown.')
         }
       />
+
+      {(props.me.homeAssistant || props.full.homeassistant.enabled) && <HomeAssistantCalendars {...props} />}
 
       <Card
         title={t('Connected calendars')}

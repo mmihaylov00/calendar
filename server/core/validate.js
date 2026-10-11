@@ -7,6 +7,7 @@ import { LANGS } from './lib/i18n.js';
 import { WEATHER_PROVIDER_IDS, OPEN_METEO_MODEL_IDS, KEY_PROVIDERS } from './weather.js';
 import { PRIVACY_MODES, MAX_PRIVACY_RULES, defaultSourcePrivacy } from './privacy.js';
 import { CAMERA_RE, DOORBELL_MIN_SEC, DOORBELL_MAX_SEC } from './doorbellCore.js';
+import { CALENDAR_ENTITY_RE } from './haCalendars.js';
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
@@ -100,7 +101,7 @@ function obj(ctx, path, v) {
 
 function sanitizeSource(ctx, path, s, seen) {
   if (!isObj(s)) { ctx.err(path, 'expected object'); return null; }
-  const type = oneOf(ctx, `${path}.type`, s.type, 'ics', ['ics', 'google', 'microsoft']);
+  const type = oneOf(ctx, `${path}.type`, s.type, 'ics', ['ics', 'google', 'microsoft', 'homeassistant']);
   const out = {
     id: id(ctx, `${path}.id`, s.id, 'c_', seen),
     type,
@@ -123,6 +124,10 @@ function sanitizeSource(ctx, path, s, seen) {
     const acct = str(ctx, `${path}.googleAccount`, s.googleAccount, '', 320).trim().toLowerCase();
     if (!EMAIL.test(acct)) ctx.err(`${path}.googleAccount`, 'Google account email required');
     out.googleAccount = acct;
+  } else if (type === 'homeassistant') {
+    const entityId = str(ctx, `${path}.entityId`, s.entityId, '', 255).trim();
+    if (!CALENDAR_ENTITY_RE.test(entityId)) ctx.err(`${path}.entityId`, 'must be a calendar entity id (calendar.…)');
+    out.entityId = entityId;
   } else {
     // Microsoft (Outlook.com, Hotmail, Microsoft 365) calendars, read through Microsoft Graph (server/microsoft.js, or
     // Marco Cloud). A server without a Microsoft app keeps them in the config and reports them as not available.

@@ -167,8 +167,7 @@
       "query": [],
       "feature": "backups",
       "callers": [
-        "backupFile",
-        "backupUrl"
+        "backupFile"
       ],
       "request": null,
       "response": null,
@@ -585,6 +584,22 @@
         "summary",
         "backgroundColor?",
         "primary?"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/homeassistant/calendars",
+      "query": [],
+      "feature": "homeassistant",
+      "callers": [
+        "haCalendars"
+      ],
+      "request": null,
+      "response": "HaCalendarListItem[]",
+      "responseArray": true,
+      "responseKeys": [
+        "entity_id",
+        "name"
       ]
     },
     {
@@ -1287,6 +1302,7 @@
       "responseArray": false,
       "responseKeys": [
         "user",
+        "homeAssistant?",
         "googleConfigured",
         "googleLoginEnabled?",
         "passwordLoginEnabled",

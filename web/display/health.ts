@@ -2,6 +2,7 @@
 // the pairing screen (code length, where to open the admin), the page a paired display continues at, and the
 // optional emoji web font. Offline or on an old server it resolves to {} (self-hosted defaults).
 import type { HealthResponse } from '../shared/types';
+import { appUrl } from '../shared/path';
 
 let pending: Promise<Partial<HealthResponse>> | null = null;
 
@@ -10,7 +11,7 @@ export function healthOnce(): Promise<Partial<HealthResponse>> {
     const ctl = new AbortController();
     const tm = setTimeout(() => ctl.abort(), 5000);
     try {
-      const r = await fetch('/api/health', { cache: 'no-store', signal: ctl.signal, headers: { Accept: 'application/json' } });
+      const r = await fetch(appUrl('/api/health'), { cache: 'no-store', signal: ctl.signal, headers: { Accept: 'application/json' } });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const j = (await r.json()) as Partial<HealthResponse>;
       return j && typeof j === 'object' ? j : {};

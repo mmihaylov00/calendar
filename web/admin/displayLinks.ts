@@ -7,6 +7,7 @@ import type { DisplayLinksResponse, StoredConfig } from '../shared/types';
 import { api } from './api';
 import { caps, has } from './caps';
 import { screenUrl } from './screenUrl';
+import { appBase } from '../shared/path';
 
 type State = { status: 'idle' | 'loading' | 'ready' | 'error'; revision: number; data: DisplayLinksResponse | null };
 
@@ -17,7 +18,7 @@ const notify = () => listeners.forEach((l) => l());
 
 /** Whether screens are opened by their private link (and so the links must be loaded). */
 export const usesPrivateLinks = (saved: Pick<StoredConfig, 'security'> | null | undefined): boolean =>
-  !has('openDisplayAccess') || saved?.security?.displayAccess !== 'open';
+  !appBase() && (!has('openDisplayAccess') || saved?.security?.displayAccess !== 'open');
 
 function load(revision: number, force = false): Promise<void> {
   if (!force && state.revision === revision && state.status !== 'idle' && state.status !== 'error') return pending ?? Promise.resolve();

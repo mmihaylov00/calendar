@@ -12,6 +12,8 @@ This fork runs as a Home Assistant app. Node.js and Express serve the API and bu
 | `server/core/` | Configuration defaults and validation, screen projection, event rules, recurrence helpers, privacy, pairing and import logic without filesystem or HTTP dependencies. |
 | `server/store.js` | Atomic JSON persistence, secrets, configuration revisions and migrations. |
 | `server/calendars.js`, `server/ics.js`, `server/google.js`, `server/microsoft.js` | Calendar providers, recurrence expansion, OAuth and source caches. |
+| `home-assistant/custom_components/marco/` | Native HA app panel and active-admin authorization endpoint. |
+| `home-assistant/install-panel.py` | Install managed panel files and configuration atomically, with backups and no service restarts. |
 | `server/displayAccess.js`, `server/pairing.js` | Private screen keys, hashed device tokens and short-lived pairing sessions. |
 | `server/sse.js`, `server/pollHub.js` | Live updates and the polling fallback. |
 | `server/weather.js`, `server/news.js`, `server/photos.js`, `server/homeassistant.js` | External sources and media, isolated from other source failures. |
@@ -56,7 +58,9 @@ The admin edits a local configuration draft and saves it explicitly. Photo prepa
 
 ## Deployment and security
 
-The app opens port 3000 and uses Marco's own setup token and admin password. Home Assistant ingress is not enabled because the browser uses root-relative paths and OAuth needs a stable callback origin. Google OAuth uses the configured `PUBLIC_URL`; private iCal links can work directly on the LAN. App options map only explicitly supported values into the server environment.
+The app exposes no LAN port. Supervisor proxies authenticated HA requests to internal port 3000. Browser assets, API calls and live streams use the ingress path. The native `/marco` panel requires an administrator, and the server independently verifies Supervisor's forwarded user against the Core integration on each request. The Core endpoint allows only authenticated active-admin callers and returns access only for active, non-system administrator users. Missing authorization denies access; credentials are never sent to the browser.
+
+HA calendar sources use Supervisor's server-side Core API credential. Google authorization is managed by HA's Google Calendar integration, and Marco reads its calendar entities. Standalone deployments retain the original password/setup protections and environment-configured direct OAuth.
 
 Home Assistant owns updates; the app disables the upstream update checker. The repository has no standalone installer, systemd/kiosk deployment, demo runtime or release-tarball pipeline.
 

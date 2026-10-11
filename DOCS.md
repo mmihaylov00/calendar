@@ -1,46 +1,45 @@
 # Marco for Home Assistant
 
-This fork runs Marco as a Home Assistant app (formerly called an add-on) on 64-bit Raspberry Pi and x86 systems. The interface is English-only. New installs start without sample calendars, news feeds or demo data.
+Marco opens inside Home Assistant and uses your existing HA login. The app runs its server privately inside its container; no additional LAN port, setup code or Marco password is required. Only active Home Assistant administrators can use its admin panel.
 
-## Install
+## Install or update
 
-1. Open **Settings → Apps → App store → ⋮ → Repositories** and add `https://github.com/mmihaylov00/marco`.
-2. Install **Marco**. The first install builds the image on your Home Assistant machine and can take several minutes.
-3. Start Marco, open its **Log** tab and copy the one-time setup code from the setup URL.
-4. Use **Open web UI**, paste that code into the setup wizard and create your admin password. The dashboard is at `http://<home-assistant-ip>:3000/` and the admin panel is at `/admin/`.
+1. Add `https://github.com/mmihaylov00/marco` under **Settings → Apps → App store → ⋮ → Repositories**, then install or update **Marco**.
+2. Install the bundled `marco` integration into Home Assistant Core. From a Home Assistant SSH terminal with access to `/config`, run the helper from this repository:
 
-On older Home Assistant versions the menu is named **Add-ons**. Port `3000` can be changed in the app's **Network** settings.
+   ```sh
+   python3 home-assistant/install-panel.py --config-dir /config --addon-slug 7cc5cd13_marco
+   ```
 
-Marco keeps its configuration, calendar tokens and photos in `/data/marco`, included in Home Assistant app backups. The server runs as the non-root `node` user. Startup only uses root to make this directory writable, then drops privileges before loading the server. Cold backups stop the app briefly so its data is saved consistently. Update Marco through Home Assistant; upstream update checks are disabled in this app.
+   The helper preserves unrelated configuration, backs up every changed installation and never restarts a service. It installs `home-assistant/custom_components/marco/` and adds the configuration below. If your app has a different slug, pass that slug to the helper.
 
-The app uses Marco's own password and setup protections. Open it through its dedicated port. Home Assistant ingress is not enabled because Marco uses root-relative browser URLs and Google needs a stable OAuth callback address.
+   ```yaml
+   marco:
+     addon_slug: 7cc5cd13_marco
+   ```
+
+3. Validate Home Assistant configuration and restart **Home Assistant Core** once to load the integration. Start Marco, then open **Marco** in the sidebar or use **Open web UI**. The stable sidebar address is `/marco`.
+
+The integration provides the native panel and an authenticated authorization endpoint. Marco checks the actual HA user on each ingress request; missing integration, unavailable authorization or an inactive/non-admin user denies access. Sidebar visibility is not the authorization check. The app keeps running as a separate container, just as Cinema does, while HA proxies its UI through port `8123`.
+
+On older Home Assistant versions **Apps** is named **Add-ons**. The sidebar integration is installed once; when updating its source, reload it by restarting Core after configuration validation. No Marco app options or manually copied HA access tokens are needed.
 
 ## Connect Google calendars
 
-### Private iCal feeds
+Use Home Assistant to manage Google authorization:
 
-For the smallest setup, open each calendar's Google Calendar **Settings → Integrate calendar → Secret address in iCal format**. In Marco, open **Calendars → Add iCal URL** and paste that URL. This reads events without a Google OAuth client or a public domain. Keep each secret URL private. Some managed Google accounts do not provide secret addresses.
+1. Add and configure the [Google Calendar integration](https://www.home-assistant.io/integrations/google/) under **Settings → Devices & services**. Select the calendars you want available in HA.
+2. In Marco, open **Calendars → Home Assistant calendars**, click **Refresh** and check the calendars you want to add.
+3. Click **Save**, then select those sources for the screens where you want their events displayed.
 
-### Google OAuth
+Marco reads upcoming events through the HA API using the app credential supplied privately by Supervisor. It does not receive your Google OAuth credentials, and it does not create or edit Google events. Other HA calendar integrations can be used in the same way.
 
-Marco already supports read-only Google Calendar access, multiple Google accounts and automatic token refresh. Use OAuth when you want to select calendars from your account or private iCal URLs are unavailable.
+Private iCal feeds remain supported: copy a calendar's secret iCal URL into Marco's calendar sources. Keep those URLs private. Direct Google OAuth is retained for standalone deployments configured through environment variables; use HA calendar entities for this app because HA ingress session URLs are temporary OAuth callback addresses.
 
-1. Serve Marco through a stable HTTPS URL using your reverse proxy, for example `https://calendar.example.com`. The proxy must forward to Marco's dedicated port, not Home Assistant's `8123` port.
-2. Create a **Web application** OAuth client in Google Cloud, enable the Google Calendar API and configure its consent screen. Add the exact redirect URI `https://calendar.example.com/auth/google/callback`. Add your account as a test user if the consent screen is in Testing.
-3. In the Home Assistant app's **Configuration**, set `public_url` to `https://calendar.example.com`, set `google_client_id` and `google_client_secret`, and set `trust_proxy` to the address or subnet of your reverse proxy. Restart Marco to apply the options.
-4. Open Marco through that same HTTPS URL, sign in to its admin and choose **Calendars → Linked accounts → Link account**. Choose Google if a provider picker appears, authorize your Google account and select the calendars to display. Repeat for other family accounts.
+## Storage and updates
 
-Google OAuth clients in Testing can expire refresh tokens after seven days ([Google's token expiration guide](https://developers.google.com/identity/protocols/oauth2#expiration)). Publish the consent screen when ready or reconnect when Google revokes access. The private iCal path does not need these OAuth settings.
+Configuration, calendar caches, credentials and photos live in `/data/marco`, included in Home Assistant app backups. Startup prepares this directory, then drops to the non-root `node` user before serving requests. Cold backups stop the app briefly for a consistent snapshot.
 
-## Options
+Update Marco through Home Assistant; upstream update checks are disabled. The English-only interface starts with no sample calendars, feeds or demo data. Existing calendar configuration and saved content are retained when updating.
 
-| Option | Purpose |
-| --- | --- |
-| `public_url` | Stable HTTP/HTTPS origin for Marco. OAuth normally requires HTTPS. Leave blank for private iCal on the LAN. |
-| `google_client_id` | Google Cloud Web application client ID. |
-| `google_client_secret` | Client secret, entered as a password field and stored in the app's private options. |
-| `allowed_hosts` | Additional accepted host names, comma-separated, if needed. IP addresses and normal LAN host names already work. |
-| `trust_proxy` | Reverse proxy IP addresses or CIDR ranges. Leave blank for direct LAN access; trust only your actual proxies. |
-| `lan_address` | Home Assistant's LAN IP or host name for dashboard links, useful because the app cannot detect the host's address. |
-
-Leave optional values blank until you need them. Never publish OAuth credentials, private calendar URLs or app backups in the fork.
+The app has no exposed LAN port. External wall displays need an active administrator's Home Assistant session to access this deployment. Admin previews and connected-screen controls remain available through ingress.

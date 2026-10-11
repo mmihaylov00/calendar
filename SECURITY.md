@@ -15,11 +15,23 @@ You should get an answer within a week.
 Install and update this fork through Home Assistant's app store. The app builds from this repository;
 upstream update checks are disabled so they cannot replace it with an upstream release.
 
-The container starts as root only to prepare its private `/data/marco` directory, then drops to the
-`node` user before loading the server. App options hold OAuth credentials; calendar tokens, passwords
-and display keys are stored in `secrets.json` with mode 600. Keep app backups private.
+The app exposes no LAN port. Home Assistant ingress provides the user's login and forwards requests to the
+internal server. Marco independently verifies the forwarded user through the bundled Core integration:
+only active, non-system administrator users are accepted, and unavailable authorization denies access.
+The integration's authorization endpoint itself requires an authenticated active-admin caller. The
+Supervisor API credential stays on the server and is never returned to the browser. Sidebar visibility
+is an additional restriction, not the access check.
 
-## Deployment model (what is and is not protected)
+The container starts as root only to prepare its private `/data/marco` directory, then drops to the
+`node` user before loading the server. Home Assistant owns Google calendar authorization; Marco reads
+calendar entities with Supervisor's supplied credential. Existing calendar tokens, passwords and display
+keys are stored in `secrets.json` with mode 600. Keep app backups private.
+
+## Standalone deployment model
+
+The protections below also apply to standalone deployments. In the Home Assistant app, ingress additionally
+requires an active HA administrator before serving any of these routes; standalone login and first-run
+setup are not used through ingress.
 
 Marco was designed for a **home network (LAN)**. Since 0.3 the displays are **private by default**, so it can also be
 used on shared networks or behind an HTTPS reverse proxy on the Internet:
@@ -147,4 +159,3 @@ how much of it.
 Device tokens live in the display browser's `localStorage`, readable by scripts on the same origin (custom CSS is the
 only user-supplied content the display injects, and it is CSS only). Anybody standing in front of the screen sees
 what it shows. In open mode none of the above applies to the display API.
-

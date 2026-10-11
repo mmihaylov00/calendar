@@ -1,3 +1,4 @@
+import { appUrl } from '../shared/path';
 import { useState } from 'preact/hooks';
 import type { AuthMeResponse } from '../shared/types';
 import { api, ApiError } from './api';
@@ -77,7 +78,7 @@ export function Login({ me, onDone, initialError }: { me: AuthMeResponse; onDone
           </div>
         )}
         {googleLogin && (
-          <a class="btn btn--google btn--block btn--lg" href="/auth/google/login">
+          <a class="btn btn--google btn--block btn--lg" href={appUrl('/auth/google/login')}>
             <GoogleG size={18} />
             <span>{t('Sign in with Google')}</span>
           </a>
@@ -89,7 +90,7 @@ export function Login({ me, onDone, initialError }: { me: AuthMeResponse; onDone
           </div>
         )}
       </div>
-      <a class="login__screen-link" href="/">
+      <a class="login__screen-link" href={appUrl('/')}>
         <Icon name="monitor" size={14} /> {t('View the screen')}
       </a>
     </div>
