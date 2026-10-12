@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.6.1-ha.7]
+
+- Return keyboard focus to the Settings button when the settings modal closes.
+
 ## [0.6.1-ha.6]
 
 - Open the Home Assistant panel directly to the live calendar, weather and photo background.

@@ -7,8 +7,12 @@ export function SettingsDialog({ children, onClose, closingDisabled }: { childre
   useEffect(() => {
     const element = dialog.current;
     if (!element) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     element.showModal();
-    return () => element.close();
+    return () => {
+      element.close();
+      opener?.focus({ preventScroll: true });
+    };
   }, []);
 
   return (
