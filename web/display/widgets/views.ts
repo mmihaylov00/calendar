@@ -194,7 +194,7 @@ export class Views {
     const box = root.querySelector<HTMLElement>('.td-evs')!;
     const H = box.clientHeight || 1;
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 10;
-    const minMin = Math.ceil(((rem * 4.4) / H) * span);
+    const minMin = Math.ceil((Math.max(24, rem * 4.4) / H) * span);
     const items = day.timed.map(({ e, a, b }) => {
       const end = Math.min(h1 * 60, Math.max(b, a + 15));
       return { e, a, b: end, vis: Math.min(h1 * 60, Math.max(end, a + minMin)), lane: 0, of: 1 };

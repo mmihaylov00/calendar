@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.6.1-ha.10]
+
+- Keep the selected date heading clear in dark themes and day-view labels readable on small screens.
+
 ## [0.6.1-ha.9]
 
 - Click a calendar date to open its hourly schedule with an animated transition; return with Back to calendar or Escape.
