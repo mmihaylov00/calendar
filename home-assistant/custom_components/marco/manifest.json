@@ -1,7 +1,7 @@
 {
   "domain": "marco",
   "name": "Calendar",
-  "version": "0.6.1-ha.10",
+  "version": "0.6.1-ha.11",
   "integration_type": "service",
   "dependencies": ["frontend", "hassio"],
   "requirements": [],

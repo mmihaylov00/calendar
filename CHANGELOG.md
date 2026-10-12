@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.6.1-ha.11]
+
+- Show calendar event times as `07:00` and `19:00` instead of abbreviated `7h` and `19h` labels.
+
 ## [0.6.1-ha.10]
 
 - Keep the selected date heading clear in dark themes and day-view labels readable on small screens.

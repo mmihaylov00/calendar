@@ -1,6 +1,6 @@
 // Normalises API events into calendar-day coordinates in the configured timezone.
 import type { CalEvent } from '../shared/types';
-import { addDays, dateKeyInTz, diffDays, formatTime, startOfWeek, zonedParts } from '../shared/i18n';
+import { addDays, dateKeyInTz, diffDays, formatTime, startOfWeek } from '../shared/i18n';
 
 export interface NEvent {
   ev: CalEvent;
@@ -123,16 +123,9 @@ export function sortForDay(a: NEvent, b: NEvent): number {
   return a.title.localeCompare(b.title);
 }
 
-/** Compact time for small chips: "18h" for full hours in 24 h mode, else "18:30". */
-export function compactTime(ms: number, tz: string, f24: boolean, ampm: boolean): string {
-  const p = zonedParts(new Date(ms), tz);
-  if (f24 && p.minute === 0) return `${p.hour}h`;
-  return formatTime(new Date(ms), tz, f24, ampm);
-}
-
-export function timeLabel(e: NEvent, tz: string, f24: boolean, ampm: boolean, withEnd: boolean, compact = false): string {
+export function timeLabel(e: NEvent, tz: string, f24: boolean, ampm: boolean, withEnd: boolean): string {
   if (e.allDay) return '';
-  const s = compact && !withEnd ? compactTime(e.startMs, tz, f24, ampm) : formatTime(new Date(e.startMs), tz, f24, ampm);
+  const s = formatTime(new Date(e.startMs), tz, f24, ampm);
   if (!withEnd || e.endMs <= e.startMs) return s;
   return `${s}–${formatTime(new Date(e.endMs), tz, f24, ampm)}`;
 }

@@ -561,7 +561,7 @@ export class MonthCalendar {
     const ongoing = e.timed && e.startMs <= nowMs && e.endMs > nowMs;
     const cls = ['ev', 'cl', allDay ? 'bar single' : 'timed', pastEv ? 'past' : '', ongoing ? 'ongoing' : ''].filter(Boolean).join(' ');
     let html = e.emoji ? `<span class="em">${esc(e.emoji)}</span>` : '';
-    if (e.timed) html += `<span class="tm">${esc(timeLabel(e, tz, cfg.datetime.format24, cfg.datetime.showAmPm, false, true))}</span>`;
+    if (e.timed) html += `<span class="tm">${esc(timeLabel(e, tz, cfg.datetime.format24, cfg.datetime.showAmPm, false))}</span>`;
     html += `<span class="tt">${esc(e.title)}</span>`;
     return `<div class="${cls}" style="--c:${col.base};--on:${col.onSolid};--tint:${col.tint};--shade:${col.shade}">${html}</div>`;
   }
@@ -610,7 +610,7 @@ export class MonthCalendar {
       const labels = new Map<Placed, { tm: string; extra: string }>();
       for (const sg of segs) {
         labels.set(sg, {
-          tm: sg.e.timed ? timeLabel(sg.e, tz, f24, ampm, c.showEndTime, true) : '',
+          tm: sg.e.timed ? timeLabel(sg.e, tz, f24, ampm, c.showEndTime) : '',
           extra: c.showLocation && sg.e.ev.location ? `· ${sg.e.ev.location}` : '',
         });
       }
@@ -640,7 +640,7 @@ export class MonthCalendar {
       ].filter(Boolean).join(' ');
       let html = e.emoji ? `<span class="em">${esc(e.emoji)}</span>` : '';
       if (e.timed) {
-        html += `<span class="tm">${esc(timeLabel(e, tz, f24, ampm, c.showEndTime, true))}</span>`;
+        html += `<span class="tm">${esc(timeLabel(e, tz, f24, ampm, c.showEndTime))}</span>`;
       }
       const short = sg.contL && sg.eSlot - sg.s <= 2;
       if (short && (e.airbnb && !e.checkoutMarker) && !sg.contR) html = `<span class="em">🚪</span>`;
@@ -657,7 +657,7 @@ export class MonthCalendar {
         // them), and a real space between time and title so the title wraps naturally.
         const WJ = '\u2060';
         let tx = e.emoji ? `<span class="em">${esc(e.emoji)}</span>${WJ}` : '';
-        if (e.timed) tx += `<span class="tm">${esc(timeLabel(e, tz, f24, ampm, c.showEndTime, true))}</span> `;
+        if (e.timed) tx += `<span class="tm">${esc(timeLabel(e, tz, f24, ampm, c.showEndTime))}</span> `;
         tx += `<span class="tt">${esc(e.title)}</span>`;
         if (c.showLocation && e.ev.location) tx += ` <span class="loc">${esc(e.ev.location)}</span>`;
         html = `<span class="tx">${tx}</span>`;
