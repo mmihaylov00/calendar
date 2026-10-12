@@ -156,8 +156,8 @@ test('HA middleware stack shares login, keeps CSRF protection and serves prefixe
     assert.equal(auth.user.method, 'homeassistant');
     assert.equal(me.headers.get('set-cookie'), null);
     assert.equal((await call('/api/admin/config')).status, 200);
-    assert.equal((await call('/api/setup/status')).status, 200);
-    assert.equal((await call('/api/setup/complete', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: '{}' })).status, 409);
+    assert.equal((await call('/api/setup/status')).status, 404);
+    assert.equal((await call('/api/setup/complete', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: '{}' })).status, 404);
     for (const url of ['/auth/google/connect', '/auth/google/callback', '/auth/microsoft/connect', '/api/auth/login', '/api/admin/password']) {
       assert.equal((await call(url, { method: url.startsWith('/api/') ? 'POST' : 'GET' })).status, 409, url);
     }

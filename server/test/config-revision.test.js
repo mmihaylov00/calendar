@@ -1,7 +1,7 @@
 // Revision guard on config saves: store conflict, PUT /api/admin/config with baseRevision (409 conflict, last write
 // wins without it), a server-side save (the Google sign-in adding the allowed email) followed by a save from an
 // open tab, the admin overwrite flow (configMerge.ts), the admin error map (apiErrors.ts) and
-// GET /api/admin/countdowns. Runs the real app (server/app.js createApp) on a random port.
+// configuration validation. Runs the real app (server/app.js createApp) on a random port.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,8 +12,7 @@ import { defaultConfig } from '../core/defaults.js';
 import { ensurePassword, hashPassword } from '../auth.js';
 import { createApp } from '../app.js';
 import { closeAll } from '../sse.js';
-import { _resetDisplays } from '../displays.js';
-import { _resetDisplayAccess, syncDisplayKeys } from '../displayAccess.js';
+import { syncDisplayKeys } from '../displayAccess.js';
 import { loadWebModules } from './webModules.js';
 
 const [merge, errs, i18n] = await loadWebModules('/web/admin/configMerge.ts', '/web/admin/apiErrors.ts', '/web/admin/i18n.ts');
@@ -42,8 +41,6 @@ async function withServer(fn) {
   fs.writeFileSync(path.join(dist, 'index.html'), '<!doctype html><title>display</title>');
   fs.writeFileSync(path.join(dist, 'admin', 'index.html'), '<!doctype html><title>admin</title>');
   store.initStore(dir);
-  _resetDisplays();
-  _resetDisplayAccess();
   await ensurePassword();
   syncDisplayKeys();
   const app = createApp({ version: '0.5.0', dist });
@@ -332,21 +329,4 @@ test('admin text stays English and retains count and placeholder formatting', ()
   assert.equal(i18n.t('Hello {name} at {time}', { name: 'Mira' }), 'Hello Mira at {time}');
   assert.equal(i18n.nScreens(1), '1 screen');
   assert.equal(i18n.nScreens(3), '3 screens');
-});
-
-test('GET /api/admin/countdowns needs a session; /api/countdowns still takes the cookie', async () => {
-  await withServer(async ({ call, login }) => {
-    assert.equal((await call('GET', '/api/admin/countdowns')).status, 401);
-    const cookie = await login();
-    const slug = store.getConfig().screens[0].slug;
-    const a = await call('GET', `/api/admin/countdowns?screen=${slug}`, { cookie });
-    assert.equal(a.status, 200);
-    assert.deepEqual(Object.keys(a.json).sort(), ['generatedAt', 'hash', 'items', 'today']);
-    assert.ok(a.json.items.some((x) => x.title === 'Summer'));
-    // unknown screen = default screen, same as the display route
-    assert.equal((await call('GET', '/api/admin/countdowns?screen=nope', { cookie })).json.hash, a.json.hash);
-    const legacy = await call('GET', `/api/countdowns?screen=${slug}`, { cookie });
-    assert.equal(legacy.status, 200);
-    assert.equal(legacy.json.hash, a.json.hash);
-  });
 });

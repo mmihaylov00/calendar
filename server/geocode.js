@@ -1,13 +1,6 @@
 // Place search for the weather location: GET /api/admin/geocode?q=&lang= (docs/API.md "Geocode").
-// The admin and the setup wizard ask this server, which asks Open-Meteo's geocoding API, so the browser only talks
-// to its own server (Marco Cloud answers the same path with the same shape).
-//
-// Who may call it: a signed-in admin, or the setup wizard while the install has no password yet (same rules as the
-// other wizard endpoints: the setup token when one is required). Rate limited per client address and globally,
-// because every miss is a request to a free third-party service. Answers are cached for a day.
 import { Router } from 'express';
-import { sessionValid, needsSetup } from './auth.js';
-import { setupGate } from './setup.js';
+import { requireAuth } from './auth.js';
 import { requestJson } from './lib/http.js';
 import { ipBucket } from './lib/net.js';
 import { LANGS } from './core/lib/i18n.js';
@@ -87,16 +80,13 @@ export async function geocode({ q, lang, ip }, { fetchJson = requestJson, now = 
   }
 }
 
-/** Router mounted at /api/admin before the session-only routers (the wizard has no session yet). */
+/** Authenticated weather place lookup. */
 export function geocodeRouter({ fetchJson } = {}) {
   const r = Router();
+  r.use(requireAuth);
   r.get('/geocode', async (req, res, next) => {
     try {
       res.set('cache-control', 'private, no-store');
-      if (!sessionValid(req)) {
-        if (!needsSetup()) return res.status(401).json({ error: 'unauthorized' });
-        if (!setupGate(req, res)) return;
-      }
       const out = await geocode({ q: req.query.q, lang: req.query.lang, ip: req.ip }, fetchJson ? { fetchJson } : {});
       if (out.retryAfter) res.set('retry-after', String(out.retryAfter));
       res.status(out.status).json(out.body);

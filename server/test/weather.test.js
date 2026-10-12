@@ -24,7 +24,6 @@ import {
 } from '../core/weather.js';
 import { validateConfig, mergeDefaults } from '../core/validate.js';
 import { defaultConfig } from '../core/defaults.js';
-import { exportSecrets, sanitizeImportedSecrets } from '../core/backupsCore.js';
 import { wmoDescription } from '../core/lib/i18n.js';
 
 const json = (name) => JSON.parse(fixture(`weather/${name}`));
@@ -296,15 +295,6 @@ test('validation: provider and model enums, defaults for old configs, the key ch
   assert.equal(validateConfig(c, { weatherKeySet: false }).ok, true);
 });
 
-test('backups: the weather key travels only with secrets and only when well formed', () => {
-  assert.deepEqual(exportSecrets({ weather: { apiKey: 'abc123XYZ' } }).weather, { apiKey: 'abc123XYZ' });
-  assert.equal(exportSecrets({}).weather, undefined);
-  assert.equal(sanitizeImportedSecrets({ weather: { apiKey: 'abc123XYZ' } }).weatherKey, 'abc123XYZ');
-  assert.equal(sanitizeImportedSecrets({ weather: { apiKey: 'bad key; rm -rf' } }).weatherKey, undefined);
-});
-
-// --------------------------------------------------------------------------------------------- self-hosted cache
-
 test('server/weather.js: one call for every language, cached until expiry, stale on error, key from secrets', async () => {
   const store = await import('../store.js');
   const weather = await import('../weather.js');
@@ -470,8 +460,6 @@ test('admin API: weather key is stored, never sent back, checked once, and requi
 
     // now it saves, and the display weather comes from Pirate Weather (the check's answer is reused)
     assert.equal((await call('PUT', '/api/admin/config', withPirate)).status, 200);
-    const status = (await call('GET', '/api/admin/status')).json;
-    assert.equal(typeof status.weather, 'object');
     assert.equal((await call('PUT', '/api/admin/weather/key', { key: '' })).json.set, false);
   } finally {
     weather.setWeatherFetch(null);

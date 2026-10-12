@@ -14,19 +14,15 @@ RUN npm run build
 # ---- runtime -------------------------------------------------------------------------------
 FROM node:22-alpine
 ARG MARCO_RUNTIME_USER=node
-# SETUP_REQUIRE_TOKEN: inside a container the client address is not reliable (docker-proxy, Docker Desktop,
-# rootless networking and same-host reverse proxies all show up as a private gateway address), so the setup
-# wizard always asks for the one-time token printed in the log (Home Assistant app Log tab).
 LABEL org.opencontainers.image.title="Calendar" \
-      org.opencontainers.image.description="Your family's day, framed. Self-hosted family wall calendar and dashboard." \
+      org.opencontainers.image.description="Calendar dashboard with Home Assistant calendars, weather and photos." \
       org.opencontainers.image.source="https://github.com/mmihaylov00/calendar" \
       org.opencontainers.image.licenses="MIT"
 # Container updates are managed outside Calendar; the admin never offers an in-process update button.
 ENV NODE_ENV=production \
     MARCO_INSTALL=docker \
     PORT=3000 \
-    DATA_DIR=/data \
-    SETUP_REQUIRE_TOKEN=1
+    DATA_DIR=/data
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force

@@ -17,7 +17,6 @@ function intervalLabel(s: number) {
 
 export function BackgroundSection({ cfg, set, errors }: SectionProps) {
   const b = cfg.background;
-  const fx = b.weatherFx ?? 'simple';
   const galleryOn = has('gallery');
   const usesGallery = galleryOn && b.source !== 'stock';
   const [gallery, setGallery] = useState<AdminPhoto[] | null>(null);
@@ -28,7 +27,7 @@ export function BackgroundSection({ cfg, set, errors }: SectionProps) {
   const intervals = INTERVALS.includes(b.intervalSec) ? INTERVALS : [...INTERVALS, b.intervalSec].sort((a, c) => a - c);
   return (
     <>
-      <PageHeader scope="screen" title={t('Background')} desc={t('Background photos, transitions and animated ambient effects.')} />
+      <PageHeader scope="screen" title={t('Background')} desc={t('Background photos and rotation.')} />
       <Card id="bg-photos" scope="screen" title={t('Background photos')} icon="image">
         <ToggleRow label={t('Show background photos')} checked={b.enabled} onChange={(v) => set((d) => void (d.background.enabled = v))} />
         <div class={`stack ${b.enabled ? '' : 'is-disabled'}`}>
@@ -115,58 +114,7 @@ export function BackgroundSection({ cfg, set, errors }: SectionProps) {
           </div>
           <ToggleRow label={t('Show photo author / title')} checked={b.showMeta} onChange={(v) => set((d) => void (d.background.showMeta = v))} />
           <ToggleRow label={t('Crop to fill the screen')} hint={t('When off, the whole photo is shown with bars.')} checked={b.cover} onChange={(v) => set((d) => void (d.background.cover = v))} />
-          <Field label={t('Photo transition')}>
-            <Segmented
-              value={b.transition}
-              options={[
-                { value: 'webgl', label: t('WebGL (smooth)') },
-                { value: 'fade', label: t('Fade') },
-                { value: 'none', label: t('None') },
-              ]}
-              onChange={(v) => set((d) => void (d.background.transition = v))}
-            />
-          </Field>
         </div>
-      </Card>
-      <Card id="bg-ambient" scope="screen" title={t('Ambient effect')} icon="sparkles" desc={t('three.js animation behind the calendar. Capped at 30 fps for the Raspberry Pi.')}>
-        <div class="fx-grid">
-          {(
-            [
-              { v: 'aurora', name: t('Aurora'), desc: t('Soft colour veils drifting slowly.') },
-              { v: 'particles', name: t('Particles'), desc: t('Floating light dust with depth.') },
-              { v: 'none', name: t('None'), desc: t('Maximum performance, no WebGL.') },
-            ] as const
-          ).map((o) => (
-            <button type="button" class={`fx ${b.ambient === o.v ? 'is-active' : ''}`} onClick={() => set((d) => void (d.background.ambient = o.v))}>
-              <span class={`fx__swatch fx__swatch--${o.v}`} />
-              <strong>{o.name}</strong>
-              <small>{o.desc}</small>
-            </button>
-          ))}
-        </div>
-      </Card>
-      <Card id="bg-weather" scope="screen" title={t('Weather effect')} icon="cloud" desc={t('Animation over the photo that follows the current weather. WebGL only, not used with ?lite=1.')}>
-        <Field
-          hint={
-            fx === 'off'
-              ? t('No rain or snow over the photo.')
-              : fx === 'rich'
-                ? t('Drops on the glass, layered snow and sun rays on clear days. The photo is not blurred. A bit heavier on a Raspberry Pi.')
-                : t('Fine rain or snow particles. The lightest option.')
-          }
-          error={errors['background.weatherFx']}
-        >
-          <Segmented
-            full
-            value={fx}
-            options={[
-              { value: 'off', label: t('Disabled') },
-              { value: 'simple', label: t('Simple') },
-              { value: 'rich', label: t('Realistic') },
-            ]}
-            onChange={(v) => set((d) => void (d.background.weatherFx = v))}
-          />
-        </Field>
       </Card>
     </>
   );

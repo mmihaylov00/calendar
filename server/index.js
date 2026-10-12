@@ -2,22 +2,14 @@
 import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
-import { initStore, getConfig, events as storeEvents, paths, ROOT, migratedOnLoad, StoreError } from './store.js';
+import { initStore, getConfig, events as storeEvents, paths, ROOT, StoreError } from './store.js';
 import { ensurePassword } from './auth.js';
 import { createApp } from './app.js';
 import { syncDisplayKeys, onDisplayAccessConfig, revalidateStreams } from './displayAccess.js';
 import { broadcast, closeAll, reresolveClients, setStreamValidator } from './sse.js';
 import { startRefresher, stopRefresher, runRefresh } from './refresher.js';
-import { logActivity, changedSections } from './activity.js';
 import { resolveScreen } from './core/screens.js';
-import { setServerVersion, flushDisplays, reresolveDisplays } from './displays.js';
-import { pruneScreens } from './announce.js';
-import { pruneDoorbellScreens } from './doorbell.js';
-import { flushTokenUsage } from './tokens.js';
-import { logSetupHint } from './setup.js';
 import { invalidateIcsParsing } from './calendars.js';
-import { serverUpdater } from './routes/updates.js';
-import { onPrivacyConfig, syncPrivacy, stopPrivacy } from './privacy.js';
 
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
@@ -28,12 +20,8 @@ try {
   console.error(err.message);
   process.exit(1);
 }
-setServerVersion(pkg.version);
-if (migratedOnLoad) {
-  logActivity('config.migrated', { actor: 'system', data: { ...migratedOnLoad, ...(migratedOnLoad.from ? { backup: 'config-v1-premigration.json' } : {}) } });
-}
 // Floating ICS times (no TZID) are interpreted in the process zone; align it with the configured zone (and keep
-// it aligned when the zone is changed in the admin or the wizard, see the 'config' listener below). A TZ set in
+// it aligned when the zone is changed in the admin, see the 'config' listener below). A TZ set in
 // the environment wins and is never changed.
 const tzFromEnv = Boolean(process.env.TZ);
 if (!tzFromEnv) process.env.TZ = getConfig().datetime.timezone;
@@ -45,24 +33,16 @@ syncDisplayKeys();
 setStreamValidator(() => revalidateStreams());
 const app = createApp({ version: pkg.version });
 
-// Config saved (admin, restore, import or server-side) → re-resolve each display's screen (slug renamed / screen
-// deleted), displays refetch their config, calendars may have changed; activity log gets the changed sections.
-storeEvents.on('config', (cfg, prev, { reason, req } = {}) => {
+// Config saves refresh live calendar and display data.
+storeEvents.on('config', (cfg) => {
   if (!tzFromEnv && cfg.datetime.timezone && cfg.datetime.timezone !== process.env.TZ) {
     process.env.TZ = cfg.datetime.timezone; // Node applies a runtime TZ change to new Date computations
     invalidateIcsParsing();
   }
   reresolveClients((key) => resolveScreen(cfg, key).screen.id);
-  onDisplayAccessConfig(cfg, prev);
-  reresolveDisplays(cfg);
-  pruneScreens(cfg);
-  pruneDoorbellScreens(cfg);
+  onDisplayAccessConfig(cfg);
   broadcast('config', { revision: cfg.revision });
-  onPrivacyConfig();
   runRefresh().catch(() => {});
-  if (reason !== 'restore' && reason !== 'import') {
-    logActivity('config.saved', { req, ...(req ? {} : { actor: 'system' }), data: { revision: cfg.revision, sections: changedSections(prev, cfg), ...(reason && reason !== 'admin' ? { reason } : {}) } });
-  }
 });
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -73,20 +53,12 @@ const server = app.listen(PORT, process.env.HOST || '0.0.0.0', (err) => {
     process.exit(1);
   }
   console.log(`[server] Calendar v${pkg.version} on http://localhost:${PORT} (data: ${paths.data})`);
-  logSetupHint(PORT);
   startRefresher();
-  // Privacy periods that end and schedule rules that start while the server runs (server/privacy.js)
-  syncPrivacy();
-  // Daily check for a newer release (MARCO_UPDATE_CHECK=0 or the admin switch turn it off); server/updates.js
-  serverUpdater(pkg.version).start();
 });
 
 function shutdown(sig) {
   console.log(`[server] ${sig}, shutting down`);
   stopRefresher();
-  stopPrivacy();
-  serverUpdater(pkg.version).stop();
-  try { flushDisplays(); flushTokenUsage(); } catch { /* ignore */ }
   closeAll();
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 3000).unref();

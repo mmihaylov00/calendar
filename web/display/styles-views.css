@@ -1,10 +1,3 @@
-/* =============================================================================================
-   Marco: the layouts with their own view (#view, web/display/widgets/views.ts) and Two weeks.
-   Today and Two weeks use the frame of the big calendar (#app also gets .preset-bigCalendar); Per person and Board use
-   the frame of Top / Bottom (.preset-topBottom). Every rule is scoped to one of these layouts or to #view, so the
-   existing layouts look exactly as before. The Modern style adds its own rules in styles-modern.css.
-   ============================================================================================= */
-
 #view { display: none; }
 .has-view #calendar, .has-view #agenda { display: none !important; }
 .has-view #view { display: flex; flex-direction: column; flex: 1; min-height: 0; }
@@ -15,7 +8,6 @@
 #app.portrait.preset-today { grid-template-rows: 38% minmax(0, 1fr); }
 /* the next event is already the big card */
 .preset-today .hl-pill.hl-next { display: none; }
-.preset-today .cd-card:not(:has(> .cd:not(.fit-hide))) { display: none; }
 /* the weather for the next hours stays visible (the fitting still drops it when the band is too full) */
 #app.portrait.preset-today:not(.fit-1) .wx-hourly { display: grid; }
 .view-today { gap: 2rem; padding: 0.4rem 0.8rem 1.6rem; }
@@ -137,7 +129,7 @@
 .preset-people .side { padding: 2.6rem 4rem 2.4rem; }
 .preset-people .hl-pill:nth-child(n + 2) { display: none; }
 /* portrait: clock on the left, the current weather on the right, in a low band */
-#app.portrait.preset-people .side, #app.portrait.preset-board .side {
+#app.portrait.preset-people .side {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: 1fr;
@@ -145,14 +137,12 @@
   gap: 3rem;
   padding: 2.4rem 3.6rem;
 }
-#app.portrait.preset-people .side-top, #app.portrait.preset-board .side-top { align-items: flex-start; text-align: left; align-self: center; }
-#app.portrait.preset-people .side-bottom, #app.portrait.preset-board .side-bottom { justify-self: end; align-self: center; }
-#app.portrait.preset-people .clock.digital, #app.portrait.preset-board .clock.digital { font-size: 11.5rem; }
-#app.portrait.preset-people .highlights, #app.portrait.preset-board .highlights,
-#app.portrait.preset-people .side-mid, #app.portrait.preset-board .side-mid,
-#app.portrait.preset-people .wx-days, #app.portrait.preset-board .wx-days { display: none; }
+#app.portrait.preset-people .side-top { align-items: flex-start; text-align: left; align-self: center; }
+#app.portrait.preset-people .side-bottom { justify-self: end; align-self: center; }
+#app.portrait.preset-people .clock.digital { font-size: 11.5rem; }
+#app.portrait.preset-people .highlights, #app.portrait.preset-people .side-mid, #app.portrait.preset-people .wx-days { display: none; }
 /* the band is lower than Top / Bottom's: current weather and the next days, without the details line */
-.preset-people .weather .wx-meta, .preset-board .weather .wx-meta { display: none; }
+.preset-people .weather .wx-meta { display: none; }
 .view-people { gap: 1.8rem; padding: 0.4rem 0.8rem 1.6rem; }
 .pp-shared { flex: none; display: flex; align-items: center; gap: 0.8rem; overflow: hidden; }
 .pp-who { flex: none; margin-right: 0.6rem; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-3); }
@@ -213,159 +203,9 @@
 /* portrait with four or five people: two per row */
 #app.portrait .pp-many .pp-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.6rem 0; }
 #app.portrait .pp-many .pp-col:nth-child(odd) { border-left-color: transparent; padding-left: 0; }
-
-/* =========================================================================================== Board */
-#app.preset-board { grid-template-rows: 25% minmax(0, 1fr); }
-#app.portrait.preset-board { grid-template-rows: 17% minmax(0, 1fr); }
-#app.preset-board .photo-area { grid-row: 1 / -1; }
-.preset-board .main { background: transparent; color: #fff; padding: 0 4rem 3.6rem; }
-.preset-board .clock.digital { font-size: 12.5rem; }
-.preset-board .side { padding: 2.6rem 4rem 2.4rem; }
-.preset-board .hl-pill:nth-child(n + 2) { display: none; }
-.preset-board #news, .preset-board .main-strip { display: none !important; }
-.preset-board .scrim { background: linear-gradient(to bottom, rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.22) 26%, rgb(0 0 0 / 0.3) 60%, rgb(0 0 0 / 0.55)); }
-.preset-board .scrim::before, .preset-board .scrim::after { display: none; }
-.view-board { padding-top: 0.4rem; }
-.bd-cols { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--bd-n, 3), minmax(0, 1fr)); gap: 2.4rem; }
-.bd-col { min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 2.4rem; }
-.bd-card {
-  flex: none;
-  min-height: 0;
-  padding: 2rem 2.4rem;
-  border-radius: 2.2rem;
-  background: rgb(10 10 14 / 0.6);
-  border: 1px solid rgb(255 255 255 / 0.1);
-  color: #fff;
-}
-.bd-col:first-child > .bd-card:first-child { flex: 1; }
-.bd-h { margin: 0 0 1.4rem; display: flex; align-items: center; gap: 1rem; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(255 255 255 / 0.7); }
-.bd-h span { font-family: var(--font-emoji); font-size: 2.2rem; letter-spacing: 0; }
-.bd-list { display: flex; flex-direction: column; gap: 0.9rem; }
-.bd-day { margin-top: 1rem; font-size: 2.2rem; font-weight: 700; }
-.bd-day:first-child { margin-top: 0; color: var(--accent); }
-.bd-row { display: flex; align-items: center; gap: 1.3rem; min-width: 0; min-height: 4.6rem; font-size: 2.3rem; font-weight: 550; line-height: 1.25; }
-.bd-tile { flex: none; display: grid; place-items: center; width: 4.6rem; height: 4.6rem; border-radius: 1.2rem; background: rgb(var(--c) / 0.26); font-family: var(--font-emoji); font-size: 2.5rem; }
-.bd-tile .td-dot { width: 1.4rem; height: 1.4rem; }
-.bd-tt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bd-meta { flex: none; font-size: 2rem; font-weight: 600; color: var(--tint); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.bd-meta b { font-family: var(--font-num); font-size: 1.3em; font-weight: 600; }
-.bd-meta small { font-size: 0.9em; font-weight: 500; opacity: 0.8; }
-.bd-row.ongoing .bd-meta, .bd-row.soon .bd-meta { font-weight: 800; }
-.bd-check {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 3rem;
-  height: 3rem;
-  margin: 0 0.8rem;
-  border-radius: 50%;
-  border: 0.25rem solid rgb(255 255 255 / 0.6);
-  font-size: 1.7rem;
-  font-weight: 800;
-}
-.bd-task.done { opacity: 0.45; }
-.bd-task.done .bd-tt { text-decoration: line-through; }
-.bd-task.done .bd-check { border-color: transparent; background: rgb(255 255 255 / 0.28); }
-.bd-none { font-size: 2rem; color: rgb(255 255 255 / 0.55); padding: 0.4rem 0; }
-.bd-more { margin-top: 1rem; font-size: 1.8rem; font-weight: 600; color: rgb(255 255 255 / 0.55); }
-.bd-more:empty { display: none; }
-.bd-msg { display: flex; align-items: center; gap: 2rem; padding: 2.4rem; }
-.bd-msg-em { flex: none; font-family: var(--font-emoji); font-size: 5.2rem; line-height: 1; }
-.bd-msg p { margin: 0; font-size: 3rem; font-weight: 650; line-height: 1.2; overflow-wrap: break-word; }
-.theme-light .bd-card { background: rgb(250 249 246 / 0.9); border-color: rgb(0 0 0 / 0.06); color: #16161a; }
-.theme-light .bd-h { color: rgb(22 22 26 / 0.6); }
-.theme-light .bd-meta { color: var(--shade); }
-.theme-light .bd-check { border-color: rgb(22 22 26 / 0.45); }
-.theme-light .bd-task.done .bd-check { background: rgb(22 22 26 / 0.18); }
-.theme-light .bd-none, .theme-light .bd-more { color: rgb(22 22 26 / 0.5); }
-.no-photo.preset-board .main { background: radial-gradient(140% 90% at 0% 0%, #1a1c24 0%, #0a0b0f 60%, #050507 100%); }
-.theme-light .no-photo.preset-board .main { background: var(--panel); }
-
-/* ===================================================================================== Photo frame */
-#app.preset-photoFrame { grid-template-columns: 100%; grid-template-rows: 100%; }
-#app.preset-photoFrame .photo-area { grid-column: 1 !important; grid-row: 1; }
-.preset-photoFrame .side { display: none; }
-#app.preset-photoFrame .main { grid-column: 1 !important; grid-row: 1; background: transparent !important; padding: 4.4rem 5rem; color: #fff; }
-.preset-photoFrame #news, .preset-photoFrame .main-strip { display: none !important; }
-.preset-photoFrame .scrim { --sx: 100%; --sy: 100%; background: radial-gradient(75% 65% at var(--sx) var(--sy), rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.16) 55%, transparent 80%); }
-.preset-photoFrame .scrim::before, .preset-photoFrame .scrim::after { display: none; }
-.corner-tl .scrim { --sx: 0%; --sy: 0%; }
-.corner-tr .scrim { --sx: 100%; --sy: 0%; }
-.corner-bl .scrim { --sx: 0%; --sy: 100%; }
-#app.portrait.preset-photoFrame .scrim { background: radial-gradient(110% 45% at var(--sx) var(--sy), rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.16) 55%, transparent 80%); }
-.view-photoFrame { justify-content: flex-end; align-items: flex-end; text-align: right; }
-.corner-tl .view-photoFrame { justify-content: flex-start; align-items: flex-start; text-align: left; }
-.corner-tr .view-photoFrame { justify-content: flex-start; }
-.corner-bl .view-photoFrame { align-items: flex-start; text-align: left; }
 /* no photo to frame: the card moves to the middle and grows, like a desk clock */
-#app.no-photo .view-photoFrame { justify-content: center; align-items: center; text-align: center; }
-#app.no-photo .pf-card .clock.digital { font-size: 18rem; }
-#app.no-photo .pf-card .date { font-size: 3.4rem; }
-#app.no-photo .pf-wx { justify-content: center; }
-.pf-card { display: flex; flex-direction: column; align-items: inherit; gap: 1.6rem; max-width: min(64rem, 100%); text-shadow: 0 0.2rem 2.4rem rgb(0 0 0 / 0.45); }
-.pf-card .clock-wrap { align-items: inherit; }
-.pf-card .clock.digital { font-size: 11.5rem; }
-.pf-card .clock.analog svg { width: 15rem; height: 15rem; }
-.pf-card .date { margin-top: 1rem; font-size: 2.8rem; }
-.pf-wx, .bs-wx { display: flex; align-items: center; gap: 1.2rem; text-align: left; }
-.pf-wx:empty, .pf-next:empty { display: none; }
-.v-wx-ic svg { display: block; width: 5rem; height: 5.2rem; }
-.v-temp { font-family: var(--font-num); font-size: 4.6rem; font-weight: 300; line-height: 1; letter-spacing: -0.02em; }
-.v-cond { display: flex; flex-direction: column; gap: 0.2rem; font-size: 2.1rem; font-weight: 600; line-height: 1.15; }
-.v-hl { font-size: 1.8rem; font-weight: 500; color: rgb(255 255 255 / 0.72); }
-.pf-ev {
-  display: inline-flex;
-  align-items: center;
-  gap: 1rem;
-  max-width: 100%;
-  padding: 0.8rem 1.6rem 0.8rem 1.2rem;
-  border-radius: 99rem;
-  background: rgb(10 10 14 / 0.55);
-  border: 1px solid rgb(var(--c) / 0.45);
-  font-size: 2.1rem;
-  line-height: 1.2;
-  text-shadow: none;
-  text-align: left;
-}
-.pf-em { flex: none; font-family: var(--font-emoji); font-size: 1.1em; }
-.pf-tt { min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pf-when { flex: none; font-weight: 600; color: var(--tint); white-space: nowrap; }
-
-/* ========================================================================================= Bedside */
-#app.preset-bedside { grid-template-columns: 100%; grid-template-rows: 100%; --bs-bg: #000; --bs-ink: rgb(255 196 150 / 0.5); --bs-ink-2: rgb(255 196 150 / 0.3); }
-/* night window (screen night mode, or 22:00–07:00): deeper, redder and dimmer, like a bedside clock */
-#app.preset-bedside.bedside-late { --bs-ink: rgb(255 96 64 / 0.34); --bs-ink-2: rgb(255 96 64 / 0.2); }
 /* the screen's night mode already dims everything with its overlay (its own "dim" setting): do not dim twice */
-.night #app.preset-bedside.bedside-late { --bs-ink: rgb(255 96 64 / 0.9); --bs-ink-2: rgb(255 96 64 / 0.56); }
 /* light theme: a soft paper look during the day, dark again at night */
-.theme-light #app.preset-bedside:not(.bedside-late) { --bs-bg: #ddd6cb; --bs-ink: rgb(64 52 42 / 0.82); --bs-ink-2: rgb(64 52 42 / 0.55); }
-.preset-bedside .photo-area, .preset-bedside .side { display: none; }
-#app.preset-bedside .main { grid-column: 1 !important; grid-row: 1; background: var(--bs-bg) !important; padding: 4rem; color: var(--bs-ink); transition: background-color 4s ease; }
-.preset-bedside #news, .preset-bedside .main-strip { display: none !important; }
-.view-bedside { justify-content: center; align-items: center; }
-.bs { display: flex; flex-direction: column; align-items: center; gap: 4rem; }
-.bs .clock-wrap { align-items: center; }
-.bs .clock.digital { font-size: 34rem; color: var(--bs-ink); transition: color 4s ease; }
-#app.portrait .bs .clock.digital { font-size: 30rem; }
-.bs .clock.analog svg { width: 46rem; height: 46rem; filter: none; }
-.bs .clock.analog .rim { fill: none; stroke: var(--bs-ink-2); }
-.bs .clock.analog .tk { stroke: var(--bs-ink-2); }
-.bs .clock.analog .tk.big, .bs .clock.analog .hh, .bs .clock.analog .mh { stroke: var(--bs-ink); }
-.bs .clock.analog .pin { fill: var(--bs-bg); }
-.bs .date { margin-top: 2.4rem; font-size: 3.4rem; font-weight: 400; color: var(--bs-ink-2); text-align: center; }
-.bs-info { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 1.6rem 5rem; font-size: 3rem; color: var(--bs-ink-2); }
-.bs-wx .v-wx-ic svg { width: 5rem; height: 5.2rem; filter: grayscale(0.5) sepia(0.6) brightness(0.65); }
-.bs-wx .v-temp { font-size: 4.4rem; color: var(--bs-ink); }
-.bs-wx .v-cond { font-size: 2.6rem; font-weight: 500; }
-.bs-next { display: flex; align-items: baseline; gap: 1.4rem; max-width: 120rem; min-width: 0; }
-.bs-next:empty, .bs-wx:empty { display: none; }
-.bs-when { flex: none; font-weight: 700; color: var(--bs-ink); }
-.bs-tt { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bs-em { font-style: normal; font-family: var(--font-emoji); filter: grayscale(1) sepia(0.7) brightness(0.55); }
-.bedside-late .bs-em { filter: grayscale(1) sepia(1) hue-rotate(-30deg) brightness(0.4); }
-.bs-wx .v-wx-ic { opacity: 0.55; }
-.bedside-late .bs-wx .v-wx-ic { opacity: 0.35; }
-#app.portrait .bs-info { flex-direction: column; gap: 2rem; }
 
 /* ---- small landscape screens (≈720p): a little more text */
 @media (orientation: landscape) and (max-height: 820px) {
@@ -377,8 +217,4 @@
   .td-sub { font-size: 2.8rem; }
   .pp-ev { font-size: 2.6rem; }
   .pp-day, .pp-who { font-size: 2rem; }
-  .bd-row { font-size: 2.7rem; }
-  .bd-meta { font-size: 2.4rem; }
-  .bd-h { font-size: 2rem; }
-  .pf-ev { font-size: 2.6rem; }
 }

@@ -63,16 +63,4 @@ export function applyScreen(cfg: StoredConfig, view: AppConfig): StoredConfig {
   return next as StoredConfig;
 }
 
-/** "Salón principal" → "salon-principal" (same rule as the server). */
-export function slugify(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/\p{M}+/gu, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 32)
-    .replace(/-+$/, '');
-}
-
 export const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;

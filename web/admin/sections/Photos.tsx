@@ -1,7 +1,7 @@
 import { appUrl } from '../../shared/path';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { coverPosition, freeBand, hasFocus, type PhotoFrame } from '../../shared/focus';
-import type { AdminPhoto, AppConfig, DisplayInfo, PhotoConflictPolicy } from '../../shared/types';
+import type { AdminPhoto, AppConfig, PhotoConflictPolicy } from '../../shared/types';
 import { api, ApiError, uploadPhotos, uploadThumb } from '../api';
 import { confirmDialog, toast } from '../components/feedback';
 import { Icon } from '../components/icons';
@@ -73,25 +73,16 @@ function errorText(e: unknown): string {
 let seq = 0;
 
 /**
- * Photo panel framing for the editor preview: what a display of this screen measured (aspect + the bands the
- * clock and the weather card cover), else an estimate from the layout.
+ * Photo framing estimated from the calendar layout.
  */
-function pickFrame(cfg: AppConfig, displays: DisplayInfo[]): { frame: PhotoFrame; note: string } {
-  const withFrame = displays
-    .filter((d) => d.photoFrame)
-    .sort((a, b) => Number(b.screenId === cfg.screenId) - Number(a.screenId === cfg.screenId) || Number(b.connected) - Number(a.connected) || b.lastSeen.localeCompare(a.lastSeen));
-  const d = withFrame[0];
-  if (d?.photoFrame) {
-    const res = d.viewport ? ` · ${d.viewport.w}×${d.viewport.h}` : '';
-    return { frame: d.photoFrame, note: t('measured on “{name}”', { name: d.screenName || d.screenSlug || d.clientId }) + res };
-  }
+function pickFrame(cfg: AppConfig): { frame: PhotoFrame; note: string } {
   const preset = cfg.layout?.preset;
   const side = preset === 'bigCalendar' || preset === 'agenda' || preset === 'leftRight';
   const aspect = side ? ((cfg.layout?.sideWidth || 0.36) * 16) / 9 : 16 / 9;
   const blocks: [number, number][] = side ? [[0.03, 0.25]] : [[0.04, 0.2]];
   if (cfg.weather?.enabled !== false) blocks.push(side ? [0.45, 0.97] : [0.72, 0.95]);
   const band = freeBand(blocks);
-  return { frame: { aspect, targetY: band.target, freeTop: band.top, freeBottom: band.bottom, blocks }, note: t('approximate: open the screen to measure it') };
+  return { frame: { aspect, targetY: band.target, freeTop: band.top, freeBottom: band.bottom, blocks }, note: t('estimated from the calendar layout') };
 }
 
 export function PhotosSection({ cfg, set }: SectionProps) {
@@ -101,7 +92,6 @@ export function PhotosSection({ cfg, set }: SectionProps) {
   const [queue, setQueue] = useState<Queue | null>(null);
   const [conflicts, setConflicts] = useState<{ items: ConflictItem[]; resolve: (c: Record<string, PhotoConflictPolicy> | null) => void } | null>(null);
   const [editing, setEditing] = useState<AdminPhoto | null>(null);
-  const [displays, setDisplays] = useState<DisplayInfo[]>([]);
   const [filter, setFilter] = useState<'all' | 'shown' | 'hidden'>('all');
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -129,7 +119,6 @@ export function PhotosSection({ cfg, set }: SectionProps) {
   };
   useEffect(() => {
     load();
-    api.displays().then((r) => setDisplays(r.displays), () => {});
     return () => urls.current.forEach((u) => URL.revokeObjectURL(u));
   }, []);
 
@@ -656,7 +645,7 @@ export function PhotosSection({ cfg, set }: SectionProps) {
         <FocusEditor
           photo={editing}
           {...(() => {
-            const f = pickFrame(cfg, displays);
+            const f = pickFrame(cfg);
             return { frame: f.frame, panelNote: f.note };
           })()}
           panelLabel={t('Photo panel of the screen')}

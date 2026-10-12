@@ -18,7 +18,7 @@ export class Clock {
   /** minute of the last fit check: the width only changes when the digits, the layout or the font size change */
   private fitKey = '';
 
-  /** @param opts.seconds force the seconds on / off (layouts with a small or a bedside clock); default: the config */
+  /** @param opts.seconds force the seconds on / off (compact clock layouts); default: the config */
   constructor(private root: HTMLElement, private opts: { seconds?: boolean } = {}) {
     root.classList.add('clock-wrap');
     root.innerHTML = `<div class="clock"></div><div class="date"></div>`;

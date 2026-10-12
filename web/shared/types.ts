@@ -1,6 +1,5 @@
 // Shared JSON contracts, see docs/API.md and docs/ARCHITECTURE.md. Imported by both the display and the admin panel.
 // Keep in sync with the server (server/core/validate.js, server/core/defaults.js).
-import type { PhotoFrame } from './focus';
 
 export type Lang = 'en';
 export type LayoutPreset =
@@ -11,9 +10,6 @@ export type FrameCorner = 'tl' | 'tr' | 'bl' | 'br';
 export type SourceKind = 'generic' | 'airbnb' | 'birthdays' | 'holidays';
 export type SourceType = 'ics' | 'google' | 'microsoft' | 'homeassistant';
 export type DateFormat = 'weekday_month_d' | 'weekday_d_month' | 'weekday_d_dot_month' | 'weekday_month_d_y' | 'weekday_mdy' | 'weekday_dmy' | 'weekday_iso' | 'custom';
-/** Every date format, in the order the admin offers them. */
-export const DATE_FORMATS: DateFormat[] = ['weekday_d_month', 'weekday_month_d', 'weekday_d_dot_month', 'weekday_month_d_y', 'weekday_mdy', 'weekday_dmy', 'weekday_iso', 'custom'];
-
 export interface NightMode {
   enabled: boolean;
   from: string; // "HH:MM"
@@ -125,56 +121,6 @@ export interface ScreenPrivacyConfig {
   /** small lock on the display while private */
   showLock: boolean;
   schedule: PrivacyRule[];
-}
-
-/** `privacy` of GET /api/display/config. */
-export interface DisplayPrivacy {
-  active: boolean;
-  /** when it ends (ISO); null while active = until someone turns it off */
-  until: string | null;
-  /** show the lock */
-  lock: boolean;
-  /** ask again at this time even without a live event (a period ends, a rule starts); null = nothing planned */
-  next: string | null;
-}
-
-/** One screen in GET /api/admin/privacy (and /api/hooks/privacy). */
-export interface PrivacyScreenState {
-  screenId: string;
-  slug: string;
-  name: string;
-  active: boolean;
-  until: string | null;
-  /** who turned it on (or paused the schedule): 'admin', 'hook', 'schedule'; null when off and nothing set */
-  by: 'admin' | 'hook' | 'schedule' | null;
-  /** a manual "off" pauses the schedule until then */
-  resumesAt: string | null;
-  /** the screen has schedule rules */
-  scheduled: boolean;
-}
-
-export interface PrivacyResponse {
-  screens: PrivacyScreenState[];
-}
-
-/** POST /api/admin/privacy and /api/hooks/privacy. Use at most one of hours, until and untilTime; none = until
- *  turned off. */
-export interface PrivacyRequest {
-  mode: 'on' | 'off' | 'toggle';
-  hours?: number;
-  /** ISO date and time */
-  until?: string;
-  /** HH:MM: the next time it comes round in the configured time zone */
-  untilTime?: string;
-  /** slugs or ids; omitted or [] = every screen */
-  screens?: string[];
-}
-
-export interface PrivacyChangeResponse {
-  ok: boolean;
-  /** screens whose privacy turned on or off */
-  changed: string[];
-  screens: PrivacyScreenState[];
 }
 
 /** Public projection of a source sent to the display (no urls / account info). */
@@ -311,92 +257,8 @@ export interface AuthConfig {
 
 /** 'private': displays need their private link (/d/<key>) or a paired-device token. 'open': legacy LAN mode. */
 export type DisplayAccessMode = 'private' | 'open';
-export type DisplayAccessVia = 'key' | 'device' | 'session' | 'open';
-
 export interface SecurityConfig {
   displayAccess: DisplayAccessMode;
-}
-
-/** GET /api/admin/display-links item: one private link per saved screen. */
-export interface DisplayLink {
-  screenId: string;
-  slug: string;
-  name: string;
-  /** UUIDv4 */
-  key: string;
-  /** "/d/<key>" */
-  path: string;
-  createdAt: string;
-}
-
-export interface DisplayLinksResponse {
-  mode: DisplayAccessMode;
-  links: DisplayLink[];
-  /** this server's LAN IPv4 addresses (LAN_ADDRESS overrides; empty inside a container) */
-  lanAddresses?: string[];
-  /** PUBLIC_URL origin when set to something else than localhost */
-  publicUrl?: string | null;
-  /** Absolute origin that serves /d/<key> when it is not the admin's own (Marco Cloud) */
-  displayOrigin?: string;
-}
-
-export interface PairedDevice {
-  id: string;
-  name: string;
-  /** first characters of the token ("md_abcd"), for recognising it */
-  prefix: string;
-  screenId: string;
-  screenSlug: string;
-  screenName: string;
-  createdAt: string;
-  lastSeenAt: string | null;
-  lastIp: string | null;
-  userAgent: string;
-  connected: boolean;
-  clientIds: string[];
-}
-
-export interface DevicesResponse {
-  mode: DisplayAccessMode;
-  devices: PairedDevice[];
-}
-
-/** POST /api/pair/start */
-export interface PairStartResponse {
-  /** secret: only this display knows it; the token is handed out to it alone */
-  sessionId: string;
-  /** 6 characters, shown on the screen and typed in the admin */
-  code: string;
-  expiresAt: string;
-  pollMs: number;
-}
-
-/** POST /api/pair/status { sessionId } */
-export type PairStatusResponse =
-  | { status: 'waiting'; code: string; expiresAt: string }
-  | { status: 'paired'; token: string; screen: { id: string; slug: string; name: string }; device: { id: string; name: string } }
-  | { status: 'expired' };
-
-export interface PairClaimRequest {
-  code: string;
-  screenId: string;
-  name?: string;
-  /** Second step: pair now. Without it the server only answers `confirm` (which display is waiting). */
-  confirm?: boolean;
-}
-
-/** First step of POST /api/admin/pair/claim: the display that shows this code, for the owner to confirm. */
-export interface PairConfirm {
-  /** Where the waiting display is: its LAN address (self-hosted) or "City, Country" (Marco Cloud); '' = unknown. */
-  where: string;
-  screenId: string;
-  screenName: string;
-}
-
-/** POST /api/admin/pair/claim: `confirm` without `confirm: true` in the request, else `device`. */
-export interface PairClaimResponse {
-  confirm?: PairConfirm;
-  device?: PairedDevice;
 }
 
 /** GET /api/admin/geocode?q=&lang= (Open-Meteo geocoding through the server). */
@@ -459,21 +321,12 @@ export interface DisplayConfig {
   slug?: string;
   /** true when ?screen= did not match any screen and the default screen was served instead */
   screenFallback?: boolean;
-  countdowns?: ScreenCountdownsConfig;
-  alerts?: ScreenAlertsConfig;
-  /** enabled scheduled messages targeting this screen (screenIds stripped) */
-  schedules?: Omit<ScheduledMessage, 'screenIds'>[];
   screen: ScreenConfig;
   layout: LayoutConfig;
   background: BackgroundConfig;
   calendar: CalendarConfig<PublicCalendarSource>;
   datetime: DateTimeConfig;
   weather: WeatherConfig;
-  news: { enabled: boolean; rotateSec: number };
-  todo: TodoConfig;
-  message: MessageConfig;
-  /** privacy mode of this screen (servers without it leave it out) */
-  privacy?: DisplayPrivacy;
 }
 
 /** CalEvent from GET /api/events */
@@ -583,20 +436,6 @@ export interface WeatherKeyStatus {
   checked?: boolean;
 }
 
-export interface NewsItem {
-  id: string;
-  title: string;
-  summary: string;
-  source: string;
-  date: string;
-  image?: string;
-}
-
-export interface NewsResponse {
-  updatedAt: string;
-  items: NewsItem[];
-}
-
 export interface Photo {
   url: string;
   author?: string;
@@ -704,107 +543,6 @@ export interface HealthResponse {
   lanAddresses?: string[];
 }
 
-// ---- Feedback (Marco Cloud, features.feedback) ----
-
-export type FeedbackKind = 'problem' | 'idea' | 'other';
-
-/** Technical details the person chose to send with a message (every field optional, all shown before sending). */
-export interface FeedbackMeta {
-  version?: string;
-  /** admin page the form was opened from, e.g. 'calendars' */
-  page?: string;
-  screens?: number;
-  userAgent?: string;
-  lang?: string;
-  timeZone?: string;
-}
-
-/** POST /api/admin/feedback */
-export interface FeedbackRequest {
-  kind: FeedbackKind;
-  message: string;
-  /** null or absent: no technical details */
-  meta?: FeedbackMeta | null;
-}
-
-export interface FeedbackResponse {
-  ok: true;
-  id: string;
-}
-
-// ---- Updates (self-hosted, features.updates) ----
-
-/** How the server was installed: what the admin offers to update it (server/updates.js detectInstall). */
-export interface UpdateInstall {
-  kind: 'release' | 'checkout' | 'docker' | 'manual';
-  /** The update button works (install.sh release install with the marco-update units). */
-  canApply: boolean;
-  /** The `marco` command manages this install. */
-  cli: boolean;
-}
-
-export interface UpdateRelease {
-  version: string;
-  name: string;
-  /** Markdown from the CHANGELOG section of that version */
-  notes: string;
-  url: string | null;
-  publishedAt: string | null;
-}
-
-export interface UpdateSettings {
-  /** Check for a new version once a day */
-  check: boolean;
-  /** Install it on its own inside the window (release installs) */
-  auto: boolean;
-  /** HH:MM, server time zone (Date & time) */
-  from: string;
-  to: string;
-}
-
-export interface UpdateStatus {
-  state: 'requested' | 'running' | 'done' | 'current' | 'failed';
-  from: string;
-  to: string;
-  target: string;
-  by: 'admin' | 'auto';
-  at: string | null;
-  rolledBack: boolean;
-  /** Requested, but no update service picked it up */
-  stalled: boolean;
-}
-
-/** GET /api/admin/update */
-export interface UpdateInfo {
-  current: string;
-  latest: UpdateRelease | null;
-  available: boolean;
-  checkedAt: string | null;
-  error: 'network' | 'http' | 'rate_limited' | 'bad_response' | null;
-  /** 'env-off' = MARCO_UPDATE_CHECK=0 on the server */
-  checks: 'on' | 'off' | 'env-off';
-  install: UpdateInstall;
-  settings: UpdateSettings;
-  status: UpdateStatus | null;
-  /** Last lines of the installer's output for the last update */
-  log: string[];
-}
-
-/** SSE /api/stream?screen=&client= event payloads (docs/ARCHITECTURE.md) */
-export type StreamEvent =
-  | ({ type: 'hello' } & StreamHello)
-  | { type: 'config'; revision: number }
-  | { type: 'reload' }
-  | { type: 'events'; hash: string }
-  | ({ type: 'announce' } & Announcement)
-  | { type: 'announce-clear'; id: string | null }
-  | ({ type: 'identify' } & IdentifyPayload)
-  | { type: 'night'; mode: NightCommand }
-  | { type: 'privacy'; active: boolean }
-  | ({ type: 'doorbell' } & DoorbellRing)
-  | { type: 'doorbell-end'; id: string }
-  | { type: 'ping'; t: number };
-
 // ---- Admin API ----
 
 export interface AuthUser {
@@ -838,7 +576,7 @@ export interface AuthMeResponse {
   passwordLoginEnabled: boolean;
   /** Logged in with the initial/default password: it must be changed (only accepted from the LAN until then). */
   mustChangePassword?: boolean;
-  /** Fresh install: no admin password yet → the admin shows the setup wizard. */
+  /** Compatibility metadata for deployments that predate HA authentication. */
   needsSetup?: boolean;
   /** The initial password came from ADMIN_PASSWORD (headless install): the panel offers to change it. */
   passwordFromEnv?: boolean;
@@ -853,95 +591,10 @@ export interface HaCalendarListItem {
   name: string;
 }
 
-/** GET /api/setup/status */
-export interface SetupStatus {
-  needsSetup: boolean;
-  googleConfigured: boolean;
-  version: string;
-  suggestedLanguage: Lang;
-  /** only while needsSetup: a setup token is needed (SETUP_TOKEN set, or the browser is not on the LAN) */
-  tokenRequired?: boolean;
-  /** only while needsSetup and when a token was sent (x-setup-token): whether it is right */
-  tokenValid?: boolean | null;
-  defaults?: { timezone: string; location: string };
-  /** only while needsSetup, for LAN clients: this machine's LAN IPv4 addresses (kiosk / wizard opened on localhost → QR code).
-   *  Empty in a container unless LAN_ADDRESS is set. */
-  lanAddresses?: string[];
-}
-
-/** POST /api/setup/complete */
-export interface SetupRequest {
-  token?: string;
-  password: string;
-  passwordConfirm: string;
-  language: Lang;
-  screenName: string;
-  location?: { name: string; lat: number; lon: number; timezone: string | null };
-  /** time zone without a location (location skipped) */
-  timezone?: string;
-  units?: 'metric' | 'imperial';
-  format24?: boolean;
-  calendars?: { name: string; url: string; kind: 'holidays' | 'generic'; color?: string }[];
-  photos?: { source: 'stock' | 'gallery' | 'mixed' };
-  layout?: { preset: LayoutPreset };
-  accent?: string;
-  ambient?: 'aurora' | 'particles' | 'none';
-  theme?: 'dark' | 'light';
-}
-
-export interface SetupCompleteResponse {
-  ok: true;
-  user: AuthUser;
-  /** displayPath: the screen's private link ("/d/<key>") */
-  screen: { id?: string; slug: string; name: string; displayPath?: string | null };
-  displayAccess?: DisplayAccessMode;
-}
-
-export interface GoogleAccount {
-  email: string;
-  name?: string;
-  picture?: string;
-}
-
-export interface GoogleCalendarListItem {
-  id: string;
-  summary: string;
-  backgroundColor?: string;
-  primary?: boolean;
-}
-
-export interface MicrosoftAccount {
-  email: string;
-}
-
-export interface MicrosoftCalendarListItem {
-  id: string;
-  name: string;
-  /** #rrggbb, when the calendar has a colour */
-  color?: string;
-  /** the account's default calendar */
-  isDefault?: boolean;
-  /** owner address when the calendar is shared with the account by someone else */
-  owner?: string;
-}
-
 export interface TestIcsResponse {
   ok: boolean;
   count?: number;
   sample?: string[];
-  error?: string;
-}
-
-export interface TestRssResponse {
-  ok: boolean;
-  title?: string;
-  count?: number;
-  error?: string;
-}
-
-export interface TestHomeAssistantResponse {
-  ok: boolean;
-  version?: string;
   error?: string;
 }
 
@@ -988,39 +641,7 @@ export interface PhotoUploadResult {
   skipped: string[];
 }
 
-export interface SourceStatus {
-  id: string;
-  name: string;
-  enabled?: boolean;
-  lastFetch: string | null;
-  lastSuccess?: string | null;
-  ok: boolean;
-  count: number;
-  error?: string | null;
-}
-
-export type WeatherErrorCode = 'key_missing' | 'key_invalid' | 'rate_limited' | 'http' | 'bad_response';
-
-export interface AdminStatus {
-  sources: SourceStatus[];
-  weather: { ok: boolean; updatedAt: string | null; error?: string | null; errorCode?: WeatherErrorCode | null; provider?: WeatherProvider | null };
-  news: { ok: boolean; updatedAt: string | null; count?: number; error?: string | null };
-  displays: number;
-  /** seconds; null where there is no long-running process (Marco Cloud) */
-  uptime: number | null;
-}
-
-// =================================================================================================
-// v2 admin management (docs/ARCHITECTURE.md). 
-// =================================================================================================
-
-/** Built-in pseudo-source ids (F2). */
-export const LOCAL_SOURCE_ID = 'local';
-export const BIRTHDAYS_SOURCE_ID = 'birthdays';
-
 export type AlertStyle = 'info' | 'success' | 'warning' | 'urgent';
-export type NightCommand = 'on' | 'off' | 'auto';
-
 // ---- §2 stored config (data/config.json, GET/PUT /api/admin/config) ----
 
 export interface ScreenCountdownsConfig {
@@ -1207,457 +828,9 @@ export interface StoredConfig {
  *  gets 409 {error:'conflict', revision}; without it the last write wins. */
 export type SaveConfigRequest = StoredConfig & { baseRevision?: number };
 
-export interface ValidationError {
-  path: string;
-  message: string;
-}
-
-// ---- §3 events: preview, CSV, countdowns ----
-
-export interface EventsPreviewRequest {
-  /** default today (server tz) */
-  from?: string;
-  /** 1..60, default 14 */
-  days?: number;
-  /** screen id/slug to filter sources; omitted → all enabled sources */
-  screen?: string;
-  /** draft calendar settings of that screen (which sources it shows) instead of the saved ones */
-  screenCalendar?: { enabled: boolean; sourceIds: string[] | null };
-  /** draft values to preview instead of the saved ones (all optional) */
-  eventRules?: EventRule[];
-  iconRules?: IconRule[];
-  localEvents?: LocalEventsConfig;
-  birthdays?: BirthdaysConfig;
-}
-
-export interface PreviewEvent extends CalEvent {
-  hidden: boolean;
-  /** title before rename rules (after kind normalisation, e.g. Airbnb) */
-  originalTitle: string;
-  sourceName: string;
-  /** rules that changed this event, in evaluation order */
-  applied: { ruleId: string; action: EventRuleAction }[];
-  /** icon rule that set emoji/color (null = none / overridden) */
-  iconRuleId: string | null;
-}
-
-export interface EventsPreviewResponse {
-  from: string;
-  to: string;
-  events: PreviewEvent[];
-  /** ruleId → number of events affected in the window */
-  ruleHits: Record<string, number>;
-  errors: { sourceId: string; message: string }[];
-}
-
-export interface BirthdayCsvResult {
-  items: Birthday[]; // parsed, with fresh ids (not saved)
-  errors: { line: number; text: string; message: string }[];
-  duplicates: number; // lines matching an existing birthday (same name + day + month), skipped
-}
-
-export interface CountdownItem {
-  id: string;
-  title: string;
-  emoji: string;
-  color: string | null;
-  date: string; // YYYY-MM-DD (next occurrence)
-  /** days from server "today" at generation time (0 = today); display recomputes at midnight from `date` */
-  days: number;
-  origin: 'manual' | 'birthday' | 'event';
-  age?: number | null;
-}
-
-export interface CountdownsResponse {
-  generatedAt: string;
-  today: string; // YYYY-MM-DD server tz
-  hash: string;
-  items: CountdownItem[];
-}
-
-// ---- §4 displays ----
-
-/** Sent by the display: POST /api/display/heartbeat (on SSE open, every 60 s, after a command). */
-export interface DisplayHeartbeat {
-  clientId: string; // [A-Za-z0-9_-]{8,64}, persisted in localStorage
-  screen: string; // ?screen= value as requested ('' = default)
-  screenId: string; // resolved screen id from DisplayConfig
-  version: string; // __APP_VERSION__
-  build: string; // __APP_BUILD__ (ISO build time)
-  viewport: { w: number; h: number }; // innerWidth/innerHeight
-  screenRes: { w: number; h: number }; // screen.width/height
-  dpr: number;
-  webgl: boolean; // three.js layers actually running
-  lite: boolean;
-  night: boolean; // dimmed right now
-  nightOverride: NightCommand; // 'auto' = following the schedule
-  uptimeSec: number; // since page load
-  lastError: string | null; // last uncaught error message (≤ 200 chars)
-  /** photo panel geometry and the part not covered by text (focal-point editor preview) */
-  photoFrame?: PhotoFrame | null;
-}
-
-export interface HeartbeatResponse {
-  ok: true;
-  now: string; // server ISO time
-  revision: number;
-}
-
-export interface DisplayInfo {
-  clientId: string;
-  screenId: string;
-  screenSlug: string;
-  screenName: string;
-  connected: boolean; // SSE stream open now
-  ip: string;
-  userAgent: string;
-  uaShort: string; // "Chromium 128 · Linux aarch64"
-  connectedAt: string | null; // current SSE connection start
-  firstSeen: string;
-  lastSeen: string; // last heartbeat or SSE activity
-  viewport: { w: number; h: number } | null;
-  screenRes: { w: number; h: number } | null;
-  dpr: number | null;
-  webgl: boolean | null;
-  lite: boolean | null;
-  version: string | null;
-  build: string | null;
-  /** version !== server version → display runs an old build */
-  outdated: boolean;
-  night: boolean | null;
-  nightOverride: NightCommand | null;
-  uptimeSec: number | null;
-  lastError: string | null;
-  photoFrame?: PhotoFrame | null;
-  /** how the display got in: private link, paired device, admin session or open mode (no key) */
-  access?: DisplayAccessVia;
-  deviceId?: string | null;
-  deviceName?: string | null;
-}
-
-export interface DisplaysResponse {
-  displays: DisplayInfo[];
-  serverVersion: string;
-}
-
-export interface DisplayCommandRequest {
-  action: 'reload' | 'identify' | 'night';
-  mode?: NightCommand; // required for 'night'
-  clientIds?: string[];
-  /** screen ids or slugs */
-  screens?: string[];
-}
-
 export interface StreamHello {
   revision: number;
   screenId: string;
-  slug: string;
-  clientId: string | null;
   serverVersion: string;
-  now: string; // server ISO time (clock-offset for announcement expiry)
-  /** announcements still active for this screen; the display drops any other it is showing (missed clears) */
-  activeAnnouncementIds: string[];
-  /** doorbell ring on this screen right now, null = none (older servers: absent) */
-  doorbellId?: string | null;
-}
-
-/**
- * A live command for one display, as GET /api/display/poll returns it. Names and payloads are the SSE event names
- * and payloads (StreamEvent), so one dispatcher (web/display/live.ts) serves both transports.
- */
-export type DisplayCommand =
-  | { type: 'reload' }
-  | { type: 'night'; mode: NightCommand }
-  | ({ type: 'identify' } & IdentifyPayload)
-  | ({ type: 'announce' } & Announcement)
-  | { type: 'announce-clear'; id: string | null }
-  | { type: 'photos'; hidden?: string[] }
-  /** self-hosted only: calendar data changed */
-  | { type: 'events'; hash: string }
-  /** privacy mode turned on or off: refetch config, events, countdowns and photos */
-  | { type: 'privacy'; active: boolean }
-  | ({ type: 'doorbell' } & DoorbellRing)
-  | { type: 'doorbell-end'; id: string };
-
-/** GET /api/display/poll?client=&cursor=&rev=&hidden=&preview= (docs/API.md) */
-export interface PollResponse {
-  /** config revision; a different one makes the display refetch its config, events and countdowns */
-  revision: number;
-  /** screen bound to this display now; a different one (device moved) reloads the page */
-  screenId: string;
-  /** server ISO time (clock offset for announcement expiry) */
-  now: string;
-  serverVersion: string;
-  /** opaque; send it back on the next poll */
-  cursor: string;
-  /** true on the first poll or after an unknown cursor: `commands` only replays the active announcements */
-  reset: boolean;
-  /** in order, already filtered to this display */
-  commands: DisplayCommand[];
-  /** present on a reset and whenever `commands` holds announce or announce-clear */
-  activeAnnouncementIds?: string[];
-  /** present on a reset: the doorbell ring on this screen, null = none */
-  doorbellId?: string | null;
-  /** ms until the next poll, chosen by the server */
-  next: number;
-}
-
-/** SSE `doorbell` / poll command: a ring on this screen (a later one with the same id extends it). */
-export interface DoorbellRing {
-  id: string;
-  startedAt: string;
-  updatedAt: string;
-  expiresAt: string;
-  /** play the door chime */
-  sound: boolean;
-  /** false: no camera picture (no camera chosen), only the label and the time */
-  frames: boolean;
-  /** ms between two frame requests to GET /api/display/doorbell/frame */
-  refreshMs: number;
-}
-
-/** POST /api/hooks/doorbell, POST /api/admin/doorbell. Omitted fields take homeassistant.doorbell. */
-export interface DoorbellRequest {
-  action?: 'ring' | 'dismiss';
-  /** 10..300 (clamped) */
-  seconds?: number;
-  /** slugs or ids; omitted = the configured screens (ring) or every ringing screen (dismiss) */
-  screens?: string[];
-  /** camera.* entity for this ring only */
-  camera?: string;
-  sound?: boolean;
-}
-
-export interface DoorbellResponse {
-  ok: true;
-  action: 'ring' | 'dismiss';
-  delivered: number;
-  /** slugs of the screens it reached */
-  screens: string[];
-  /** ring only: when the last of the rings ends */
-  expiresAt?: string | null;
-  /** servers that show uploaded snapshots (features.doorbellLive off): the ring has a picture */
-  picture?: boolean;
-}
-
-export interface IdentifyPayload {
-  name: string;
-  slug: string;
-  clientId: string | null;
-  durationSec: number; // 10
-}
-
-// ---- §5 announcements, tokens ----
-
-export interface AnnounceRequest {
-  title?: string; // ≤120; title or body required
-  body?: string; // ≤500
-  emoji?: string;
-  style?: AlertStyle; // default 'info'
-  durationSec?: number; // 5..86400, default 30
-  sound?: boolean; // default false
-  /** screen ids or slugs; omitted/[] = all */
-  screens?: string[];
-}
-
-export interface Announcement {
-  id: string; // "a_xxx"
-  title: string;
-  body: string;
-  emoji: string;
-  style: AlertStyle;
-  durationSec: number;
-  sound: boolean;
-  /** screen ids; [] = all */
-  screenIds: string[];
-  createdAt: string;
-  expiresAt: string;
-  via: 'admin' | 'hook';
-  by: string; // admin email or "token:<name>"
-  /** set when removed before expiry */
-  clearedAt?: string | null;
-}
-
-export interface AnnounceResponse {
-  ok: true;
-  announcement: Announcement;
-  delivered: number; // SSE clients that received it
-}
-
-export interface AnnouncementsResponse {
-  active: Announcement[];
-  history: Announcement[]; // newest first, ≤ 50
-}
-
-export interface ApiTokenInfo {
-  id: string; // "tk_xxx"
-  name: string;
-  prefix: string; // first 8 chars of the token, e.g. "cs_Ab3x"
-  createdAt: string;
-  lastUsedAt: string | null;
-  lastUsedIp: string | null;
-  useCount: number;
-}
-
-export interface ApiTokenCreated {
-  token: string; // shown ONCE
-  info: ApiTokenInfo;
-}
-
-// ---- §6 backups, export/import, activity ----
-
-export type BackupReason = 'save' | 'manual' | 'restore' | 'import' | 'migration';
-
-export interface BackupInfo {
-  id: string; // file name
-  createdAt: string;
-  revision: number;
-  reason: BackupReason;
-  size: number;
-  screens: number;
-  sources: number;
-}
-
-export interface ExportSecrets {
-  passwordHash?: string;
-  homeassistant?: { token?: string };
-  /** API key of a weather source that needs one (Pirate Weather) */
-  weather?: { apiKey?: string };
-  google?: { accounts: Record<string, unknown> };
-  apiTokens?: unknown[];
-}
-
-export interface ExportBundle {
-  format: 'marco-backup';
-  formatVersion: 1;
-  exportedAt: string;
-  appVersion: string;
-  config: StoredConfig;
-  secrets?: ExportSecrets;
-}
-
-export interface ImportPreview {
-  ok: boolean;
-  errors: ValidationError[];
-  fromVersion: number; // config version found (1 or 2)
-  appVersion: string | null;
-  exportedAt: string | null;
-  hasSecrets: boolean;
-  /** what importing the secrets would change in display access (null: the bundle has no links / devices) */
-  secretsImpact?: { linksChanged: string[]; devicesRemoved: string[]; devicesAdded: number } | null;
-  /** current display access mode: imports and restores always keep it */
-  displayAccess?: 'private' | 'open';
-  sections: { key: string; changed: boolean; summary: string }[];
-  screens: { added: string[]; removed: string[]; changed: string[] };
-  sources: { added: string[]; removed: string[]; changed: string[] };
-  /** enabled scheduled messages that a partial import would leave without target screens (they get disabled) */
-  orphanSchedules: { screensOnly: string[]; schedulesOnly: string[] };
-  counts: { localEvents: number; birthdays: number; eventRules: number; countdowns: number; schedules: number };
-  /** Marco Cloud: settings this server does not offer, left out of the import (absent on self-hosted servers). */
-  notes?: ImportNote[];
-  /** Marco Cloud: sections that go over a plan limit; importing one of them is refused (400 limit_exceeded). */
-  overLimit?: { section: string; path: string; max: number }[];
-}
-
-/**
- * Something an import leaves out on this server, and why:
- *   secrets            the file has secrets (they are not imported here)
- *   homeassistant      Home Assistant (and its weather) cannot be reached
- *   signIn             admin password and Google sign-in (the account signs in instead)
- *   openDisplayAccess  open display access (screens use private links and pairing)
- *   insecureTls        calendars imported with certificate checks on (items)
- *   google             Google calendars of accounts not connected here (items)
- *   microsoft          Microsoft calendars of accounts not connected here, or on a server without them (items)
- *   blockedUrl         calendars and feeds on an address this server cannot fetch (items)
- *   refreshMin         calendars refreshed every 30 minutes at most (items)
- *   news               news feeds, while this server offers no news
- *   photos             screens show the gallery: photos are not in the file
- */
-export interface ImportNote {
-  code: 'secrets' | 'homeassistant' | 'signIn' | 'openDisplayAccess' | 'insecureTls' | 'google' | 'microsoft' | 'blockedUrl' | 'refreshMin' | 'news' | 'photos';
-  items?: string[];
-}
-
-export interface ImportApplyRequest {
-  bundle: unknown;
-  includeSecrets: boolean;
-  /** top-level config keys to take from the bundle; omitted = all */
-  sections?: string[];
-}
-
-export type ActivityType =
-  | 'auth.login'
-  | 'auth.login_failed'
-  | 'auth.logout'
-  | 'auth.logout_all'
-  | 'auth.password_changed'
-  | 'auth.setup_completed'
-  | 'auth.setup_rejected'
-  | 'google.connected'
-  | 'google.removed'
-  | 'microsoft.connected'
-  | 'microsoft.removed'
-  | 'config.saved'
-  | 'config.restored'
-  | 'config.imported'
-  | 'config.exported'
-  | 'config.migrated'
-  | 'backup.created'
-  | 'backup.deleted'
-  | 'source.error'
-  | 'source.recovered'
-  | 'announce.sent'
-  | 'announce.cleared'
-  | 'token.created'
-  | 'token.revoked'
-  | 'token.used'
-  | 'token.rejected'
-  | 'display.connected'
-  | 'display.command'
-  | 'privacy.changed'
-  | 'display.link_regenerated'
-  | 'display.paired'
-  | 'display.pair_failed'
-  | 'display.device_updated'
-  | 'display.device_revoked'
-  | 'display.doorbell'
-  | 'activity.cleared'
-  | 'update.requested'
-  | 'update.finished'
-  | 'update.failed'
-  | 'update.settings';
-
-export interface ActivityEntry {
-  id: string; // sortable (time-based)
-  ts: string;
-  type: ActivityType;
-  level: 'info' | 'warn' | 'error';
-  actor: string; // email | "password" | "token:<name>" | "system" | "anonymous"
-  ip: string | null;
-  data?: Record<string, unknown>;
-}
-
-export interface ActivityResponse {
-  items: ActivityEntry[]; // newest first
-  hasMore: boolean;
-}
-
-// ---- §7 dashboard ----
-
-export interface DashboardResponse {
-  version: string;
-  /** seconds; null where there is no long-running process (Marco Cloud) */
-  uptime: number | null;
-  revision: number;
-  screens: { id: string; slug: string; name: string; isDefault: boolean; displaysOnline: number }[];
-  displays: DisplayInfo[];
-  nextEvents: CalEvent[];
-  sources: SourceStatus[];
-  /** `source` since 0.5 (Marco Cloud copies the dashboard shape, so it may be missing) */
-  weather: (WeatherCurrent & { locationName: string; updatedAt: string; min: number; max: number; source?: WeatherSource }) | null;
-  announcements: Announcement[];
-  schedulesNow: { id: string; title: string; emoji: string; screenIds: string[]; until: string }[];
-  activity: ActivityEntry[];
-  /** codes: default_password | source_errors | no_displays | outdated_displays | google_auth_failed | microsoft_auth_failed */
-  warnings: string[];
+  now: string; // server ISO time for clock synchronization
 }

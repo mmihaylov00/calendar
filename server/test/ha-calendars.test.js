@@ -11,7 +11,6 @@ import { haSettings, haGet, haUsable } from '../homeassistant.js';
 import { calendarToRaw, listCalendars, listEvents } from '../haCalendars.js';
 import { refreshSource, getEvents } from '../calendars.js';
 import { adminRouter } from '../routes/admin.js';
-import { dashboardWarnings } from '../routes/system.js';
 
 const DATE_EVENT = { summary: 'Holiday', start: { date: '2026-10-25' }, end: { date: '2026-10-27' } };
 const TIMED_EVENT = { summary: 'Lunch', start: { dateTime: '2026-10-25T10:00:00Z' }, end: { dateTime: '2026-10-25T11:00:00Z' }, location: 'Home' };
@@ -48,7 +47,7 @@ describe('Home Assistant calendar entities', () => {
 
   test('HA mode pins Supervisor credentials to the internal Core proxy without persisting them', async () => {
     assert.deepEqual(haSettings({ url: 'https://untrusted.example', token: 'other-token' }), {
-      url: 'http://supervisor/core', token: 'supervisor-secret', enabled: false,
+      url: 'http://supervisor/core', token: 'supervisor-secret', enabled: true,
     });
     response = () => Response.json({ message: 'API running.' });
     assert.deepEqual(await haGet('/api/'), { message: 'API running.' });
@@ -73,9 +72,9 @@ describe('Home Assistant calendar entities', () => {
     await assert.rejects(listCalendars(), /invalid JSON/);
   });
 
-  test('the sensor toggle controls HA overlays while calendars retain their trusted connection', async () => {
+  test('managed HA weather and calendars need no standalone connection toggle', async () => {
     store.updateConfig((cfg) => { cfg.homeassistant.enabled = false; cfg.homeassistant.url = ''; });
-    assert.equal(haUsable(), false);
+    assert.equal(haUsable(), true);
     response = () => Response.json([{ entity_id: 'calendar.family', name: 'Family' }]);
     assert.equal((await listCalendars())[0].entity_id, 'calendar.family');
     store.updateConfig((cfg) => { cfg.homeassistant.enabled = true; });
@@ -85,16 +84,6 @@ describe('Home Assistant calendar entities', () => {
     await assert.rejects(listCalendars(), /Supervisor API token is unavailable/);
   });
 
-  test('dashboard warnings omit standalone password and display-access advice in HA mode', () => {
-    const cfg = defaultConfig();
-    cfg.security.displayAccess = 'open';
-    const args = { secrets: { passwordIsDefault: true }, cfg, sources: [], displays: [] };
-    assert.deepEqual(dashboardWarnings(args), ['no_displays']);
-    process.env.MARCO_HOME_ASSISTANT = '0';
-    assert.deepEqual(dashboardWarnings(args), ['default_password', 'display_access_open', 'no_displays']);
-    args.secrets = { passwordFromEnv: true };
-    assert.deepEqual(dashboardWarnings(args), ['env_password', 'display_access_open', 'no_displays']);
-  });
 
   test('all-day dates remain exclusive dates and timed events retain their UTC instant across DST', async () => {
     const rawDate = calendarToRaw(DATE_EVENT);

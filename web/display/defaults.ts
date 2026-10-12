@@ -14,7 +14,7 @@ export const DEFAULT_CONFIG: DisplayConfig = {
   layout: { preset: 'bigCalendar', sidePanel: 'left', sideWidth: 0.36, people: null, corner: 'br' },
   background: {
     enabled: true, source: 'stock', stockTopic: 'nature', order: 'random', intervalSec: 120, brightness: 0.85, showMeta: false,
-    cover: true, transition: 'webgl', ambient: 'aurora', weatherFx: 'simple',
+    cover: true, transition: 'fade', ambient: 'none', weatherFx: 'off',
   },
   calendar: {
     enabled: true, view: 'month', weeks: 5, weekStart: 1, showLocation: false, showEndTime: false, showDayXofY: true,
@@ -30,13 +30,6 @@ export const DEFAULT_CONFIG: DisplayConfig = {
     forecastDays: 5, showHourly: true, showPrecipChance: true, haWeatherEntity: '', haIndoorTempEntity: '',
     haIndoorHumidityEntity: '',
   },
-  news: { enabled: true, rotateSec: 15 },
-  todo: { enabled: false, items: [] },
-  message: { enabled: false, text: '', emoji: '💬' },
-  // v2 (docs/ARCHITECTURE.md): per-screen widgets
-  countdowns: { enabled: true, max: 4 },
-  alerts: { enabled: true, sound: true, volume: 0.6 },
-  schedules: [],
 };
 
 function isObj(v: unknown): v is Record<string, unknown> {
@@ -71,14 +64,10 @@ export function normalizeConfig(raw: unknown): DisplayConfig {
   c.screen.fontScale = Math.min(2, Math.max(0.5, Number(c.screen.fontScale) || 1));
   c.background.intervalSec = Math.max(10, Number(c.background.intervalSec) || 120);
   c.background.brightness = Math.min(1.2, Math.max(0.1, Number(c.background.brightness) || 0.85));
-  c.news.rotateSec = Math.max(5, Number(c.news.rotateSec) || 15);
   c.weather.forecastDays = clampInt(c.weather.forecastDays, 1, 7, 5);
   if (c.screen.style !== 'modern') c.screen.style = 'classic';
   c.screen.glass = normalizeGlass(c.screen.glass);
   if (!/^#[0-9a-f]{3,8}$/i.test(c.screen.accent)) c.screen.accent = '#ff5a4e';
-  if (c.countdowns) c.countdowns.max = clampInt(c.countdowns.max, 1, 12, 4);
-  if (c.alerts) c.alerts.volume = Math.min(1, Math.max(0, Number(c.alerts.volume) || 0));
-  if (!Array.isArray(c.schedules)) c.schedules = [];
   return c;
 }
 

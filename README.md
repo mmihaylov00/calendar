@@ -2,7 +2,7 @@
 
 Personal Home Assistant fork of [mr-reb00t/marco](https://github.com/mr-reb00t/marco), maintained at [mmihaylov00/calendar](https://github.com/mmihaylov00/calendar).
 
-Calendar displays family calendars, weather, photos, local events, birthdays and Home Assistant announcements in a browser. Each screen has its own layout. This fork uses English throughout and starts without sample calendars, news feeds or demo data.
+Calendar displays calendars, a clock, weather and photo backgrounds inside Home Assistant. The control panel contains calendar connections, layout, backgrounds, weather and photos. This fork uses English throughout and starts without sample content.
 
 ## Install in Home Assistant
 
@@ -14,15 +14,15 @@ Calendar opens at `/calendar-dashboard` through Home Assistant ingress and uses 
 
 Add Google's calendar integration in Home Assistant, then choose its calendar entities under Calendar's **Calendars → Home Assistant calendars** and click **Save**. Calendar reads upcoming events through the HA API without handling Google OAuth credentials. Other HA calendars and private iCal feeds are also supported.
 
-The [connection and installation guide](DOCS.md) explains the bundled HA integration required for the native panel and per-request user authorization. Standalone deployments retain direct Google OAuth through environment configuration. Keep OAuth credentials and private iCal URLs out of this repository.
+The [connection and installation guide](DOCS.md) explains the bundled HA integration required for the native panel and per-request user authorization. Keep OAuth credentials and private iCal URLs out of this repository.
 
 ## Display
 
-Open a screen from **Connected screens** using your Home Assistant session. Use the admin preview to try layout changes before saving. The HA app does not require a separate pairing code.
+Use **Open calendar** to open the calendar with your Home Assistant session. Use the preview to try layout changes before saving.
 
 The display keeps cached data for network interruptions and refreshes when the server returns. Home Assistant authenticates access to the display and admin. See [the security policy](SECURITY.md).
 
-Useful display URL overrides include `?lite=1` for reduced graphics, `?weeks=2` for a shorter grid, `?compact=0` for normal-sized event rows, `?marquee=0` to stop scrolling titles, and `?rotate=0` to stop paging busy days. Append overrides with `&` when the URL already has a query string.
+Calendar connections and uploaded photos survive updates. Home Assistant owns authentication, app updates and backups. Old configuration fields are retained for compatibility; retired widgets and services do not run.
 
 ## Development
 

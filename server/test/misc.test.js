@@ -74,7 +74,7 @@ test('display config never leaks urls, accounts or HA entities', () => {
   assert.equal(d.homeassistant, undefined);
   assert.equal(d.auth, undefined);
   assert.deepEqual(Object.keys(d.calendar.sources[0]).sort(), ['color', 'emoji', 'id', 'kind', 'name']);
-  assert.deepEqual(d.news, { enabled: true, rotateSec: 15 });
+  assert.equal(d.news, undefined);
 });
 
 test('multipart latin1 filename recovery', async () => {

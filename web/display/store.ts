@@ -1,14 +1,12 @@
 // Minimal reactive store for the display.
-import type { CountdownsResponse, DisplayConfig, EventsResponse, NewsResponse, PhotosResponse, WeatherResponse } from '../shared/types';
+import type { DisplayConfig, EventsResponse, PhotosResponse, WeatherResponse } from '../shared/types';
 import { isPreview, screenNs } from './identity';
 
 export interface State {
   config: DisplayConfig | null;
   events: EventsResponse | null;
   weather: WeatherResponse | null;
-  news: NewsResponse | null;
   photos: PhotosResponse | null;
-  countdowns: CountdownsResponse | null;
   online: boolean;
 }
 
@@ -18,7 +16,7 @@ type Fn = (s: State) => void;
 const subs = new Map<Topic, Set<Fn>>();
 
 export const state: State = {
-  config: null, events: null, weather: null, news: null, photos: null, countdowns: null, online: true,
+  config: null, events: null, weather: null, photos: null, online: true,
 };
 
 export function set<K extends Topic>(k: K, v: State[K]): void {

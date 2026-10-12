@@ -5,9 +5,15 @@ import { isValidTimeZone } from './lib/tz.js';
 import { randomId, fold } from './lib/text.js';
 import { LANGS } from './lib/i18n.js';
 import { WEATHER_PROVIDER_IDS, OPEN_METEO_MODEL_IDS, KEY_PROVIDERS } from './weather.js';
-import { PRIVACY_MODES, MAX_PRIVACY_RULES, defaultSourcePrivacy } from './privacy.js';
-import { CAMERA_RE, DOORBELL_MIN_SEC, DOORBELL_MAX_SEC } from './doorbellCore.js';
 import { CALENDAR_ENTITY_RE } from './haCalendars.js';
+
+// Legacy fields stay valid for saved configurations; these features no longer run.
+const PRIVACY_MODES = ['busy', 'hide', 'keep'];
+const MAX_PRIVACY_RULES = 10;
+const defaultSourcePrivacy = kind => kind === 'holidays' || kind === 'birthdays' ? 'keep' : 'busy';
+const CAMERA_RE = /^camera\.[a-z0-9_]{1,200}$/;
+const DOORBELL_MIN_SEC = 10;
+const DOORBELL_MAX_SEC = 300;
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;

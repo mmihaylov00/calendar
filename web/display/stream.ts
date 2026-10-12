@@ -1,7 +1,7 @@
-// SSE client for /api/stream?screen=&client= with manual exponential-backoff reconnect (docs/ARCHITECTURE.md).
-// The per-event checks live in live.ts (dispatch), shared with the poll channel.
+// SSE client for /api/stream?screen= with manual exponential-backoff reconnect (docs/ARCHITECTURE.md).
+// The per-event checks live in live.ts (dispatch).
 import { dispatch, type StreamHandlers } from './live';
-import { clientId, credential, isPreview, screenKey } from './identity';
+import { credential, screenKey } from './identity';
 import { appUrl } from '../shared/path';
 
 export type { StreamHandlers } from './live';
@@ -9,26 +9,13 @@ export type { StreamHandlers } from './live';
 export function streamUrl(): string {
   const q = new URLSearchParams();
   if (screenKey) q.set('screen', screenKey);
-  q.set('client', clientId);
-  if (isPreview) q.set('preview', '1');
   // EventSource cannot send headers: the credential travels as ?k= (never logged by the server).
   if (credential) q.set('k', credential);
   return appUrl(`/api/stream?${q.toString()}`);
 }
 
 /** Events the stream listens for (besides `revoked` and `ping`). */
-export const STREAM_EVENTS = ['hello', 'config', 'events', 'photos', 'reload', 'announce', 'announce-clear', 'identify', 'night', 'doorbell', 'doorbell-end', 'privacy'] as const;
-
-/** Query string for GET /api/display/poll (the screen is added by api.ts; the credential travels in X-Marco-Key). */
-export function pollUrl(cursor: string, revision: number | undefined, hidden: boolean): string {
-  const q = new URLSearchParams();
-  q.set('client', clientId);
-  if (isPreview) q.set('preview', '1');
-  if (cursor) q.set('cursor', cursor);
-  if (typeof revision === 'number') q.set('rev', String(revision));
-  if (hidden) q.set('hidden', '1');
-  return q.toString();
-}
+export const STREAM_EVENTS = ['hello', 'config', 'events', 'photos', 'reload'] as const;
 
 export function connectStream(h: StreamHandlers): { close(): void } {
   let es: EventSource | null = null;

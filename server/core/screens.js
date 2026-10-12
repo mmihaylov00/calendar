@@ -1,8 +1,7 @@
 // Screen profiles (F1): resolve ?screen=, project the v2 config into the flat per-screen view that the display
 // (and the legacy single-screen code paths) understand. Pure functions. See docs/API.md and docs/ARCHITECTURE.md.
 // Mirror for the admin panel: web/shared/screens.ts (keep both in sync).
-import { SCREEN_SPLIT_KEYS, SCREEN_ONLY_KEYS, LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_ID } from './defaults.js';
-import { displayPrivacy } from './privacy.js';
+import { SCREEN_SPLIT_KEYS, SCREEN_ONLY_KEYS } from './defaults.js';
 
 /** Default screen profile (cfg.defaultScreen, falling back to the first one). */
 export function defaultScreen(cfg) {
@@ -35,68 +34,30 @@ export function flatView(cfg, screen) {
   return out;
 }
 
-/** Enabled calendar sources visible on a screen, including the built-in local/birthdays pseudo-sources. */
+/** Enabled remote calendar sources visible on a screen. */
 export function screenSourceIds(cfg, screen) {
-  const ids = [
-    ...cfg.calendar.sources.filter((s) => s.enabled).map((s) => s.id),
-    ...(cfg.localEvents.enabled ? [LOCAL_SOURCE_ID] : []),
-    ...(cfg.birthdays.enabled ? [BIRTHDAYS_SOURCE_ID] : []),
-  ];
+  const ids = cfg.calendar.sources.filter(s => s.enabled).map(s => s.id);
   if (!screen) return ids;
   if (!screen.calendar.enabled) return [];
   const only = screen.calendar.sourceIds;
-  return Array.isArray(only) ? ids.filter((id) => only.includes(id)) : ids;
+  return Array.isArray(only) ? ids.filter(id => only.includes(id)) : ids;
 }
 
-/** Public projection of every source (incl. pseudo-sources) as sent to the display legend. */
 export function publicSources(cfg, screen) {
   const visible = new Set(screenSourceIds(cfg, screen));
-  const all = [
-    ...cfg.calendar.sources.map(({ id, name, color, emoji, kind }) => ({ id, name, color, emoji, kind })),
-    { id: LOCAL_SOURCE_ID, name: cfg.localEvents.name, color: cfg.localEvents.color, emoji: cfg.localEvents.emoji, kind: 'generic' },
-    { id: BIRTHDAYS_SOURCE_ID, name: cfg.birthdays.name, color: cfg.birthdays.color, emoji: cfg.birthdays.emoji, kind: 'birthdays' },
-  ];
-  // Pseudo-sources without any item are left out of the legend.
-  const empty = new Set([
-    ...(cfg.localEvents.items.length ? [] : [LOCAL_SOURCE_ID]),
-    ...(cfg.birthdays.items.length ? [] : [BIRTHDAYS_SOURCE_ID]),
-  ]);
-  return all.filter((s) => visible.has(s.id) && !empty.has(s.id));
+  return cfg.calendar.sources.filter(s => visible.has(s.id))
+    .map(({ id, name, color, emoji, kind }) => ({ id, name, color, emoji, kind }));
 }
 
-/** Schedules (F5) that target a screen (enabled; empty screenIds = all screens). */
-export function screenSchedules(cfg, screen) {
-  return cfg.schedules.items.filter((m) => m.enabled && (!m.screenIds.length || m.screenIds.includes(screen.id)));
-}
-
-/**
- * GET /api/display/config payload for one screen (no secrets, no URLs, no HA entity ids).
- * `privacy` = { status, next } from core/privacy.js (privacyStatus, privacyNextChange); absent = not private.
- * While private with `hidePhotos`, the background only uses stock photos.
- */
-export function displayConfig(cfg, screen, { fallback = false, privacy = null } = {}) {
+/** Public config: no provider URLs, secrets, HA entity ids or retired widgets. */
+export function displayConfig(cfg, screen, { fallback = false } = {}) {
   const f = flatView(cfg, screen);
-  const priv = displayPrivacy(screen, privacy?.status, privacy?.next ?? null);
-  const background = priv.active && screen.privacy?.hidePhotos && f.background.source !== 'stock' ? { ...f.background, source: 'stock' } : f.background;
-  const { sources, sourceIds, ...cal } = f.calendar;
+  const { sources, sourceIds, ...calendar } = f.calendar;
   const { haWeatherEntity, haIndoorTempEntity, haIndoorHumidityEntity, ...weather } = f.weather;
   return {
-    revision: cfg.revision,
-    screenId: screen.id,
-    slug: screen.slug,
-    screenFallback: fallback,
-    screen: f.screen,
-    layout: f.layout,
-    background,
-    calendar: { ...cal, sources: publicSources(cfg, screen) },
-    datetime: f.datetime,
-    weather,
-    news: { enabled: f.news.enabled, rotateSec: f.news.rotateSec },
-    todo: { enabled: f.todo.enabled, items: f.todo.items },
-    message: f.message,
-    countdowns: { enabled: f.countdowns.enabled, max: f.countdowns.max },
-    alerts: f.alerts,
-    schedules: screenSchedules(cfg, screen).map(({ screenIds, ...m }) => m),
-    privacy: priv,
+    revision: cfg.revision, screenId: screen.id, slug: screen.slug, screenFallback: fallback,
+    screen: f.screen, layout: f.layout, background: f.background,
+    calendar: { ...calendar, sources: publicSources(cfg, screen) },
+    datetime: f.datetime, weather,
   };
 }

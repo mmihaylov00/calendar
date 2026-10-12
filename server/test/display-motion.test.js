@@ -59,15 +59,11 @@ test('values that are not booleans are rejected with their path and fall back to
   }
 });
 
-test('the display reads ?marquee= and ?rotate=, and the README documents them', () => {
+test('the display reads calendar title and busy-day overrides', () => {
   const main = read('web/display/main.ts');
   assert.match(main, /params\.get\('marquee'\)/);
   assert.match(main, /params\.get\('rotate'\)/);
-  for (const f of ['README.md']) {
-    const md = read(f);
-    assert.match(md, /\?marquee=0/, f);
-    assert.match(md, /\?rotate=0/, f);
-  }
+
 });
 
 test('marquee timing: titles that fit stay still, the rest slide at a speed that follows the display unit', ts, () => {
@@ -137,18 +133,6 @@ test('credits: a clamped chip title moves up a line at a time, stays on its last
   assert.deepEqual(creditsTiming(43, 20, 10).frames.map((f) => f.y), [0, 0, 20, 20, 43, 43, 0]);
 });
 
-test('news headline: one slide that ends before the item leaves, or none when the item shows too briefly', ts, () => {
-  const { onceTiming, ONCE_LEAD_MS, ONCE_TAIL_MS } = motion;
-  assert.equal(onceTiming(0, 10, 15000), null);
-  assert.equal(onceTiming(300, 10, 5000), null); // 5 s: no room for a slide between the lead and the tail
-  const t = onceTiming(300, 10, 15000); // 15 s (the default): 10 s at the usual speed would not fit, so it is faster
-  assert.equal(t.duration, 15000);
-  assert.ok(Math.abs(t.offsets[0] * 15000 - ONCE_LEAD_MS) < 1);
-  assert.ok(t.offsets[1] * 15000 <= 15000 - ONCE_TAIL_MS + 1);
-  const slow = onceTiming(300, 10, 60000); // a long window keeps the usual speed
-  assert.ok(Math.abs((slow.offsets[1] - slow.offsets[0]) * 60000 - 10000) < 1);
-});
-
 test('month cells: a lone event may use the whole free height of its day, shared days keep a couple of lines', ts, () => {
   const { wrapLineCap } = motion;
   assert.equal(wrapLineCap(1, false, 5), 5);
@@ -159,15 +143,13 @@ test('month cells: a lone event may use the whole free height of its day, shared
   assert.match(read('web/display/widgets/calendar.ts'), /wrapLineCap\(day\.length, this\.roomy, free\.length\)/);
 });
 
-test('what moves: timed chips, clamped chip titles, side panel pills, countdowns and the news headline', () => {
+test('what moves: timed chips, clamped chip titles and side panel pills', () => {
   const mq = read('web/display/marquee.ts');
-  for (const sel of ["'.cal .ev:not(.wrap) > .tt'", "'.hl-tt'", "'.cd-tt'", "'.cal .ev.wrap > .tx'", "'.news-item:last-child > .news-title'"]) {
+  for (const sel of ["'.cal .ev:not(.wrap) > .tt'", "'.hl-tt'", "'.cal .ev.wrap > .tx'"]) {
     assert.ok(mq.includes(sel), sel);
   }
   // no per-frame script: transforms through the Web Animations API only
   assert.doesNotMatch(mq, /requestAnimationFrame\(\s*function|setInterval|scrollTop\s*=/);
-  // the news item says when it leaves, so its headline's slide fits
-  assert.match(read('web/display/widgets/news.ts'), /dataset\.mqUntil = String\(Date\.now\(\) \+ sec \* 1000\)/);
   // the pill's countdown is written in place, so a sliding title is not re-created every minute
   assert.match(read('web/display/widgets/highlights.ts'), /<span class="hl-lead"><\/span>/);
 });

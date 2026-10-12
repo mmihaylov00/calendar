@@ -1,17 +1,11 @@
-// The pure modules in server/core on their own: image headers (with fuzzing), file names, pairing codes, hashing,
-// announcements, feed parsing and the activity helpers.
+// Pure image metadata, file names and calendar hashing.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { imageInfo, imageHeaderNeed, exifOrientation, sniffImage, sanitizeFilename, isGalleryFile, uploadName, baseName, extName } from '../core/imageInfo.js';
-import { CODE_ALPHABET, CODE_LENGTH, randomCode, normalizeCode } from '../core/pairCore.js';
 import { hash, sha1Hex, randomId } from '../core/lib/text.js';
 import { hash as nodeHash } from '../lib/text.js';
-import { sanitizeAnnounce, makeAnnouncement, splitExpired, activeFor, alertsFilter, ACTIVE_MAX } from '../core/announceCore.js';
-import { parseFeed, MAX_FEED_ITEMS } from '../core/newsParse.js';
-import { changedSections, redactSecrets, capData, MAX_DATA_CHARS } from '../core/activityCore.js';
-import { makeBundle, parseImport, mergeImport } from '../core/backupsCore.js';
 import { defaultConfig, DEFAULT_ICON_RULES } from '../core/defaults.js';
 import ICON_RULES from '../core/iconRules.js';
 
@@ -200,30 +194,6 @@ test('file names: same results as node:path for baseName, extName and the saniti
   for (const n of ['../x.jpg', 'a/b.jpg', '.x.jpg', 'a.svg', '', null]) assert.equal(isGalleryFile(n), false);
 });
 
-test('pairCore: codes use the alphabet, any length, unbiased rejection, normalisation', () => {
-  assert.equal(CODE_LENGTH, 6);
-  assert.equal(CODE_ALPHABET.length, 31);
-  for (const len of [6, 8]) {
-    for (let i = 0; i < 200; i++) {
-      const c = randomCode(len);
-      assert.equal(c.length, len);
-      assert.ok([...c].every((ch) => CODE_ALPHABET.includes(ch)));
-      assert.equal(normalizeCode(c.toLowerCase(), len), c);
-    }
-  }
-  // Bytes from 248 up are skipped (248 = 8 × 31), so each symbol is equally likely.
-  const fed = [255, 248, 0, 31, 30, 247, 249, 62];
-  let k = 0;
-  const code = randomCode(5, (n) => Uint8Array.from({ length: n }, () => fed[k++ % fed.length]));
-  assert.equal(code, [0, 31, 30, 247, 62].map((b) => CODE_ALPHABET[b % 31]).join(''));
-  assert.equal(normalizeCode('abc-234'), 'ABC234');
-  assert.equal(normalizeCode('ab c-23 4'), 'ABC234');
-  assert.equal(normalizeCode('ABCD2345', 8), 'ABCD2345');
-  assert.equal(normalizeCode('ABCD2345'), null);
-  assert.equal(normalizeCode('ABC1O0'), null);
-  assert.equal(normalizeCode(123456), null);
-});
-
 test('text: the pure SHA-1 matches node:crypto, randomId has the old format', () => {
   const rand = rng(99);
   const inputs = ['', 'a', 'abc', 'é漢🎉', ...[55, 56, 63, 64, 65, 119, 120, 1000].map((n) => 'x'.repeat(n))];
@@ -242,70 +212,4 @@ test('icon rules: one list for server, admin and display', () => {
   assert.deepEqual(DEFAULT_ICON_RULES, ICON_RULES.map((r) => ({ id: r.id, match: r.match, emoji: r.emoji, color: null })));
   assert.deepEqual(defaultConfig().calendar.iconRules, DEFAULT_ICON_RULES);
   assert.equal(new Set(ICON_RULES.map((r) => r.id)).size, ICON_RULES.length);
-});
-
-test('announceCore: validation (emoji rule from validate.js), record, expiry, targeting, alerts filter', () => {
-  const resolve = (keys) => (keys === undefined ? { ids: [] } : { ids: keys });
-  const ok = sanitizeAnnounce({ title: ' Hola ', emoji: ' 🍽️ ', screens: ['s1'] }, resolve);
-  assert.equal(ok.ok, true);
-  assert.deepEqual(ok.value, { title: 'Hola', body: '', emoji: '🍽️', style: 'info', durationSec: 30, sound: false, screenIds: ['s1'] });
-  const bad = sanitizeAnnounce({ title: 'x', emoji: 'e'.repeat(17) }, resolve);
-  assert.deepEqual(bad.details, [{ path: 'emoji', message: 'too long (max 16)' }]);
-  assert.deepEqual(sanitizeAnnounce({ title: 'x', emoji: 5 }, resolve).details, [{ path: 'emoji', message: 'expected string' }]);
-
-  const now = new Date('2026-01-01T10:00:00Z');
-  const a = makeAnnouncement({ ...ok.value, durationSec: 60 }, { via: 'hook', by: 'token:x'.padEnd(200, 'y'), now, id: 'a_1' });
-  assert.equal(a.expiresAt, '2026-01-01T10:01:00.000Z');
-  assert.equal(a.by.length, 120);
-  assert.match(makeAnnouncement(ok.value, { via: 'admin', by: 'a' }).id, /^a_[0-9a-f]{12}$/);
-  const all = makeAnnouncement({ ...ok.value, screenIds: [] }, { via: 'admin', by: 'a', now, id: 'a_2' });
-  const t = now.getTime();
-  assert.deepEqual(activeFor([a, all], 's1', t).map((x) => x.id), ['a_1', 'a_2']);
-  assert.deepEqual(activeFor([a, all], 's2', t).map((x) => x.id), ['a_2']);
-  assert.deepEqual(activeFor([a, all], 's1', t + 60_000), []);
-  const sp = splitExpired([a, { ...all, expiresAt: '2026-01-01T09:00:00Z' }], t);
-  assert.deepEqual([sp.keep.map((x) => x.id), sp.expired.map((x) => x.id)], [['a_1'], ['a_2']]);
-  const cfg = { screens: [{ id: 's1', alerts: { enabled: false } }, { id: 's2', alerts: { enabled: true } }] };
-  const f = alertsFilter(cfg);
-  assert.deepEqual(['s1', 's2', 'unknown'].map((screenId) => f({ screenId })), [false, true, true]);
-  assert.equal(ACTIVE_MAX, 50);
-});
-
-test('newsParse: item cap applied before mapping, no entity expansion', () => {
-  const items = Array.from({ length: 300 }, (_, i) => `<item><title>Item ${i}</title><guid>g${i}</guid></item>`).join('');
-  const xml = `<rss><channel><title>Big</title>${items}</channel></rss>`;
-  assert.equal(parseFeed(xml).items.length, MAX_FEED_ITEMS);
-  assert.deepEqual(parseFeed(xml, '', { maxItems: 3 }).items.map((i) => i.title), ['Item 0', 'Item 1', 'Item 2']);
-  assert.equal(parseFeed(xml, '', { maxItems: 0 }).items.length, 0);
-  // "Billion laughs": entities stay unexpanded and parsing is instant.
-  let ents = '<!ENTITY lol "lol">';
-  for (let i = 1; i < 10; i++) ents += `<!ENTITY lol${i} "${`&lol${i === 1 ? '' : i - 1};`.repeat(10)}">`;
-  const bomb = `<?xml version="1.0"?><!DOCTYPE rss [${ents}]><rss><channel><title>&lol9;</title><item><title>A &lol9; B</title></item></channel></rss>`;
-  const started = Date.now();
-  const f = parseFeed(bomb);
-  assert.ok(Date.now() - started < 500);
-  assert.ok(f.items[0].title.length < 50, f.items[0].title);
-  assert.ok(!f.items[0].title.includes('lollol'));
-});
-
-test('activityCore: redaction, data cap, changed sections', () => {
-  assert.equal(redactSecrets('GET /d/abc123?k=secret&x=1'), 'GET /d/[redacted]?k=[redacted]&x=1');
-  assert.deepEqual(capData({ url: '/d/0123456789abcdef' }), { url: '/d/[redacted]' });
-  const big = capData({ s: 'x'.repeat(MAX_DATA_CHARS + 10) });
-  assert.equal(big.truncated, true);
-  assert.equal(big.preview.length, 300);
-  const cyclic = {}; cyclic.self = cyclic;
-  assert.deepEqual(capData(cyclic), { truncated: true });
-  assert.deepEqual(changedSections(null, {}), ['*']);
-});
-
-test('backupsCore: bundle → parse → merge round trip without files', () => {
-  const cfg = defaultConfig();
-  const bundle = makeBundle(cfg, { appVersion: '0.0.0', now: new Date('2026-01-01T00:00:00Z') });
-  assert.equal(bundle.format, 'marco-backup');
-  assert.equal(bundle.secrets, undefined);
-  const p = parseImport(JSON.parse(JSON.stringify(bundle)));
-  assert.equal(p.ok, true, JSON.stringify(p.errors));
-  const merged = mergeImport({ ...cfg, revision: 7 }, p.value, ['news']);
-  assert.equal(merged.revision, 7);
 });

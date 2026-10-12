@@ -1,5 +1,4 @@
-// GET /api/admin/geocode: place search through the server (Open-Meteo mocked), for a signed-in admin and for the
-// setup wizard before the first password (setup token rules), with its rate limit and cache.
+// Authenticated weather place search, rate limiting and cache with Open-Meteo mocked.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,7 +9,6 @@ import * as store from '../store.js';
 import { defaultConfig } from '../core/defaults.js';
 import { sessionMiddleware, csrfGuard, ensurePassword, loginHandler } from '../auth.js';
 import { adminRouter } from '../routes/admin.js';
-import { setupRouter, setupToken, _resetSetup } from '../setup.js';
 import { geocodeRouter, geocode, mapGeocode, _resetGeocode, GEOCODE_LIMIT, GEOCODE_URL } from '../geocode.js';
 import { createApp } from '../app.js';
 import { closeAll } from '../sse.js';
@@ -50,16 +48,14 @@ async function withApp(fn, { secrets = {}, env = {}, fetchJson = fakeFetch() } =
     else process.env[k] = v;
   }
   store.initStore(dir);
-  _resetSetup();
   _resetGeocode();
   await ensurePassword();
   const app = express();
   app.set('trust proxy', true);
   app.use(sessionMiddleware());
   app.use(express.json());
-  app.use(['/api/admin', '/api/auth', '/api/setup'], csrfGuard());
+  app.use(['/api/admin', '/api/auth'], csrfGuard());
   app.post('/api/auth/login', (req, res, next) => loginHandler(req, res).catch(next));
-  app.use('/api/setup', setupRouter({ version: '9.9.9' }));
   app.use('/api/admin', geocodeRouter({ fetchJson }));
   app.use('/api/admin', adminRouter());
   const server = await new Promise((resolve) => { const s = app.listen(0, '127.0.0.1', () => resolve(s)); });
@@ -92,8 +88,7 @@ async function withApp(fn, { secrets = {}, env = {}, fetchJson = fakeFetch() } =
       if (v === undefined) delete process.env[k];
       else process.env[k] = v;
     }
-    _resetSetup();
-    _resetGeocode();
+      _resetGeocode();
     fs.rmSync(dir, { recursive: true, force: true });
   }
 }
@@ -141,35 +136,6 @@ test('geocode with an admin session: query, language, cache, short queries, upst
     assert.equal(r.status, 502);
     assert.equal(r.json.error, 'geocode_unavailable');
   }, { secrets: { passwordHash: hash, sessionEpoch: 'e1' }, fetchJson: fakeFetch(new Error('offline')) });
-});
-
-test('geocode during setup: LAN without token, remote needs the setup token, closed once set up', async () => {
-  await withApp(async ({ call, fetchJson }) => {
-    // LAN client, no token required
-    assert.equal((await call('GET', '/api/admin/geocode?q=porto&lang=es')).status, 200);
-    // remote client: token required, wrong token refused, right token accepted
-    const remote = { ip: '203.0.113.9' };
-    const miss = await call('GET', '/api/admin/geocode?q=lisboa&lang=es', undefined, remote);
-    assert.equal(miss.status, 403);
-    assert.equal(miss.json.code, 'token_required');
-    assert.equal((await call('GET', '/api/admin/geocode?q=lisboa&lang=es', undefined, { ...remote, headers: { 'x-setup-token': 'nope' } })).json.code, 'invalid_token');
-    const ok = await call('GET', '/api/admin/geocode?q=lisboa&lang=es', undefined, { ...remote, headers: { 'x-setup-token': setupToken() } });
-    assert.equal(ok.status, 200);
-    assert.equal(fetchJson.urls.length, 2);
-    // the wizard completes: the place search now needs a session
-    assert.equal((await call('POST', '/api/setup/complete', {
-      password: GOOD, passwordConfirm: GOOD, language: 'en', screenName: 'Cocina', units: 'metric', format24: true, calendars: [],
-    })).status, 200);
-    assert.equal((await call('GET', '/api/admin/geocode?q=madrid&lang=es')).status, 200, 'the wizard signed this browser in');
-    const other = await call('GET', '/api/admin/geocode?q=madrid&lang=es', undefined, { headers: { cookie: '', 'x-setup-token': setupToken() } });
-    assert.equal(other.status, 401, 'no session once set up, setup token or not');
-  });
-
-  await withApp(async ({ call }) => {
-    // SETUP_TOKEN set: even LAN clients need it
-    assert.equal((await call('GET', '/api/admin/geocode?q=porto&lang=es')).status, 403);
-    assert.equal((await call('GET', '/api/admin/geocode?q=porto&lang=es', undefined, { headers: { 'x-setup-token': 'a-long-setup-token-1234' } })).status, 200);
-  }, { env: { SETUP_TOKEN: 'a-long-setup-token-1234' } });
 });
 
 test('geocode is rate limited per address; cached answers are free', async () => {

@@ -13,20 +13,17 @@
 // headers are impossible). A credential always decides the screen (?screen= is ignored), so a key for the kitchen
 // never reads the living room. Comparisons are constant-time (sha256 digests + timingSafeEqual over every entry).
 import crypto from 'node:crypto';
-import { getConfig, getSecrets, updateSecrets, flushSecrets } from './store.js';
+import { getConfig, getSecrets, flushSecrets } from './store.js';
 import { sessionValid, isLanClient, authEvents, SESSION_MAX_AGE } from './auth.js';
 import { listClients, dropClient } from './sse.js';
-import { listPollers, dropPollers } from './pollHub.js';
-import { logActivity } from './activity.js';
 import { resolveScreen } from './core/screens.js';
+import { homeAssistantUser } from './ingress.js';
 
 export const KEY_HEADER = 'x-marco-key';
 /** Display key: a random UUIDv4 (122 random bits), lower-case. Upper-case input is accepted. */
 export const KEY_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 /** Paired-device token: md_ + base64url(32 random bytes). */
 export const DEVICE_TOKEN_RE = /^md_[A-Za-z0-9_-]{43}$/;
-export const MAX_DEVICES = 50;
-const LAST_SEEN_FLUSH_MS = 5 * 60_000;
 
 const sha = (s) => crypto.createHash('sha256').update(String(s)).digest();
 
@@ -71,14 +68,6 @@ export function displayKeyFor(screenId) {
   return keys()[screenId]?.key || null;
 }
 
-/** DisplayLink[] for the admin: one private link per saved screen. */
-export function listDisplayLinks() {
-  const cfg = getConfig();
-  syncDisplayKeys(cfg);
-  const k = keys();
-  return cfg.screens.map((s) => ({ screenId: s.id, slug: s.slug, name: s.name, key: k[s.id].key, path: `/d/${k[s.id].key}`, createdAt: k[s.id].createdAt }));
-}
-
 /** Screen id for a presented key, or null. Constant-time over every stored key. */
 export function screenForKey(key) {
   const given = typeof key === 'string' ? key.trim().toLowerCase() : '';
@@ -120,12 +109,13 @@ export function credentialOf(req, { allowQuery = false } = {}) {
  * session, so a display opened with a revoked link shows "link no longer valid" instead of silently falling back.
  */
 export function resolveDisplayAccess(req, { allowQuery = false } = {}) {
+  // Ingress has already verified the HA role. Stale standalone keys must not override its login.
+  if (homeAssistantUser(req)) return { ok: true, via: 'session' };
   const cred = credentialOf(req, { allowQuery });
   if (cred) {
     if (cred.startsWith('md_')) {
       const d = deviceForToken(cred);
       if (d) {
-        touchDevice(d, req);
         return { ok: true, via: 'device', screenId: d.screenId, device: d, credHash: d.hash };
       }
     } else {
@@ -140,7 +130,7 @@ export function resolveDisplayAccess(req, { allowQuery = false } = {}) {
 }
 
 const ERRORS = {
-  key_required: 'display key required: open this screen\'s private link (/d/<key>) or pair it from the admin',
+  key_required: 'authentication required: open Calendar through Home Assistant',
   invalid_key: 'this display link or device is no longer valid',
 };
 
@@ -180,111 +170,8 @@ export function mediaAuth(req, res, next) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// Admin operations
-
-/** Replace a screen's key (the old private link stops working at once). Returns the new key or null. */
-export function regenerateKey(screenId, { req } = {}) {
-  const cfg = getConfig();
-  const screen = cfg.screens.find((s) => s.id === screenId);
-  if (!screen) return null;
-  const k = newKey();
-  updateSecrets((s) => {
-    if (!s.displayKeys || typeof s.displayKeys !== 'object') s.displayKeys = {};
-    s.displayKeys[screenId] = k;
-  });
-  const n = kickClients((c) => c.access?.via === 'key' && c.access.screenId === screenId, 'invalid_key');
-  logActivity('display.link_regenerated', { req, level: 'warn', data: { screen: screen.slug, disconnected: n } });
-  return k.key;
-}
-
-const deviceInfo = (d, cfg = getConfig()) => {
-  const s = cfg.screens.find((x) => x.id === d.screenId);
-  const live = [...listClients(), ...listPollers()].filter((c) => c.access?.deviceId === d.id && !c.preview);
-  return {
-    id: d.id, name: d.name, prefix: d.prefix, screenId: d.screenId, screenSlug: s?.slug || '', screenName: s?.name || '',
-    createdAt: d.createdAt, lastSeenAt: d.lastSeenAt ?? null, lastIp: d.lastIp ?? null, userAgent: d.userAgent ?? '',
-    connected: live.length > 0, clientIds: [...new Set(live.filter((c) => !c.anonymous).map((c) => c.clientId))],
-  };
-};
-
-/** Name of a paired device (null when revoked). */
-export const deviceName = (id) => devices().find((d) => d.id === id)?.name ?? null;
-
-/** PairedDevice[] (no hashes), newest first. */
-export function listDevices() {
-  const cfg = getConfig();
-  return devices().map((d) => deviceInfo(d, cfg)).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-}
-
-const cleanName = (v) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60) : '');
-
-/** Create a paired device bound to `screenId`. Returns { token, device } or { error, status }. */
-export function createDevice({ name, screenId, ip, userAgent }, { req } = {}) {
-  const cfg = getConfig();
-  const screen = cfg.screens.find((s) => s.id === screenId);
-  if (!screen) return { error: 'unknown screen', status: 400 };
-  if (devices().length >= MAX_DEVICES) return { error: `max ${MAX_DEVICES} paired devices: revoke one first`, status: 409 };
-  const token = `md_${crypto.randomBytes(32).toString('base64url')}`;
-  const d = {
-    id: `dv_${crypto.randomBytes(6).toString('hex')}`,
-    name: cleanName(name) || screen.name,
-    screenId,
-    hash: sha(token).toString('hex'),
-    prefix: token.slice(0, 7),
-    createdAt: new Date().toISOString(),
-    lastSeenAt: null,
-    lastIp: ip ? String(ip).slice(0, 64) : null,
-    userAgent: String(userAgent || '').slice(0, 300),
-  };
-  updateSecrets((s) => {
-    if (!Array.isArray(s.devices)) s.devices = [];
-    s.devices.push(d);
-  });
-  logActivity('display.paired', { req, level: 'warn', data: { id: d.id, name: d.name, screen: screen.slug } });
-  return { token, device: deviceInfo(d, cfg) };
-}
-
-/** Rename / move a device. Returns the device info or { error, status }. */
-export function updateDevice(id, body, { req } = {}) {
-  const d = devices().find((x) => x.id === id);
-  if (!d) return { error: 'not found', status: 404 };
-  const patch = {};
-  if (body?.name !== undefined) {
-    const n = cleanName(body.name);
-    if (!n) return { error: 'name must be 1-60 characters', status: 400 };
-    patch.name = n;
-  }
-  if (body?.screenId !== undefined) {
-    if (!getConfig().screens.some((s) => s.id === body.screenId)) return { error: 'unknown screen', status: 400 };
-    patch.screenId = body.screenId;
-  }
-  const before = { name: d.name, screenId: d.screenId };
-  updateSecrets(() => Object.assign(d, patch));
-  if (patch.screenId && patch.screenId !== before.screenId) {
-    // A stream is bound to the screen it opened with: close this device's streams ('reload' first) so they
-    // reconnect with the new binding: a client that ignores 'reload' must not keep the old screen's events.
-    for (const c of listClients()) if (c.access?.deviceId === d.id) dropClient(c, { event: 'reload', data: {} });
-  }
-  logActivity('display.device_updated', { req, data: { id: d.id, name: d.name, ...(patch.name && patch.name !== before.name ? { from: before.name } : {}) } });
-  return { device: deviceInfo(d) };
-}
-
-/** Revoke a device (its token stops working; connected streams switch to the "no longer valid" screen). */
-export function revokeDevice(id, { req } = {}) {
-  const d = devices().find((x) => x.id === id);
-  if (!d) return false;
-  updateSecrets((s) => { s.devices = s.devices.filter((x) => x.id !== id); });
-  const n = kickClients((c) => c.access?.deviceId === id, 'invalid_key');
-  logActivity('display.device_revoked', { req, level: 'warn', data: { id: d.id, name: d.name, disconnected: n } });
-  return true;
-}
-
-/**
- * Send `revoked` to matching SSE clients and close their streams. Matching pollers stop counting as connected (their
- * next poll gets 401 / 403). Returns how many streams were closed.
- */
+/** Revoke matching live responses immediately. */
 export function kickClients(filter, code) {
-  dropPollers(filter);
   let n = 0;
   for (const c of listClients()) {
     if (!filter(c)) continue;
@@ -295,12 +182,12 @@ export function kickClients(filter, code) {
   return n;
 }
 
-const sameHash = (hex, buf) => /^[a-f0-9]{64}$/.test(hex || '') && crypto.timingSafeEqual(Buffer.from(hex, 'hex'), buf);
+const sameHash = (hex, buf) => /^[a-f0-9]{64}$/.test(hex || '') && buf.length === 32 && crypto.timingSafeEqual(Buffer.from(hex, 'hex'), buf);
 
 /**
  * Re-check the credential of every open stream against the current config + secrets, and close the ones that no
  * longer resolve to the same screen. Called after config saves, imports, session revocation and every heartbeat,
- * so no path that changes keys, devices, sessions or the access mode can leave a stream reading:
+ * so changed credentials cannot leave a stream reading:
  *   key:     the screen's current key must still be the one the stream opened with ('invalid_key')
  *   device:  the device must still exist ('invalid_key'); moved to another screen → 'reload' + close
  *   session: the admin session must still be valid (epoch, login method) ('key_required')
@@ -338,25 +225,19 @@ export function revalidateStreams(cfg = getConfig()) {
     if (code === 'reload') { dropClient(c, { event: 'reload', data: {} }); n++; }
     else if (code) { dropClient(c, { event: 'revoked', data: { code } }); n++; }
   }
-  // Pollers re-check on every poll; a moved device finds its new screen there. The others stop counting as connected.
-  dropPollers((p) => {
-    if (!p.access) return false;
-    const code = check(p.access, p.at);
-    return code !== null && code !== 'reload';
-  });
   return n;
 }
 
 // Logging out everywhere / changing the password closes admin-session streams at once; a plain logout closes the
 // streams opened by that browser login.
-authEvents.on('revoked', () => { try { revalidateStreams(); } catch (err) { console.warn('[displays] revalidate:', err.message); } });
+authEvents.on('revoked', () => { try { revalidateStreams(); } catch (err) { console.warn('[access] revalidate:', err.message); } });
 authEvents.on('logout', (sid) => {
   kickClients((c) => c.access?.via === 'session' && c.access.sid && c.access.sid === sid, 'key_required');
 });
 
 /**
  * Config saved: keep keys in step with the screens, then re-check every stream: switching to private disconnects
- * the displays that were reading without a key (they show the pairing screen); deleted screens drop their links'
+ * responses that were reading without a key; deleted screens drop their links'
  * streams; a disabled login method closes its admin-session streams.
  */
 export function onDisplayAccessConfig(cfg) {
@@ -364,23 +245,6 @@ export function onDisplayAccessConfig(cfg) {
     syncDisplayKeys(cfg);
     revalidateStreams(cfg);
   } catch (err) {
-    console.warn('[displays] access sync failed:', err.message);
+    console.warn('[access] access sync failed:', err.message);
   }
 }
-
-// last-seen bookkeeping for devices (memory; secrets.json written at most every 5 minutes per device)
-const lastFlush = new Map(); // device id → ms
-function touchDevice(d, req) {
-  const now = Date.now();
-  d.lastSeenAt = new Date(now).toISOString();
-  if (req?.ip) d.lastIp = String(req.ip).slice(0, 64);
-  const ua = req?.get?.('user-agent');
-  if (ua) d.userAgent = String(ua).slice(0, 300);
-  if (now - (lastFlush.get(d.id) || 0) > LAST_SEEN_FLUSH_MS) {
-    lastFlush.set(d.id, now);
-    try { flushSecrets(); } catch { /* ignore */ }
-  }
-}
-
-/** Tests only. */
-export const _resetDisplayAccess = () => lastFlush.clear();

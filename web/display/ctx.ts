@@ -17,7 +17,7 @@ const params = new URLSearchParams(location.search);
 export const ctx: Ctx = {
   cfg: DEFAULT_CONFIG,
   lang: 'en',
-  tz: 'Europe/Lisbon',
+  tz: 'Europe/Sofia',
   t: makeT('en'),
   lite: params.get('lite') === '1',
   params,
@@ -27,5 +27,5 @@ export function setCtxConfig(cfg: DisplayConfig): void {
   ctx.cfg = cfg;
   ctx.lang = normLang(params.get('lang') || cfg.screen.language);
   ctx.t = makeT(ctx.lang);
-  ctx.tz = cfg.datetime.timezone || 'Europe/Lisbon';
+  ctx.tz = cfg.datetime.timezone || 'Europe/Sofia';
 }

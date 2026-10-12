@@ -1,10 +1,9 @@
 // Background refresher: keeps calendar sources fresh (respecting refreshMin) and broadcasts SSE `events`
-// when the merged events (default window) change. Also pre-warms weather/news caches.
+// when the merged events (default window) change. Also pre-warms weather caches.
 import { getConfig } from './store.js';
 import { refreshAll, getEvents, defaultWindow } from './calendars.js';
 import { getWeather } from './weather.js';
-import { getNews } from './news.js';
-import { publish } from './pollHub.js';
+import { broadcast } from './sse.js';
 
 let timer = null;
 let running = null;
@@ -26,14 +25,13 @@ export function runRefresh() {
       const win = defaultWindow(cfg.datetime.timezone);
       const { hash } = await getEvents(win);
       // Hash changes on data changes and on day rollover (window moves)
-      if (lastHash !== null && (hash !== lastHash || win.from !== lastDay)) publish('events', { hash });
+      if (lastHash !== null && (hash !== lastHash || win.from !== lastDay)) broadcast('events', { hash });
       lastHash = hash;
       lastDay = win.from;
       // Pre-warm the weather cache for every language used by a screen that shows weather.
       for (const lang of new Set(cfg.screens.filter((s) => s.weather.enabled).map((s) => s.screen.language))) {
         getWeather({ lang }).catch(() => {});
       }
-      if (cfg.screens.some((s) => s.news.enabled)) getNews().catch(() => {});
     } catch (err) {
       console.warn('[refresher]', err.message);
     } finally {

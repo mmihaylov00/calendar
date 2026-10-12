@@ -1,14 +1,11 @@
 // Photo rotation controller: preloads + decodes the next image before showing it, then hands it to the
-// WebGL photo layer (shader transition) or to the CSS cross-fade fallback.
+// CSS cross-fade.
 import { coverPosition, coverWindow, freeBand, type PhotoFrame } from '../../shared/focus';
 import type { PhotoStats } from '../../shared/glass';
 import type { Photo } from '../../shared/types';
 import { ctx } from '../ctx';
 import { el, esc, reducedMotion } from '../dom';
 import { mediaUrl } from '../identity';
-import type { PhotoLayer } from '../gl/photoLayer';
-
-const MAX_TEX = 2560;
 
 /** set once the first photo's tone has been applied (see measureTone) */
 let toneSeen = false;
@@ -18,20 +15,19 @@ export class Photos {
   private idx = -1;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private loading = false;
-  private glLayer: PhotoLayer | null = null;
+  private stopped = false;
   private domCur: HTMLElement | null = null;
   private meta: HTMLElement;
-  private failures = 0;
   private shownFile = '';
   private lastGallery = '';
   /** Called when the batch has been shown completely; may replace the list (awaited before wrapping around). */
   onExhausted: (() => Promise<void> | void) | null = null;
-  /** Free band of the photo panel (not covered by clock / weather card / side widgets); reported in heartbeats. */
+  /** Free band of the photo panel, used to keep the subject clear of the clock and weather. */
   frame: PhotoFrame | null = null;
-  onFrameChange: (() => void) | null = null;
 
   constructor(private area: HTMLElement, metaEl: HTMLElement) {
     this.meta = metaEl;
+    this.area.classList.add('dom');
   }
 
   /** Gallery file on screen right now ('' for stock photos). */
@@ -44,35 +40,23 @@ export class Photos {
     return this.lastGallery;
   }
 
-  /** Switch between WebGL and DOM rendering (e.g. after context loss). */
-  setGL(layer: PhotoLayer | null): void {
-    this.glLayer = layer;
-    if (layer) layer.targetY = this.frame?.targetY ?? 0.5;
-    this.area.classList.toggle('dom', !this.usingGL);
-    // WebGL became available after a photo was already shown via the DOM: hand it over.
-    if (layer && this.usingGL && this.idx >= 0) this.showCurrentAgain();
-  }
-
-  get usingGL(): boolean {
-    const tr = ctx.cfg.background.transition;
-    return !!this.glLayer && tr === 'webgl';
-  }
-
   applyConfig(): void {
     const b = ctx.cfg.background;
-    const gl = this.usingGL;
-    this.area.classList.toggle('dom', !gl);
     this.area.style.setProperty('--photo-bright', String(b.brightness));
-    if (this.glLayer) {
-      this.glLayer.enabled = gl && b.enabled;
-      this.glLayer.brightness = b.brightness;
-      this.glLayer.interval = b.intervalSec;
-      this.glLayer.cover = b.cover;
-    }
-    if (!gl && !this.domCur && this.idx >= 0) this.showCurrentAgain();
+    if (!this.domCur && this.idx >= 0) this.showCurrentAgain();
     this.area.style.display = b.enabled ? '' : 'none';
     this.reframe();
     this.schedule();
+  }
+
+  stop(): void {
+    this.stopped = true;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+    this.list = [];
+    this.domCur?.remove();
+    this.domCur = null;
+    this.meta.style.display = 'none';
   }
 
   setList(photos: Photo[]): void {
@@ -104,10 +88,8 @@ export class Photos {
       JSON.stringify(f.blocks) !== JSON.stringify(prev.blocks)));
     if (!changed) return;
     this.frame = f;
-    if (this.glLayer) this.glLayer.targetY = f?.targetY ?? 0.5;
     const n = this.domCur as (HTMLElement & { _ph?: { w: number; h: number; p: Photo } }) | null;
     if (n?._ph) this.frameDom(n, n._ph.w, n._ph.h, n._ph.p);
-    this.onFrameChange?.();
   }
 
   private measure(): PhotoFrame | null {
@@ -149,11 +131,11 @@ export class Photos {
 
   private schedule(): void {
     if (this.timer) clearTimeout(this.timer);
-    if (!ctx.cfg.background.enabled) return;
+    if (this.stopped || !ctx.cfg.background.enabled) return;
     this.timer = setTimeout(() => this.next(), ctx.cfg.background.intervalSec * 1000);
   }
 
-  private async load(url: string): Promise<{ img: HTMLImageElement; src: TexImageSource & { width: number; height: number } }> {
+  private async load(url: string): Promise<HTMLImageElement> {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.decoding = 'async';
@@ -170,20 +152,11 @@ export class Photos {
         });
       }
     }
-    let src: TexImageSource & { width: number; height: number } = img;
-    const w = img.naturalWidth, h = img.naturalHeight;
-    if (this.usingGL && (w > MAX_TEX || h > MAX_TEX) && 'createImageBitmap' in window) {
-      const s = MAX_TEX / Math.max(w, h);
-      // WebGL ignores UNPACK_FLIP_Y for ImageBitmaps (three uploads them unflipped): flip at decode time;
-      // PhotoLayer sets texture.flipY = false for bitmaps so both paths end up upright.
-      src = await createImageBitmap(img, {
-        resizeWidth: Math.round(w * s), resizeHeight: Math.round(h * s), resizeQuality: 'high', imageOrientation: 'flipY',
-      });
-    }
-    return { img, src };
+    return img;
   }
 
   async next(): Promise<void> {
+    if (this.stopped) return;
     if (this.loading || !this.list.length || !ctx.cfg.background.enabled) {
       this.schedule();
       return;
@@ -205,16 +178,15 @@ export class Photos {
         if (this.idx >= this.list.length) this.idx = 0;
         const p = this.list[this.idx];
         try {
-          const { img, src } = await this.load(p.url).catch(async () => {
+          const img = await this.load(p.url).catch(async () => {
             await new Promise((r) => setTimeout(r, 1500)); // one retry for transient network/decoder hiccups
             return this.load(p.url);
           });
-          this.display(p, img, src);
+          if (this.stopped) return;
+          this.display(p, img);
           applyTone(img);
-          this.failures = 0;
           break;
         } catch (e) {
-          this.failures++;
           console.warn('[photos] failed', p.url, e);
         }
       }
@@ -226,36 +198,28 @@ export class Photos {
 
   private showCurrentAgain(): void {
     const p = this.list[this.idx];
-    if (p) this.load(p.url).then(({ img, src }) => this.display(p, img, src)).catch(() => {});
+    if (p) this.load(p.url).then((img) => { if (!this.stopped) this.display(p, img); }).catch((e) => console.warn('[photos]', e));
   }
 
-  private display(p: Photo, img: HTMLImageElement, src: TexImageSource & { width: number; height: number }): void {
+  private display(p: Photo, img: HTMLImageElement): void {
     const b = ctx.cfg.background;
     this.shownFile = p.file || '';
     if (p.file) this.lastGallery = p.file;
-    if (this.usingGL && this.glLayer) {
-      this.glLayer.show(src, p);
-      if (this.domCur) {
-        this.domCur.remove();
-        this.domCur = null;
-      }
-    } else {
-      const node = el('div', `ph${b.cover ? '' : ' contain'}`);
-      node.style.backgroundImage = `url("${img.src.replace(/"/g, '%22')}")`;
-      node.style.setProperty('--kb-dur', `${b.intervalSec + 6}s`);
-      node.style.setProperty('--kb-x', `${(Math.random() * 2 - 1).toFixed(2)}%`);
-      node.style.setProperty('--kb-y', `${(Math.random() * 2 - 1).toFixed(2)}%`);
-      (node as HTMLElement & { _ph?: unknown })._ph = { w: img.naturalWidth, h: img.naturalHeight, p };
-      this.frameDom(node, img.naturalWidth, img.naturalHeight, p);
-      const old = this.domCur;
-      this.area.querySelector('.ph-stack')!.appendChild(node);
-      this.domCur = node;
-      const fade = b.transition !== 'none' && !reducedMotion();
-      if (fade) {
-        node.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 2200, easing: 'ease-in-out', fill: 'backwards' }).onfinish = () =>
-          old?.remove();
-      } else old?.remove();
-    }
+    const node = el('div', `ph${b.cover ? '' : ' contain'}`);
+    node.style.backgroundImage = `url("${img.src.replace(/"/g, '%22')}")`;
+    node.style.setProperty('--kb-dur', `${b.intervalSec + 6}s`);
+    node.style.setProperty('--kb-x', `${(Math.random() * 2 - 1).toFixed(2)}%`);
+    node.style.setProperty('--kb-y', `${(Math.random() * 2 - 1).toFixed(2)}%`);
+    (node as HTMLElement & { _ph?: unknown })._ph = { w: img.naturalWidth, h: img.naturalHeight, p };
+    this.frameDom(node, img.naturalWidth, img.naturalHeight, p);
+    const old = this.domCur;
+    this.area.querySelector('.ph-stack')!.appendChild(node);
+    this.domCur = node;
+    const fade = b.transition !== 'none' && !reducedMotion();
+    if (fade && typeof node.animate === 'function') {
+      node.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 2200, easing: 'ease-in-out', fill: 'backwards' }).onfinish = () =>
+        old?.remove();
+    } else old?.remove();
     const showMeta = b.showMeta && (p.author || p.title);
     this.meta.style.display = showMeta ? '' : 'none';
     if (showMeta) this.meta.innerHTML = esc(p.title ? `${p.title}${p.author ? ' · ' + p.author : ''}` : ctx.t('photoBy', { a: p.author! }));

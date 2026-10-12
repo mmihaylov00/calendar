@@ -1,5 +1,5 @@
 import { GLASS_DEFAULTS, glassVars, normalizeGlass, type PhotoStats } from '../../shared/glass';
-import type { DisplayStyle, FrameCorner, GlassConfig, LayoutPreset } from '../../shared/types';
+import type { DisplayStyle, GlassConfig, LayoutPreset } from '../../shared/types';
 import { Icon } from '../components/icons';
 import { Button, Callout, Card, Field, PageHeader, Segmented, Slider, ToggleRow } from '../components/ui';
 import { t } from '../i18n';
@@ -7,17 +7,14 @@ import { allSourceOptions } from '../util';
 import type { SectionProps } from './common';
 
 export const PRESETS: { id: LayoutPreset; name: string; desc: string; wizard?: boolean }[] = [
-  { id: 'bigCalendar', name: 'Big calendar', desc: 'Full month on a big screen with clock, weather and news in a side column.', wizard: true },
+  { id: 'bigCalendar', name: 'Big calendar', desc: 'Full month on a big screen with clock and weather in a side column.', wizard: true },
   { id: 'twoWeeks', name: 'Two weeks', desc: 'This week and the next, with more room for each day. Today is highlighted.' },
   { id: 'leftRight', name: 'Left / Right', desc: 'Photo on one side; clock, weather and agenda on the other. Ideal for landscape screens.', wizard: true },
   { id: 'topBottom', name: 'Top / Bottom', desc: 'Clock and weather on top, calendar below. Great for portrait screens or tablets.', wizard: true },
   { id: 'agenda', name: 'Agenda', desc: 'Upcoming events grouped by day, readable from afar (mobile / tablet).', wizard: true },
   { id: 'today', name: 'Today', desc: 'The day hour by hour with a line for now, the next event in large type and the weather for the coming hours. For the kitchen in the morning.' },
   { id: 'people', name: 'Per person', desc: 'One column per person (per calendar) with today and tomorrow.' },
-  { id: 'board', name: 'Board', desc: 'Family organisation: to-dos, countdowns, message of the day, upcoming birthdays and a short agenda.' },
   { id: 'bigTime', name: 'Big time', desc: 'Large clock over the photo, with today’s and tomorrow’s agenda.', wizard: true },
-  { id: 'photoFrame', name: 'Photo frame', desc: 'The photo is the hero: just a small clock, the temperature and the next event in a corner. Ideal for a portrait frame.' },
-  { id: 'bedside', name: 'Bedside', desc: 'A huge clock, the next event and the temperature in very low brightness, for the bedroom. It dims further at night.' },
 ];
 
 /** Tiny schematic drawing of each layout preset. */
@@ -125,44 +122,9 @@ export function Schematic({ id, side }: { id: LayoutPreset; side: 'left' | 'righ
           ))}
         </g>
       )}
-      {id === 'board' && (
-        <g>
-          <rect x="12" y="9" width="34" height="12" rx="2" fill={accent} />
-          <rect x="116" y="9" width="32" height="12" rx="3" fill="var(--schem-line)" opacity=".5" />
-          <rect x="6" y="28" width="47" height="56" rx="4" fill={block} opacity=".9" />
-          <rect x="57" y="28" width="46" height="18" rx="4" fill={block} opacity=".9" />
-          <rect x="57" y="50" width="46" height="34" rx="4" fill={block} opacity=".9" />
-          <rect x="107" y="28" width="47" height="30" rx="4" fill={block} opacity=".9" />
-          <rect x="107" y="62" width="47" height="22" rx="4" fill={block} opacity=".9" />
-          {[0, 1, 2, 3].map((i) => (
-            <rect x="11" y={36 + i * 9} width={36 - (i % 2) * 10} height="4" rx="1.5" fill="var(--schem-line)" opacity=".55" />
-          ))}
-          <rect x="62" y="34" width="34" height="5" rx="2" fill="var(--schem-line)" />
-          {[0, 1, 2].map((i) => (
-            <g>
-              <circle cx="64" cy={59 + i * 8} r="2.2" fill="none" stroke="var(--schem-line)" stroke-width="1" />
-              <rect x="69" y={57.5 + i * 8} width={26 - i * 5} height="3" rx="1.5" fill="var(--schem-line)" opacity=".55" />
-            </g>
-          ))}
-        </g>
-      )}
-      {id === 'photoFrame' && (
-        <g>
-          <rect x="112" y="54" width="42" height="30" rx="5" fill={block} opacity="0.85" />
-          <rect x="117" y="59" width="26" height="9" rx="2" fill="var(--schem-line)" />
-          <rect x="117" y="72" width="16" height="3.5" rx="1.5" fill="var(--schem-line)" opacity=".6" />
-          <rect x="117" y="78" width="30" height="3" rx="1.5" fill={accent} opacity=".8" />
-        </g>
-      )}
-      {id === 'bedside' && (
-        <g>
-          <rect width="160" height="90" rx="6" fill="#050505" />
-          <text x="80" y="54" text-anchor="middle" fill="#c99a76" opacity=".75" font-size="30" font-weight="300" font-family="system-ui, sans-serif">
-            7:05
-          </text>
-          <rect x="52" y="64" width="56" height="3.5" rx="1.5" fill="#c99a76" opacity=".4" />
-        </g>
-      )}
+
+
+
       {id === 'agenda' && (
         <g>
           <rect x="6" y="6" width="148" height="16" rx="4" fill={block} opacity="0.9" />
@@ -358,25 +320,10 @@ export function GlassCard({ cfg, set }: Pick<SectionProps, 'cfg' | 'set'>) {
   );
 }
 
-const CORNERS: { value: FrameCorner; label: string }[] = [
-  { value: 'tl', label: 'Top left' },
-  { value: 'tr', label: 'Top right' },
-  { value: 'bl', label: 'Bottom left' },
-  { value: 'br', label: 'Bottom right' },
-];
-
-/** Settings of the layouts that have any: the people columns (Por persona) and the corner (Marco de fotos). */
+/** Calendar columns for the people layout. */
 function PresetOptions({ cfg, set, full }: SectionProps) {
   const l = cfg.layout;
-  if (l.preset === 'photoFrame') {
-    return (
-      <Card id="layout-options" scope="screen" title={t('Photo frame')} icon="image" desc={t('Where the card with the time, the temperature and the next event goes.')}>
-        <Field label={t('Corner')}>
-          <Segmented full value={l.corner ?? 'br'} options={CORNERS.map((c) => ({ value: c.value, label: t(c.label) }))} onChange={(v) => set((d) => void (d.layout.corner = v))} />
-        </Field>
-      </Card>
-    );
-  }
+
   if (l.preset !== 'people') return null;
   const opts = allSourceOptions(full, { includeDisabled: false }).filter((o) => o.id !== 'birthdays');
   const holidays = new Set(full.calendar.sources.filter((x) => x.kind === 'holidays').map((x) => x.id));

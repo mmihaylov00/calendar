@@ -34,16 +34,16 @@ Use Home Assistant to manage Google authorization:
 
 1. Add and configure the [Google Calendar integration](https://www.home-assistant.io/integrations/google/) under **Settings → Devices & services**. Select the calendars you want available in HA.
 2. In Calendar, open **Calendars → Home Assistant calendars**, click **Refresh** and check the calendars you want to add.
-3. Click **Save**, then select those sources for the screens where you want their events displayed.
+3. Click **Save**. Use **Open calendar** or the preview to see the selected calendars.
 
 Calendar reads upcoming events through the HA API using the app credential supplied privately by Supervisor. It does not receive your Google OAuth credentials, and it does not create or edit Google events. Other HA calendar integrations can be used in the same way.
 
-Private iCal feeds remain supported: copy a calendar's secret iCal URL into Calendar's calendar sources. Keep those URLs private. Direct Google OAuth is retained for standalone deployments configured through environment variables; use HA calendar entities for this app because HA ingress session URLs are temporary OAuth callback addresses.
+Private iCal feeds remain supported: copy a calendar's secret iCal URL into Calendar's calendar sources. Keep those URLs private. Use HA calendar entities for Google accounts; Home Assistant manages their OAuth authorization.
 
 ## Storage and updates
 
 Configuration, calendar caches, credentials and photos live in `/data/marco`, included in Home Assistant app backups. Startup prepares this directory, then drops to the non-root `node` user before serving requests. Cold backups stop the app briefly for a consistent snapshot.
 
-Update Calendar through Home Assistant; upstream update checks are disabled. The English-only interface starts with no sample calendars, feeds or demo data. Existing calendar configuration and saved content are retained when updating.
+Update and back up Calendar through Home Assistant. The English-only interface starts with no sample content. Existing calendar configuration, credentials and photos are retained when updating.
 
-The app has no exposed LAN port. External wall displays need an active administrator's Home Assistant session to access this deployment. Admin previews and connected-screen controls remain available through ingress.
+The app has no exposed LAN port. The calendar view and preview use an active administrator's Home Assistant session. The control panel opens directly to calendar connections; layout, backgrounds, weather and photos are its other pages.

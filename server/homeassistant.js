@@ -5,7 +5,7 @@ import { getConfig, getSecrets } from './store.js';
 export function haSettings(override = {}) {
   if (process.env.MARCO_HOME_ASSISTANT === '1') {
     // Supervisor credentials must only be sent to its fixed internal Core proxy.
-    return { url: 'http://supervisor/core', token: process.env.SUPERVISOR_TOKEN || '', enabled: getConfig().homeassistant.enabled };
+    return { url: 'http://supervisor/core', token: process.env.SUPERVISOR_TOKEN || '', enabled: true };
   }
   const cfg = getConfig().homeassistant;
   return {
@@ -26,18 +26,6 @@ export async function haGet(path, { url, token } = haSettings()) {
   if (res.status === 401) throw new HttpError(process.env.MARCO_HOME_ASSISTANT === '1' ? 'Home Assistant rejected its managed API token' : 'Unauthorized (check token)', 401);
   if (!res.ok) throw new HttpError(`HTTP ${res.status}`, res.status);
   try { return JSON.parse(res.text); } catch { throw new HttpError('Home Assistant returned invalid JSON', 502); }
-}
-
-export async function testConnection(override) {
-  try {
-    const s = haSettings(override);
-    const ping = await haGet('/api/', s);
-    let version;
-    try { version = (await haGet('/api/config', s)).version; } catch { /* optional */ }
-    return { ok: true, version, message: ping.message };
-  } catch (err) {
-    return { ok: false, error: err.message };
-  }
 }
 
 export async function getState(entityId) {

@@ -1,4 +1,4 @@
-// "Today's highlights" pills: next event countdown, ongoing event, birthdays, check-ins / check-outs.
+// "Today's highlights" pills: next event countdown, ongoing event, check-ins / check-outs.
 import { addDays, formatCountdown, formatTime } from '../../shared/i18n';
 import { chipColors } from '../color';
 import { ctx } from '../ctx';
@@ -41,7 +41,7 @@ export class Highlights {
     if (next) {
       pill(`nx${next.id}`, next, formatCountdown(lang, next.startMs - nowMs), `${next.title} · ${formatTime(new Date(next.startMs), tz, f24, ampm)}`, ' hl-next');
     }
-    // Today's special all-day things: birthdays, check-in/out
+    // Check-ins and check-outs today or tomorrow.
     const seenStay = new Set<string>();
     for (const e of events) {
       if (specs.length >= 4) break;
@@ -66,13 +66,6 @@ export class Highlights {
         else if (e.spanLast === tomorrow) outPill(tomorrow, t('tomorrow'));
         continue;
       }
-      if (isBirthday(e) && e.startKey <= today && e.lastKey >= today) pill(`bd${e.id}`, e, t('today'), e.title);
-    }
-    // Tomorrow's birthdays, after today's things so they never push those out.
-    const tomorrow = addDays(today, 1);
-    for (const e of events) {
-      if (specs.length >= 4) break;
-      if (isBirthday(e) && e.startKey === tomorrow) pill(`bt${e.id}`, e, t('tomorrow'), e.title);
     }
     this.root.style.display = specs.length ? '' : 'none';
     reconcile(this.root, specs.slice(0, 4), { flip: true });
@@ -83,5 +76,3 @@ export class Highlights {
     }
   }
 }
-
-const isBirthday = (e: NEvent) => e.allDay && (e.ev.kind === 'birthdays' || e.emoji === '🎂');

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.1-ha.5]
+
+- Reduce the control panel to calendar connections, layout, backgrounds, weather and photos.
+- Remove screen management, backups, security/status/settings pages, alerts, messages, to-dos, news, local events and birthdays, including their display widgets and service endpoints.
+- Keep Home Assistant authentication, Google/HA calendar discovery, existing calendar credentials and configuration save protection.
+
 ## [0.6.1-ha.4]
 
 - Rename the app, sidebar, interface and repository to Calendar.

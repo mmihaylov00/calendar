@@ -1,25 +1,21 @@
 // Admin API (session required).
 import { Router } from 'express';
 import { getConfig, saveConfig, updateSecrets } from '../store.js';
-import { requireAuth, changePasswordHandler } from '../auth.js';
+import { requireAuth } from '../auth.js';
 import * as google from '../google.js';
 import * as microsoft from '../microsoft.js';
 import * as ha from '../homeassistant.js';
 import * as haCalendars from '../haCalendars.js';
-import { testIcs, sourceStatus } from '../calendars.js';
-import { testFeed, status as newsStatus } from '../news.js';
-import { status as weatherStatus, weatherKey, checkWeatherKey } from '../weather.js';
+import { testIcs } from '../calendars.js';
+import { weatherKey, checkWeatherKey } from '../weather.js';
 import { WEATHER_KEY_RE, weatherKeyStatus } from '../core/weather.js';
 import {
   listGallery, uploadMiddleware, thumbMiddleware, deletePhoto, finalizeUpload, readMeta, writeMeta, setFocus, setHidden, getPhoto, checkNames,
   cleanupTempUploads, isUnit, isGalleryFile, isThumbField, storeThumb, validThumb, CONFLICT_POLICIES,
 } from '../photos.js';
 import fs from 'node:fs';
-import { publish, connectedCount } from '../pollHub.js';
+import { broadcast } from '../sse.js';
 import { isHttpUrl } from '../core/validate.js';
-import { logActivity } from '../activity.js';
-import { resolveScreenList } from '../displays.js';
-import { handlePrivacy, privacyResponse } from '../privacy.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -49,15 +45,12 @@ export function adminRouter({ onConfigSaved } = {}) {
     res.json(result.config);
   });
 
-  r.put('/password', wrap(changePasswordHandler));
-
   // --- Google accounts / calendars ---
   r.get('/google/accounts', (req, res) => res.json(google.listAccounts()));
   r.delete('/google/accounts/:email', wrap(async (req, res) => {
     const email = String(req.params.email).toLowerCase();
     const ok = await google.removeAccount(email);
     if (!ok) return res.status(404).json({ error: 'not found' });
-    logActivity('google.removed', { req, data: { email } });
     res.json({ ok: true });
   }));
   r.get('/google/calendars', wrap(async (req, res) => {
@@ -77,7 +70,6 @@ export function adminRouter({ onConfigSaved } = {}) {
     const email = String(req.params.email).toLowerCase();
     if (!microsoft.removeAccount(email)) return res.status(404).json({ error: 'not found' });
     // Its calendars leave the config when the admin saves (it drops them from its draft), as for Google accounts.
-    logActivity('microsoft.removed', { req, data: { email } });
     res.json({ ok: true, manageAccess: microsoft.MANAGE_ACCESS_URLS });
   });
   r.get('/microsoft/calendars', msOn, wrap(async (req, res) => {
@@ -98,16 +90,6 @@ export function adminRouter({ onConfigSaved } = {}) {
     if (!isHttpUrl(url, ['http:', 'https:', 'webcal:', 'webcals:'])) return res.json({ ok: false, count: 0, sample: [], error: 'invalid URL' });
     res.json(await testIcs(url, insecureTls === true));
   }));
-  r.post('/test/rss', wrap(async (req, res) => {
-    const { url } = req.body || {};
-    if (!isHttpUrl(url)) return res.json({ ok: false, title: '', count: 0, error: 'invalid URL' });
-    res.json(await testFeed(url));
-  }));
-  r.post('/test/homeassistant', wrap(async (req, res) => {
-    const { url, token } = req.body || {};
-    if (url && !isHttpUrl(url)) return res.json({ ok: false, error: 'invalid URL' });
-    res.json(await ha.testConnection({ url, token }));
-  }));
   r.get('/homeassistant/entities', wrap(async (req, res) => {
     const domain = /^[a-z_]+$/.test(req.query.domain || '') ? req.query.domain : '';
     try {
@@ -123,13 +105,6 @@ export function adminRouter({ onConfigSaved } = {}) {
       res.status(502).json({ error: err.message });
     }
   }));
-  r.put('/homeassistant/token', (req, res) => {
-    const token = req.body?.token;
-    if (typeof token !== 'string' || token.length > 1000) return res.status(400).json({ error: 'token must be a string' });
-    updateSecrets((s) => { s.homeassistant.token = token.trim(); });
-    res.json({ ok: true });
-  });
-
   // --- weather API key (Pirate Weather): kept in secrets.json, never sent back, only whether one is set ---
   r.get('/weather/key', (req, res) => res.json(weatherKeyStatus(weatherKey())));
   r.put('/weather/key', wrap(async (req, res) => {
@@ -188,7 +163,7 @@ export function adminRouter({ onConfigSaved } = {}) {
     }
     for (const [seq, p] of thumbs) if (!photos.some((f) => f.seq === seq)) fs.rmSync(p, { force: true }); // unpaired
     writeMeta(meta);
-    if (files.length) publish('photos', {});
+    if (files.length) broadcast('photos', {});
     res.json({ ok: true, files, skipped });
   });
   // Body: { focusX, focusY } (focal point) and/or { hidden } (excluded from the rotation).
@@ -208,7 +183,7 @@ export function adminRouter({ onConfigSaved } = {}) {
       photo = getPhoto(req.params.file);
     }
     if (!photo) return res.status(404).json({ error: 'not found' });
-    publish('photos', hasHidden && hidden ? { hidden: [photo.file] } : {});
+    broadcast('photos', hasHidden && hidden ? { hidden: [photo.file] } : {});
     res.json(photo);
   });
   // Bulk show / hide: { files: string[], hidden: boolean }.
@@ -219,7 +194,7 @@ export function adminRouter({ onConfigSaved } = {}) {
     }
     if (typeof hidden !== 'boolean') return res.status(400).json({ error: 'hidden must be a boolean' });
     const { updated, missing } = setHidden(files, hidden);
-    if (updated.length) publish('photos', hidden ? { hidden: updated } : {});
+    if (updated.length) broadcast('photos', hidden ? { hidden: updated } : {});
     const all = listGallery();
     res.json({ ok: true, updated, missing, total: all.length, inRotation: all.filter((p) => !p.hidden).length });
   });
@@ -234,34 +209,8 @@ export function adminRouter({ onConfigSaved } = {}) {
   });
   r.delete('/photos/:file', (req, res) => {
     if (!deletePhoto(req.params.file)) return res.status(404).json({ error: 'not found' });
-    publish('photos', {});
+    broadcast('photos', {});
     res.json({ ok: true });
-  });
-
-  // Optional body { screens?: string[] } (ids or slugs) limits the reload to those screens.
-  r.post('/refresh-displays', (req, res) => {
-    const scr = resolveScreenList(getConfig(), req.body?.screens);
-    if (scr.error) return res.status(400).json({ error: scr.error, ...(scr.unknown ? { unknown: scr.unknown } : {}) });
-    const delivered = publish('reload', {}, scr.ids.length ? { screenIds: scr.ids } : null);
-    logActivity('display.command', { req, data: { action: 'reload', ...(scr.ids.length ? { screens: scr.ids } : {}), delivered } });
-    res.json({ ok: true, displays: connectedCount(), delivered });
-  });
-
-  // Privacy mode per screen (server/privacy.js): state of every screen, and the quick actions of the admin.
-  r.get('/privacy', (req, res) => res.json(privacyResponse()));
-  r.post('/privacy', (req, res) => {
-    const [status, body] = handlePrivacy(req, 'admin');
-    res.status(status).json(body);
-  });
-
-  r.get('/status', (req, res) => {
-    res.json({
-      sources: sourceStatus(),
-      weather: { ...weatherStatus },
-      news: { ...newsStatus },
-      displays: connectedCount(),
-      uptime: Math.round(process.uptime()),
-    });
   });
 
   return r;

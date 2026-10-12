@@ -1,6 +1,4 @@
-// GET /api/health, read once per page load by the parts of the display that depend on the server's edition:
-// the pairing screen (code length, where to open the admin), the page a paired display continues at, and the
-// optional emoji web font. Offline or on an old server it resolves to {} (self-hosted defaults).
+// Fetch server health once to select the optional emoji web font. Offline use keeps bundled fonts.
 import type { HealthResponse } from '../shared/types';
 import { appUrl } from '../shared/path';
 

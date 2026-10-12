@@ -2,8 +2,8 @@
 // Every per-screen endpoint gets `?screen=<key>` when the display was opened with one; every request carries the
 // display credential (private-link key or paired-device token) in X-Marco-Key.
 import type {
-  CountdownsResponse, DisplayConfig, DisplayHeartbeat, EventsResponse, HealthResponse, HeartbeatResponse, NewsResponse,
-  PhotosResponse, PollResponse, WeatherResponse,
+  DisplayConfig, EventsResponse, HealthResponse,
+  PhotosResponse, WeatherResponse,
 } from '../shared/types';
 import { authHeaders, withScreen } from './identity';
 import { appUrl } from '../shared/path';
@@ -14,15 +14,15 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 15000): Promise<T> {
+async function request<T>(path: string, timeoutMs = 15000): Promise<T> {
   const ctl = new AbortController();
   const tm = setTimeout(() => ctl.abort(), timeoutMs);
   try {
     const r = await fetch(appUrl(path), {
-      ...init, signal: ctl.signal, cache: 'no-store', headers: { Accept: 'application/json', ...authHeaders(), ...(init.headers || {}) },
+      signal: ctl.signal, cache: 'no-store', headers: { Accept: 'application/json', ...authHeaders() },
     });
     if (!r.ok) {
-      // 401 key_required / 403 invalid_key: the display shows the pairing / "link no longer valid" screen.
+      // Authentication failures clear cached data and show the Home Assistant access screen.
       let code = '';
       if (r.status === 401 || r.status === 403) {
         try {
@@ -43,7 +43,7 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 1500
 }
 
 export function getJSON<T>(path: string, timeoutMs = 15000): Promise<T> {
-  return request<T>(path, {}, timeoutMs);
+  return request<T>(path, timeoutMs);
 }
 
 export const api = {
@@ -53,16 +53,8 @@ export const api = {
   events: (from: string, to: string) =>
     getJSON<EventsResponse>(withScreen(`/api/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)),
   weather: () => getJSON<WeatherResponse>(withScreen('/api/weather')),
-  news: () => getJSON<NewsResponse>('/api/news'),
   /** `after` = gallery file shown last, so sequential orders continue from there and random avoids repeating it. */
   photos: (count = 20, after = '') =>
     getJSON<PhotosResponse>(withScreen(`/api/photos?count=${count}${after ? `&after=${encodeURIComponent(after)}` : ''}`)),
-  countdowns: () => getJSON<CountdownsResponse>(withScreen('/api/countdowns')),
   health: () => getJSON<HealthResponse>('/api/health', 5000),
-  /** `q` from stream.ts pollUrl (client, cursor, rev, hidden, preview). */
-  poll: (q: string) => getJSON<PollResponse>(withScreen(`/api/display/poll?${q}`), 10000),
-  heartbeat: (hb: DisplayHeartbeat) =>
-    request<HeartbeatResponse>('/api/display/heartbeat', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(hb),
-    }, 8000),
 };

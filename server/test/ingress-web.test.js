@@ -41,7 +41,7 @@ async function withBrowser(path, fn) {
 
 test('ingress URLs remain scoped and external URLs remain unchanged', async () => {
   await withBrowser(`${BASE}/admin/`, async () => {
-    const [p, auth, urls] = await loadWebModules('/web/shared/path.ts', '/web/admin/authRedirect.ts', '/web/admin/screenUrl.ts');
+    const [p, auth] = await loadWebModules('/web/shared/path.ts', '/web/admin/authRedirect.ts');
     assert.equal(p.appBase(), BASE);
     assert.equal(p.appPath(), '/admin/');
     assert.equal(p.appBase('/api/hassio_ingress/bad%2ftoken/admin'), '');
@@ -50,10 +50,7 @@ test('ingress URLs remain scoped and external URLs remain unchanged', async () =
     assert.equal(p.appUrl(`${BASE}/api/health`), `${BASE}/api/health`);
     for (const url of ['https://example.com/media/photo', '//example.com/photo', 'blob:http://ha.local/id', 'data:image/png,abc', '#/calendars']) assert.equal(p.appUrl(url), url);
     assert.equal(auth.homeAssistantMode(null), true);
-    assert.equal(auth.accountMode({ user: null }, { edition: 'cloud', tenancy: 'multi' }), false);
-    assert.equal(auth.safeNext(`${BASE}/admin/#/calendars`), `${BASE}/admin/#/calendars`);
-    assert.equal(auth.safeNext('//example.com/admin/'), `${BASE}/admin/`);
-    assert.equal(urls.screenUrl({ slug: 'kitchen', linkKey: KEY, displayOrigin: 'http://marco.local:3000', origin: location.origin, preview: true }), `${BASE}/?screen=kitchen&preview=1`);
+    assert.equal(p.appUrl('/?screen=kitchen&preview=1'), `${BASE}/?screen=kitchen&preview=1`);
   });
   await withBrowser('/admin/', async () => {
     const [p, auth] = await loadWebModules('/web/shared/path.ts', '/web/admin/authRedirect.ts');
@@ -69,8 +66,6 @@ test('ingress display identity ignores stale device tokens and scopes media and 
     const [id, stream] = await loadWebModules('/web/display/identity.ts', '/web/display/stream.ts');
     assert.equal(id.credential, '');
     assert.equal(id.screenKey, 'kitchen');
-    id.saveDeviceToken(`md_${'B'.repeat(43)}`);
-    id.clearDeviceToken();
     assert.equal(data.get('marco.deviceToken'), `md_${'A'.repeat(43)}`);
     assert.equal(id.mediaUrl('/media/photo.jpg'), `${BASE}/media/photo.jpg`);
     assert.match(stream.streamUrl(), new RegExp(`^${BASE}/api/stream\\?`));
@@ -84,7 +79,7 @@ test('ingress display identity ignores stale device tokens and scopes media and 
   });
 });
 
-test('admin fetch, display fetch, downloads and photo uploads use ingress paths', async () => {
+test('admin fetch, display fetch and photo uploads use ingress paths', async () => {
   await withBrowser(`${BASE}/admin/`, async ({ requests }) => {
     const [admin, display] = await loadWebModules('/web/admin/api.ts', '/web/display/api.ts');
     await admin.api.haCalendars();
@@ -95,6 +90,5 @@ test('admin fetch, display fetch, downloads and photo uploads use ingress paths'
       `${BASE}/api/weather`,
       `${BASE}/api/admin/photos?onConflict=rename`,
     ]);
-    assert.equal(admin.api.backupUrl('backup.json'), `${BASE}/api/admin/backups/backup.json`);
   });
 });

@@ -16,7 +16,7 @@ export const events = new EventEmitter();
 
 let config = null;
 let secrets = null;
-/** Set when the stored config was migrated during the last initStore() (logged by the activity module). */
+/** Set when the stored config was migrated during the last initStore() (available for startup diagnostics). */
 export let migratedOnLoad = null;
 
 export function initStore(dataDir = process.env.DATA_DIR || path.join(ROOT, 'data')) {
@@ -25,11 +25,7 @@ export function initStore(dataDir = process.env.DATA_DIR || path.join(ROOT, 'dat
   paths.secrets = path.join(paths.data, 'secrets.json');
   paths.photos = path.join(paths.data, 'photos');
   paths.cache = path.join(paths.data, 'cache');
-  paths.backups = path.join(paths.data, 'backups'); // rotating config backups (docs/ARCHITECTURE.md)
-  paths.activity = path.join(paths.data, 'activity.jsonl'); // activity log
-  paths.announcements = path.join(paths.data, 'announcements.json'); // active + history
-  paths.displays = path.join(paths.data, 'displays.json'); // known displays registry
-  paths.privacy = path.join(paths.data, 'privacy.json'); // privacy mode state per screen (server/privacy.js)
+  paths.backups = path.join(paths.data, 'backups'); // internal previous-config and migration recovery copies
   migratedOnLoad = null;
   for (const d of [paths.data, paths.photos, paths.cache, paths.backups]) fs.mkdirSync(d, { recursive: true });
   config = loadConfig();
@@ -52,11 +48,9 @@ function readJson(file, { strict = false } = {}) {
     return v;
   } catch (err) {
     if (err.code !== 'ENOENT' && strict) {
-      // Secrets hold the admin password hash: falling back to {} would silently reopen the setup wizard on a
-      // configured install. Refuse to start instead and let the owner fix or restore the file.
+      // Falling back to empty secrets would lose authentication and calendar credentials. Fail closed.
       throw new StoreError(`[store] cannot read ${file}: ${err.message}. Refusing to start: fix the file, restore it from a `
-        + 'backup, or delete it on purpose to reset the admin password (the setup wizard then asks for the setup token '
-        + 'printed in this log).');
+        + 'known good copy, or reset it deliberately and configure administrator credentials.');
     }
     if (err.code !== 'ENOENT') {
       console.error(`[store] cannot read ${file}: ${err.message}; backing it up and using defaults`);
@@ -90,7 +84,7 @@ function loadConfig() {
   if (legacyAccess && !migrate) {
     try {
       writeFileAtomic(paths.config, JSON.stringify(value, null, 2));
-      console.log('[store] display access set to "open" for this existing install (switch to private links in the admin: Security)');
+      console.log('[store] display access set to "open" for this existing install');
       migratedOnLoad = { ...(migratedOnLoad || {}), displayAccess: 'open' };
     } catch (err) {
       console.error('[store] display access migration could not be persisted:', err.message);
@@ -170,7 +164,7 @@ export const getSecrets = () => secrets;
 
 /**
  * Validate + save a full config. Returns { ok, errors, config, conflict? }. Bumps revision.
- * Before overwriting, the current file is copied to data/backups/ (rotating, docs/ARCHITECTURE.md).
+ * Before overwriting, the current config is preserved as an internal recovery copy.
  * `baseRevision` (the revision the caller's copy was loaded at) turns on the revision guard: when the config was
  * saved since then, nothing is written and the result has `conflict: true`. Without it the last write wins.
  * @param {unknown} input

@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { CalendarSource, GoogleCalendarListItem, HaCalendarListItem, MicrosoftCalendarListItem, SourceKind, TestIcsResponse } from '../../shared/types';
-import { appUrl } from '../../shared/path';
+import type { CalendarSource, HaCalendarListItem, SourceKind, TestIcsResponse } from '../../shared/types';
 import { api, ApiError, UNAUTHORIZED_EVENT } from '../api';
 import { fetchErrorText } from '../apiErrors';
-import { choiceDialog, confirmDialog, toast } from '../components/feedback';
+import { confirmDialog, toast } from '../components/feedback';
 import { GoogleG, Icon, MicrosoftLogo } from '../components/icons';
 import {
   Button,
@@ -24,31 +23,21 @@ import {
   ToggleRow,
   useReorder,
 } from '../components/ui';
-import { atLimit, has, offers } from '../caps';
-import { defaultPrivacyOf, privacyModeOptions } from './Privacy';
+import { atLimit, has } from '../caps';
 import { LimitNote } from '../components/LimitNote';
 import { t } from '../i18n';
-import { allSourceOptions, guessKind, HOLIDAY_PRESETS, isHttpUrl, KIND_EMOJI, moveItem, SWATCHES, uid } from '../util';
+import { allSourceOptions, guessKind, isHttpUrl, KIND_EMOJI, moveItem, SWATCHES, uid } from '../util';
 import type { SectionProps } from './common';
-import { ICloudGuide, icloudUrl } from './ICloudGuide';
 
 /** `insecureTls` is an optional extension (self-signed HTTPS feeds on the LAN); see docs/ARCHITECTURE.md. */
 type Source = CalendarSource & { insecureTls?: boolean };
-
-const KINDS: { value: SourceKind; label: string }[] = [
-  { value: 'generic', label: 'General' },
-  { value: 'airbnb', label: 'Vacation rental (Airbnb, Booking…)' },
-  { value: 'birthdays', label: 'Birthdays' },
-  { value: 'holidays', label: 'Holidays' },
-];
-
 
 function nextColor(sources: CalendarSource[]) {
   const used = new Set(sources.map((s) => s.color.toLowerCase()));
   return SWATCHES.find((c) => !used.has(c)) ?? SWATCHES[sources.length % SWATCHES.length];
 }
 
-/** Adds an iCal source to a config draft ("Añadir URL iCal", the quick-add pills and the iCloud guide). */
+/** Adds an iCal source to a config draft. */
 function pushIcs(d: { calendar: { sources: CalendarSource[] } }, name = '', url = '', kind: SourceKind = 'generic') {
   if (atLimit('sources', d.calendar.sources.length)) return;
   d.calendar.sources.push({
@@ -179,20 +168,6 @@ function SourceRow({
           </div>
         )}
         <div class="src__opts">
-          <label class="mini-field">
-            <span>{t('Type')}</span>
-            <div class="src__kind">
-              <Select value={src.kind} options={KINDS.map((k) => ({ ...k, label: `${KIND_EMOJI[k.value] || '📅'} ${t(k.label)}` }))} onChange={(v) => update((s) => void (s.kind = v))} />
-            </div>
-          </label>
-          {has('privacy') && (
-            <label class="mini-field" title={t('What screens in private mode show of this calendar')}>
-              <span>{t('In private mode')}</span>
-              <div class="src__kind">
-                <Select value={src.privacy ?? defaultPrivacyOf(src.kind)} options={privacyModeOptions()} onChange={(v) => update((s) => void (s.privacy = v))} />
-              </div>
-            </label>
-          )}
           <label class="mini-field" title={t('How often (minutes) it is downloaded again')}>
             <span>{t('Refresh every')}</span>
             <NumberInput value={src.refreshMin} min={1} max={1440} suffix="min" error={!!errors[`${p}.refreshMin`]} onValue={(v) => update((s) => void (s.refreshMin = v))} />
@@ -233,307 +208,6 @@ function SourceRow({
         )}
       </div>
     </div>
-  );
-}
-
-/** A linked account and one of its calendars, the same for every provider. */
-interface LinkedAccount {
-  email: string;
-  name?: string;
-  picture?: string;
-}
-interface LinkedCalendar {
-  id: string;
-  name: string;
-  color?: string;
-  primary?: boolean;
-  /** owner address of a calendar someone else shared with the account */
-  owner?: string;
-}
-
-type ProviderId = 'google' | 'microsoft';
-
-/** What differs between Google and Microsoft in the linked accounts card. Strings are English. */
-interface Provider {
-  id: ProviderId;
-  label: string;
-  /** the server can link accounts of this provider for this user (me.googleConfigured / me.microsoftConfigured) */
-  configured: boolean;
-  leaveBody: string;
-  disconnectBody: string;
-  connectPath: string;
-  accounts: () => Promise<LinkedAccount[]>;
-  calendars: (email: string) => Promise<LinkedCalendar[]>;
-  remove: (email: string) => Promise<unknown>;
-  accountOf: (s: CalendarSource) => string | undefined;
-  calendarOf: (s: CalendarSource) => string | undefined;
-  newSource: (email: string, c: LinkedCalendar) => Partial<CalendarSource>;
-}
-
-function googleProvider(me: SectionProps['me']): Provider {
-  return {
-    id: 'google',
-    label: 'Google',
-    configured: offers('googleCalendar') && !!me.googleConfigured,
-    leaveBody: 'You are going to Google to link the account. Save pending changes first?',
-    disconnectBody: 'Its calendars will no longer be shown on the screen.',
-    connectPath: '/auth/google/connect',
-    accounts: () => api.googleAccounts(),
-    calendars: async (email) =>
-      (await api.googleCalendars(email)).map((c: GoogleCalendarListItem) => ({ id: c.id, name: c.summary, color: c.backgroundColor, primary: c.primary })),
-    remove: (email) => api.removeGoogleAccount(email),
-    accountOf: (s) => (s.type === 'google' ? s.googleAccount : undefined),
-    calendarOf: (s) => (s.type === 'google' ? s.googleCalendarId : undefined),
-    newSource: (email, c) => ({ type: 'google', googleAccount: email, googleCalendarId: c.id }),
-  };
-}
-
-function microsoftProvider(me: SectionProps['me']): Provider {
-  return {
-    id: 'microsoft',
-    label: 'Microsoft',
-    configured: has('microsoftCalendar') && !!me.microsoftConfigured,
-    leaveBody: 'You are about to go to Microsoft to link the account. Save your pending changes first?',
-    disconnectBody:
-      'Its calendars will no longer show on the screen and Calendar will delete its access. To remove the permission at Microsoft too, go to account.live.com/consent/Manage (personal account) or myapps.microsoft.com (work or school account).',
-    connectPath: '/auth/microsoft/connect',
-    accounts: () => api.microsoftAccounts(),
-    calendars: async (email) =>
-      (await api.microsoftCalendars(email)).map((c: MicrosoftCalendarListItem) => ({ id: c.id, name: c.name, color: c.color, primary: c.isDefault, owner: c.owner })),
-    remove: (email) => api.removeMicrosoftAccount(email),
-    accountOf: (s) => (s.type === 'microsoft' ? s.microsoftAccount : undefined),
-    calendarOf: (s) => (s.type === 'microsoft' ? s.microsoftCalendarId : undefined),
-    newSource: (email, c) => ({ type: 'microsoft', microsoftAccount: email, microsoftCalendarId: c.id }),
-  };
-}
-
-/** One linked account of any provider, as listed in the card. */
-interface Linked extends LinkedAccount {
-  provider: ProviderId;
-}
-const linkKey = (a: { provider: ProviderId; email: string }) => `${a.provider}:${a.email}`;
-
-/**
- * Linked accounts (Google and Microsoft) in one card: "Link account" asks which provider, and every linked account is
- * listed one below the other with its calendars to pick from. Apple iCloud is always in the chooser: it opens a guide
- * to add the calendar's public link as an iCal source (no account to link, no server credentials).
- */
-function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
-  const all = [googleProvider(me), microsoftProvider(me)];
-  const providers = all.filter((p) => p.configured);
-  const byId = (id: ProviderId) => all.find((p) => p.id === id)!;
-  const configuredKey = providers.map((p) => p.id).join(',');
-  const [accounts, setAccounts] = useState<Linked[] | null>(null);
-  const [cals, setCals] = useState<Record<string, LinkedCalendar[] | 'error' | undefined>>({});
-  const [err, setErr] = useState('');
-  const [icloud, setIcloud] = useState(false);
-
-  const load = async () => {
-    const lists = await Promise.allSettled(providers.map(async (p) => (await p.accounts()).map((a) => ({ ...a, provider: p.id }) as Linked)));
-    const list = lists.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
-    const failed = lists.find((r): r is PromiseRejectedResult => r.status === 'rejected');
-    setAccounts(list);
-    setErr(failed ? (failed.reason as ApiError).message : '');
-    for (const a of list) {
-      byId(a.provider)
-        .calendars(a.email)
-        .then((c) => setCals((m) => ({ ...m, [linkKey(a)]: c })))
-        .catch(() => setCals((m) => ({ ...m, [linkKey(a)]: 'error' })));
-    }
-  };
-  useEffect(() => {
-    if (providers.length) load();
-    else setAccounts([]);
-  }, [configuredKey]);
-
-  const go = async (p: Provider) => {
-    if (dirty) {
-      const ok = await confirmDialog({
-        title: t('Save changes before continuing'),
-        body: t(p.leaveBody),
-        confirm: t('Save and continue'),
-      });
-      if (!ok) return;
-      if (!(await save())) return;
-    }
-    window.location.href = appUrl(p.connectPath);
-  };
-
-  /** Ask which provider (Apple iCloud is always there); with no account provider set up, straight to the iCloud guide. */
-  const connect = async () => {
-    if (!providers.length) return setIcloud(true);
-    const choice = await choiceDialog<ProviderId | 'apple'>({
-      title: t('Link account'),
-      body: t('Which account do you want to link?'),
-      choices: [
-        ...providers.map((p) => ({ value: p.id, label: p.label, kind: 'default' as const, icon: p.id })),
-        { value: 'apple' as const, label: 'Apple iCloud', kind: 'default' as const, icon: 'apple' as const },
-      ],
-      closeX: true,
-    });
-    if (choice === 'apple') setIcloud(true);
-    else if (choice) await go(byId(choice));
-  };
-
-  const ofAccount = (s: CalendarSource, a: Linked) => byId(a.provider).accountOf(s) === a.email;
-  const isOn = (a: Linked, id: string) => cfg.calendar.sources.some((s) => ofAccount(s, a) && byId(a.provider).calendarOf(s) === id);
-
-  const disconnect = async (a: Linked) => {
-    const p = byId(a.provider);
-    const ok = await confirmDialog({
-      title: t('Unlink {email}', { email: a.email }),
-      body: t(p.disconnectBody),
-      confirm: t('Unlink'),
-      danger: true,
-    });
-    if (!ok) return;
-    try {
-      await p.remove(a.email);
-      set((d) => {
-        d.calendar.sources = d.calendar.sources.filter((s) => !ofAccount(s, a));
-      });
-      toast(t('Account unlinked. Save to apply the calendar changes.'), 'info');
-      load();
-    } catch (e) {
-      toast((e as ApiError).message, 'error');
-    }
-  };
-
-  const toggleCal = (a: Linked, c: LinkedCalendar, on: boolean) =>
-    set((d) => {
-      const p = byId(a.provider);
-      if (on) {
-        if (isOn(a, c.id) || atLimit('sources', d.calendar.sources.length)) return;
-        d.calendar.sources.push({
-          id: uid('c'),
-          type: p.id,
-          name: c.name,
-          color: c.color && /^#[0-9a-f]{6}$/i.test(c.color) ? c.color : nextColor(d.calendar.sources),
-          emoji: '',
-          kind: guessKind(`${c.name} ${c.id}`),
-          enabled: true,
-          refreshMin: 5,
-          ...p.newSource(a.email, c),
-        } as CalendarSource);
-      } else {
-        d.calendar.sources = d.calendar.sources.filter((s) => !(ofAccount(s, a) && p.calendarOf(s) === c.id));
-      }
-    });
-
-  const desc =
-    providers.length > 1
-      ? t('Link Google or Microsoft accounts (Outlook.com, Hotmail, Microsoft 365) and choose which calendars to show.')
-      : providers[0]?.id === 'microsoft'
-        ? t('Link an Outlook.com, Hotmail or Microsoft 365 account and choose which calendars to show.')
-        : providers[0]?.id === 'google'
-          ? t('Link a Google account and choose which calendars to show.')
-          : t('Add an Apple iCloud calendar with its public link.');
-  const hasMicrosoft = !!accounts?.some((a) => a.provider === 'microsoft');
-
-  return (
-    <Card
-      title={t('Linked accounts')}
-      id="cal-accounts"
-      scope="global"
-      icon="link"
-      desc={desc}
-      actions={
-        <Button icon="plus" variant="primary" size="sm" onClick={connect}>
-          {providers.length ? t('Link account') : t('Add iCloud')}
-        </Button>
-      }
-    >
-      {icloud && (
-        <ICloudGuide
-          onClose={() => setIcloud(false)}
-          onAdd={(name, url) => set((d) => pushIcs(d, name, url, 'generic'))}
-          exists={(url) => cfg.calendar.sources.some((s) => s.type === 'ics' && !!s.url && icloudUrl(s.url) === url)}
-          disabled={atLimit('sources', cfg.calendar.sources.length)}
-          note={<LimitNote name="sources" count={cfg.calendar.sources.length} />}
-        />
-      )}
-      {providers.length === 0 ? (
-        (offers('googleCalendar') || offers('microsoftCalendar')) && (
-          <Callout kind="warn">
-            {t('To link accounts, add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET (Google) or MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET (Microsoft) to the .env file and restart. Meanwhile you can use your calendar’s secret iCal URL.')}
-          </Callout>
-        )
-      ) : accounts === null ? (
-        <div class="skeleton-list">
-          <div class="skeleton" />
-          <div class="skeleton" />
-        </div>
-      ) : accounts.length === 0 ? (
-        <Empty icon="calendar" title={err ? t('Could not load accounts') : t('No linked accounts')}>
-          {err ||
-            (providers.length > 1
-              ? t('Press “Link account” to give read-only access to your Google or Outlook calendar.')
-              : providers[0].id === 'microsoft'
-                ? t('Press “Link account” to give read-only access to your Outlook calendar.')
-                : t('Press “Link account” to grant read-only access to your Google Calendar.'))}
-        </Empty>
-      ) : (
-        <div class="gaccounts">
-          {accounts.map((a) => {
-            const list = cals[linkKey(a)];
-            return (
-              <div class="gaccount">
-                <div class="gaccount__head">
-                  {a.picture ? <img class="avatar" src={a.picture} alt="" referrerpolicy="no-referrer" /> : <span class="avatar avatar--letter">{(a.name || a.email)[0].toUpperCase()}</span>}
-                  <div class="gaccount__who">
-                    <strong>{a.name || a.email}</strong>
-                    <span class="muted small">
-                      {a.provider === 'microsoft' ? <MicrosoftLogo size={12} /> : <GoogleG size={12} />} {byId(a.provider).label}
-                      {a.name && a.name !== a.email ? ` · ${a.email}` : ''}
-                    </span>
-                  </div>
-                  <Button size="sm" variant="ghost" icon="x" onClick={() => disconnect(a)}>
-                    {t('Unlink')}
-                  </Button>
-                </div>
-                {list === undefined ? (
-                  <div class="skeleton" />
-                ) : list === 'error' ? (
-                  <Callout kind="error">{t('Could not read the calendar list. Link the account again.')}</Callout>
-                ) : (
-                  <ul class="gcal-list">
-                    {list.map((c) => {
-                      const on = isOn(a, c.id);
-                      return (
-                        <li>
-                          <label class={`gcal ${on ? 'is-on' : ''}`}>
-                            <input type="checkbox" checked={on} disabled={!on && atLimit('sources', cfg.calendar.sources.length)} onChange={(e) => toggleCal(a, c, e.currentTarget.checked)} />
-                            <span class="check-box">
-                              <Icon name="check" size={12} />
-                            </span>
-                            <span class="dot-color" style={{ background: c.color || '#888' }} />
-                            <span class="gcal__name">{c.name}</span>
-                            {c.owner && <span class="muted small">{c.owner}</span>}
-                            {c.primary && <span class="badge badge--soft">{t('Primary')}</span>}
-                          </label>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-      {hasMicrosoft && (
-        <p class="muted small">
-          {t('Calendar only reads your calendars. To remove the permission at Microsoft too:')}{' '}
-          <a href="https://account.live.com/consent/Manage" target="_blank" rel="noopener noreferrer">
-            {t('personal account')}
-          </a>
-          {' · '}
-          <a href="https://myapps.microsoft.com" target="_blank" rel="noopener noreferrer">
-            {t('work or school account')}
-          </a>
-        </p>
-      )}
-    </Card>
   );
 }
 
@@ -592,8 +266,6 @@ function ScreenSourcesCard({ cfg, set, full }: SectionProps) {
   const ids = cfg.calendar.sourceIds ?? null;
   const opts = allSourceOptions(full, { includeDisabled: true });
   const disabled = new Set(full.calendar.sources.filter((s) => !s.enabled).map((s) => s.id));
-  if (!full.localEvents.enabled) disabled.add('local');
-  if (!full.birthdays.enabled) disabled.add('birthdays');
   const all = ids === null;
   const toggle = (id: string, on: boolean) =>
     set((d) => {
@@ -606,7 +278,7 @@ function ScreenSourcesCard({ cfg, set, full }: SectionProps) {
       scope="screen"
       title={t('Calendars on this screen')}
       icon="eye"
-      desc={full.screens.length > 1 ? t('For example: the kitchen only with family and birthdays; the hall with bookings.') : t('Choose which calendars are shown.')}
+      desc={t('Choose which calendars are shown.')}
     >
       <Segmented
         full
@@ -636,7 +308,6 @@ function ScreenSourcesCard({ cfg, set, full }: SectionProps) {
                     {o.name}
                   </span>
                   {disabled.has(o.id) && <span class="badge badge--soft">{t('Disabled')}</span>}
-                  {(o.id === 'local' || o.id === 'birthdays') && <span class="badge badge--soft">{o.id === 'local' ? t('Local events') : t('Birthdays')}</span>}
                 </label>
               </li>
             );
@@ -659,7 +330,7 @@ export function CalendarsSection(props: SectionProps) {
   const addIcs = (name = '', url = '', kind: SourceKind = 'generic') => set((d) => pushIcs(d, name, url, kind));
 
   const removeSource = async (s: Source) => {
-    const ok = await confirmDialog({ title: t('Delete “{name}”', { name: s.name || 'calendario' }), body: t('Its events will no longer be shown.'), confirm: t('Delete'), danger: true });
+    const ok = await confirmDialog({ title: t('Delete “{name}”', { name: s.name || 'calendar' }), body: t('Its events will no longer be shown.'), confirm: t('Delete'), danger: true });
     if (ok) set((d) => void (d.calendar.sources = d.calendar.sources.filter((x) => x.id !== s.id)));
   };
 
@@ -667,15 +338,7 @@ export function CalendarsSection(props: SectionProps) {
     <>
       <PageHeader
         title={t('Calendars')}
-        desc={
-          offers('microsoftCalendar')
-            ? offers('googleCalendar')
-              ? t('Connect iCal, Google and Microsoft calendars, and decide how they look.')
-              : t('Connect iCal and Microsoft calendars, and decide how they look.')
-            : offers('googleCalendar')
-              ? t('Connect iCal and Google calendars and decide how they are shown.')
-              : t('Connect iCal calendars and decide how they are shown.')
-        }
+        desc={t('Choose Google calendars connected in Home Assistant, or add a private iCal link.')}
       />
 
       {(props.me.homeAssistant || props.full.homeassistant.enabled) && <HomeAssistantCalendars {...props} />}
@@ -694,13 +357,7 @@ export function CalendarsSection(props: SectionProps) {
       >
         {sources.length === 0 ? (
           <Empty icon="calendar" title={t('No calendars yet')}>
-            {offers('googleCalendar') && offers('microsoftCalendar')
-              ? t('Paste your calendar’s .ics URL (Airbnb, Booking, Google, iCloud, Outlook…) or link a Google or Microsoft account.')
-              : offers('googleCalendar')
-                ? t('Paste your calendar’s .ics URL (Airbnb, Booking, Google, iCloud, Outlook…) or link a Google account.')
-                : offers('microsoftCalendar')
-                  ? t('Paste your calendar’s .ics URL (Airbnb, Booking, Google, iCloud, Outlook…) or link a Microsoft account.')
-                  : t('Paste your calendar’s .ics URL (Airbnb, Booking, Google, iCloud, Outlook…).')}
+            {t('Choose a Home Assistant calendar above, or paste a private iCal link.')}
           </Empty>
         ) : (
           <div class="src-list">
@@ -725,20 +382,8 @@ export function CalendarsSection(props: SectionProps) {
           </div>
         )}
         <LimitNote name="sources" count={sources.length} />
-        <div class="quick-add">
-          <span class="muted small">{t('Quick add:')}</span>
-          {HOLIDAY_PRESETS.filter((p) => !sources.some((s) => s.url === p.url)).map((p) => (
-            <button type="button" class="pill" disabled={atMax} onClick={() => addIcs(t(p.name), p.url, 'holidays')}>
-              🎉 {t(p.name)}
-            </button>
-          ))}
-          <button type="button" class="pill" disabled={atMax} onClick={() => addIcs('Airbnb', '', 'airbnb')}>
-            🏠 {t('Airbnb bookings')}
-          </button>
-        </div>
       </Card>
 
-      <LinkedAccounts {...props} />
 
       <ScreenSourcesCard {...props} />
 
@@ -785,7 +430,7 @@ export function CalendarsSection(props: SectionProps) {
             <ToggleRow
               icon="↔️"
               label={t('Slide long titles')}
-              hint={t('Titles that do not fit slide slowly so you can read them in full: in the calendar, next to the clock, in countdowns and in the news. Titles on several lines move up one line at a time.')}
+              hint={t('Titles that do not fit slide slowly so you can read them in full: in the calendar and next to the clock. Titles on several lines move up one line at a time.')}
               checked={c.marquee !== false}
               onChange={(v) => set((d) => void (d.calendar.marquee = v))}
             />

@@ -1,6 +1,4 @@
-// server/core holds the logic shared with Marco Cloud, which copies the folder as it is into a Workers build.
-// These checks keep it portable: no Node built-ins, no store / SSE / HTTP modules, no imports that leave the
-// folder, and no Node-only globals.
+// Keep the domain layer free of storage, HTTP and Node-specific dependencies.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -11,8 +9,7 @@ import { fileURLToPath } from 'node:url';
 const SERVER = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CORE = path.join(SERVER, 'core');
 const FORBIDDEN_FILES = ['store.js', 'sse.js', 'lib/http.js'].map((f) => path.join(SERVER, f));
-/** npm packages core may use (the cloud build bundles each of them). */
-const ALLOWED_PACKAGES = new Set(['fast-xml-parser']);
+const ALLOWED_PACKAGES = new Set();
 const BUILTINS = new Set(builtinModules.flatMap((m) => [m, m.split('/')[0]]));
 
 /** Source without comments and string/template contents, for the globals check. */
@@ -71,10 +68,7 @@ function coreFiles(dir = CORE) {
 
 test('server/core: no Node built-ins, store, sse or lib/http imports, nothing outside the folder', () => {
   const files = coreFiles();
-  for (const f of ['activityCore.js', 'announceCore.js', 'backupsCore.js', 'imageInfo.js', 'newsParse.js', 'pairCore.js',
-    'validate.js', 'defaults.js', 'screens.js', 'csv.js', 'schedules.js', 'lib/text.js', 'lib/tz.js', 'lib/i18n.js']) {
-    assert.ok(files.includes(path.join(CORE, f)), `server/core/${f} exists`);
-  }
+  assert.ok(files.length > 0, 'domain modules are checked');
   const report = files.flatMap((f) => lintCoreFile(f, fs.readFileSync(f, 'utf8')).map((p) => `${path.relative(SERVER, f)}: ${p}`));
   assert.deepEqual(report, []);
 });

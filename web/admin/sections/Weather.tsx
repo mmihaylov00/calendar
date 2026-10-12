@@ -3,17 +3,17 @@ import { HaEntityPicker } from '../components/HaEntityPicker';
 import { Icon } from '../components/icons';
 import { Button, Callout, Card, Field, NumberInput, PageHeader, Segmented, Select, TextInput, ToggleRow } from '../components/ui';
 import { ScopeBadge } from '../components/ui';
-import type { AdminStatus, GeocodeResult, OpenMeteoModel, WeatherKeyStatus, WeatherProvider } from '../../shared/types';
+import type { GeocodeResult, OpenMeteoModel, WeatherKeyStatus, WeatherProvider } from '../../shared/types';
 import { api, ApiError } from '../api';
 import { toast } from '../components/feedback';
 import { has } from '../caps';
 import { getLang, t } from '../i18n';
 import type { SectionProps } from './common';
 
-export function WeatherSection({ cfg, set, errors }: SectionProps) {
+export function WeatherSection({ cfg, set, errors, me }: SectionProps) {
   const w = cfg.weather;
   const haOffered = has('homeassistant');
-  const haOn = haOffered && cfg.homeassistant.enabled;
+  const haOn = haOffered && (!!me.homeAssistant || cfg.homeassistant.enabled);
   const [q, setQ] = useState('');
   const [results, setResults] = useState<GeocodeResult[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -113,12 +113,12 @@ export function WeatherSection({ cfg, set, errors }: SectionProps) {
           <ToggleRow icon="☔" label={t('Chance of rain')} checked={w.showPrecipChance} onChange={(v) => set((d) => void (d.weather.showPrecipChance = v))} />
         </div>
       </Card>
-      <WeatherSourceCard cfg={cfg} set={set} errors={errors} haOffered={haOffered} haOn={haOn} />
+      <WeatherSourceCard cfg={cfg} set={set} errors={errors} haOffered={haOffered} />
       {haOffered && (
         <Card id="wx-ha" scope="global" title={t('Home Assistant data')} icon="home" desc={t('Optional: use your weather station and indoor sensors.')} muted={!haOn}>
           <div class="grid grid--3">
             <Field label={t('Weather entity')} error={errors['weather.haWeatherEntity']}>
-              <HaEntityPicker domain="weather" enabled={haOn} value={w.haWeatherEntity} error={!!errors['weather.haWeatherEntity']} onChange={(v) => set((d) => void (d.weather.haWeatherEntity = v))} />
+              <HaEntityPicker domain="weather" enabled={haOn} value={w.haWeatherEntity} error={!!errors['weather.haWeatherEntity']} onChange={(v) => set((d) => { d.weather.haWeatherEntity = v; d.homeassistant.enabled = true; })} />
             </Field>
             <Field label={t('Indoor temperature')}>
               <HaEntityPicker
@@ -126,7 +126,7 @@ export function WeatherSection({ cfg, set, errors }: SectionProps) {
                 enabled={haOn}
                 value={w.haIndoorTempEntity}
                 filter={(e) => !e.unit || /°|c|f/i.test(e.unit)}
-                onChange={(v) => set((d) => void (d.weather.haIndoorTempEntity = v))}
+                onChange={(v) => set((d) => { d.weather.haIndoorTempEntity = v; d.homeassistant.enabled = true; })}
               />
             </Field>
             <Field label={t('Indoor humidity')}>
@@ -135,7 +135,7 @@ export function WeatherSection({ cfg, set, errors }: SectionProps) {
                 enabled={haOn}
                 value={w.haIndoorHumidityEntity}
                 filter={(e) => !e.unit || e.unit === '%'}
-                onChange={(v) => set((d) => void (d.weather.haIndoorHumidityEntity = v))}
+                onChange={(v) => set((d) => { d.weather.haIndoorHumidityEntity = v; d.homeassistant.enabled = true; })}
               />
             </Field>
           </div>
@@ -192,26 +192,16 @@ const LICENCE: Record<string, { name: string; site: string; url: string; licence
   'pirate-weather': { name: 'Pirate Weather', site: 'pirateweather.net', url: 'https://pirateweather.net/' },
 };
 
-const WX_ERRORS: Record<string, string> = {
-  key_missing: 'The weather source key is missing.',
-  key_invalid: 'The weather source does not accept the saved key. Check it.',
-  rate_limited: 'The weather source got too many requests. Calendar will try again in a few minutes.',
-  http: 'Could not reach the weather source. The screens show the latest data.',
-  bad_response: 'The weather source sent an answer Calendar does not understand.',
-};
-
-function WeatherSourceCard({ cfg, set, errors, haOffered, haOn }: Pick<SectionProps, 'cfg' | 'set' | 'errors'> & { haOffered: boolean; haOn: boolean }) {
+function WeatherSourceCard({ cfg, set, errors, haOffered }: Pick<SectionProps, 'cfg' | 'set' | 'errors'> & { haOffered: boolean }) {
   const w = cfg.weather;
   const provider = w.provider;
   const [keyStatus, setKeyStatus] = useState<WeatherKeyStatus | null>(null);
   const [key, setKey] = useState('');
   const [savingKey, setSavingKey] = useState(false);
   const [editKey, setEditKey] = useState(false);
-  const [wxStatus, setWxStatus] = useState<AdminStatus['weather'] | null>(null);
 
   useEffect(() => {
     api.weatherKey().then(setKeyStatus).catch(() => setKeyStatus(null));
-    if (has('status')) api.status().then((s) => setWxStatus(s.weather)).catch(() => {});
   }, []);
 
   const saveKey = async (value: string) => {
@@ -235,14 +225,12 @@ function WeatherSourceCard({ cfg, set, errors, haOffered, haOn }: Pick<SectionPr
   const model = fromOpenMeteo && w.model !== 'best_match' ? MODEL_LABELS[w.model]?.replace(/ \(.*\)$/, '') : '';
   const opts = sourceOptions(haOffered, provider);
   const keyError = errors['weather.apiKey'];
-  // The status is about the saved provider: show it only while the page shows that one.
-  const statusError = wxStatus && wxStatus.ok === false && (!wxStatus.provider || wxStatus.provider === (provider === 'homeassistant' ? 'open-meteo' : provider)) ? WX_ERRORS[wxStatus.errorCode || 'http'] : null;
 
   return (
     <Card id="wx-source" scope="global" title={t('Data source')} icon="globe" desc={t('Where Calendar gets the forecast. You can change it at any time.')}>
       <div class="access-mode wx-sources" role="radiogroup" aria-label={t('Data source')}>
         {opts.map((o) => (
-          <button type="button" role="radio" aria-checked={provider === o.v} class={`access-mode__opt ${provider === o.v ? 'is-active' : ''}`} onClick={() => set((d) => void (d.weather.provider = o.v))}>
+          <button type="button" role="radio" aria-checked={provider === o.v} class={`access-mode__opt ${provider === o.v ? 'is-active' : ''}`} onClick={() => set((d) => { d.weather.provider = o.v; if (o.v === 'homeassistant') d.homeassistant.enabled = true; })}>
             <Icon name={o.icon} size={18} />
             <div>
               <strong>
@@ -255,11 +243,6 @@ function WeatherSourceCard({ cfg, set, errors, haOffered, haOn }: Pick<SectionPr
         ))}
       </div>
       {provider === 'homeassistant' && !haOffered && <Callout kind="warn">{t('{name} is not available here. Pick another option.', { name: 'Home Assistant' })}</Callout>}
-      {provider === 'homeassistant' && haOffered && !haOn && (
-        <Callout kind="warn">
-          {t('Enable and configure Home Assistant in')} <a href="#/homeassistant">Home Assistant</a>.
-        </Callout>
-      )}
       {fromOpenMeteo && (
         <Field label={t('Forecast model')} hint={t('Automatic picks the best model for your area. Some models give no chance of rain or UV index; those values are not shown.')}>
           <Select<OpenMeteoModel>
@@ -309,7 +292,6 @@ function WeatherSourceCard({ cfg, set, errors, haOffered, haOn }: Pick<SectionPr
           )}
         </Field>
       )}
-      {statusError && <Callout kind="error">{t(statusError)}</Callout>}
       <p class="muted small wx-credit">
         {t('Data from')}{' '}
         <a href={lic.url} target="_blank" rel="noopener noreferrer">

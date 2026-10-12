@@ -1,14 +1,13 @@
 // Titles cut short move to show the rest (calendar.marquee):
 // - one-line titles (bars and timed chips of the calendar grids, the list-like views, the side panel's pills,
-//   countdowns and agenda) slide sideways to their end, wait, slide back, wait, and so on;
+//   and agenda) slide sideways to their end, wait, slide back, wait, and so on;
 // - chip titles clamped to a few lines in a month cell scroll up like film credits, a line at a time, until the last
 //   line shows, wait, glide back, wait; the box keeps its size (the grid never moves) and the time stays put when there is room;
-// - the news headline slides once per item, within the time the item stays on screen.
 // A title that fits never moves. Every motion is one Web Animation on the transform of an inner wrapper (runs on the
 // compositor, no per-frame script); titles are measured after each render and when the screen size or fonts change.
 import { ctx } from './ctx';
 import {
-  MARQUEE_MAX, MARQUEE_MAX_LITE, creditsTiming, marqueeDelay, marqueeTiming, onceTiming, pickMovers,
+  MARQUEE_MAX, MARQUEE_MAX_LITE, creditsTiming, marqueeDelay, marqueeTiming, pickMovers,
   type MarqueeTiming,
 } from './motion';
 
@@ -18,18 +17,11 @@ const SLIDE = [
   '.agenda .ag-tt', '.agenda .ag-sub', // agenda view and the side agenda
   '.td-chip > b', '.td-tt', '.td-l1 > span', // today
   '.pp-chip > b', '.pp-tt', // per person
-  '.bd-agenda .bd-tt', // board: agenda card
-  '.pf-tt', // next event line of the portrait views
-  '.hl-tt', // side panel pills: next event, happening now, check-in / check-out, birthdays
-  '.cd-tt', // countdowns
-  '.sched-body', // scheduled messages
+  '.hl-tt', // side panel pills: next event, happening now, check-in / check-out
 ].join(',');
 /** Chip titles clamped to a few lines: they scroll up. */
 const SCROLL = '.cal .ev.wrap > .tx';
-/** The news headline: one slide per item (its .news-item carries data-mq-until, when it leaves). */
-const ONCE = '.news-item:last-child > .news-title';
-
-type Kind = 'x' | 'y' | 'once';
+type Kind = 'x' | 'y';
 
 interface MqState {
   kind: Kind;
@@ -108,7 +100,7 @@ function stop(el: MqEl): void {
 }
 
 function kindOf(el: Element): Kind {
-  return el.matches(SCROLL) ? 'y' : el.matches(ONCE) ? 'once' : 'x';
+  return el.matches(SCROLL) ? 'y' : 'x';
 }
 
 function animate(inner: HTMLElement, frames: Keyframe[], opts: KeyframeAnimationOptions, key: string, keep: Map<string, number>): Animation | null {
@@ -196,11 +188,10 @@ function scan(): void {
       stop(el);
     }
   }
-  const els = Array.from(document.querySelectorAll<MqEl>(`${SLIDE},${SCROLL},${ONCE}`));
+  const els = Array.from(document.querySelectorAll<MqEl>(`${SLIDE},${SCROLL}`));
   const kinds = els.map(kindOf);
   const unit = parseFloat(getComputedStyle(document.documentElement).fontSize) || 10;
   const vw = window.innerWidth, vh = window.innerHeight;
-  const now = Date.now();
   // read every size first, then write (one layout pass)
   const over = els.map((el, i) => {
     // a chip on a busy day's page that is not showing does not move (nor count against the budget)
@@ -220,12 +211,7 @@ function scan(): void {
     const inner = innerOf(el);
     return (inner ? inner.offsetWidth : el.scrollWidth) - box;
   });
-  const windowOf = (el: HTMLElement) => Number((el.parentElement as HTMLElement | null)?.dataset.mqUntil) - now;
-  const timing = (i: number) => {
-    const k = kinds[i];
-    if (k === 'once') return onceTiming(over[i], unit, windowOf(els[i]));
-    return marqueeTiming(over[i], unit);
-  };
+  const timing = (i: number) => marqueeTiming(over[i], unit);
   const movers = new Set(pickMovers(over.map((_, i) => !!timing(i)), ctx.lite ? MARQUEE_MAX_LITE : MARQUEE_MAX));
   const keep = new Map<string, number>();
   let n = 0;
@@ -271,22 +257,10 @@ function scan(): void {
       el.append(inner);
     }
     el.classList.add('mq');
-    let anim: Animation | null;
-    if (kind === 'once') {
-      const o = onceTiming(over[i], unit, windowOf(el))!;
-      const x = (px: number) => ({ transform: `translateX(${-px}px)` });
-      anim = animate(inner, [
-        { ...x(0), offset: 0 },
-        { ...x(0), offset: o.offsets[0], easing: 'ease-in-out' },
-        { ...x(o.distance), offset: o.offsets[1] },
-        { ...x(o.distance), offset: 1 },
-      ], { duration: o.duration, fill: 'forwards' }, key, keep);
-    } else {
-      anim = animate(inner, loopFrames(t.distance, (t as MarqueeTiming).offsets), {
-        duration: t.duration, delay: marqueeDelay(n), iterations: Infinity,
-      }, key, keep);
-      n++;
-    }
+    const anim = animate(inner, loopFrames(t.distance, (t as MarqueeTiming).offsets), {
+      duration: t.duration, delay: marqueeDelay(n), iterations: Infinity,
+    }, key, keep);
+    n++;
     el.__mq = { kind, distance: t.distance, anim };
   });
   phase = keep;

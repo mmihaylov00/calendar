@@ -1,6 +1,6 @@
 // Pure helpers for the two calendar motions (no DOM, so the tests can load them with Node):
 // - marquee: a title cut short slides left until its end shows, waits, slides back, waits, and so on; a chip title
-//   clamped to a few lines scrolls up like film credits instead; the news headline slides once per item;
+//   clamped to a few lines scrolls up like film credits instead;
 // - busy days: a month-grid day with more events than lanes pages through them.
 
 /** Sliding speed in display units (1rem ≈ 10px at 1080p) per second: about 30px/s on a 1080p screen. */
@@ -75,33 +75,6 @@ export function creditsTiming(overflowPx: number, linePx: number, unitPx: number
   pts.push([t, 0]);
   // offsets from the exact times (a line pitch is rarely a whole number of pixels), so the last one is exactly 1
   return { duration: Math.round(t), frames: pts.map(([ms, y]) => ({ offset: Math.min(1, ms / t), y })), distance };
-}
-
-/** Wait before the news headline starts to slide (its item has just come in) and the least time its end stays. */
-export const ONCE_LEAD_MS = 2000;
-export const ONCE_TAIL_MS = 2500;
-
-export interface OnceTiming {
-  /** the whole animation: as long as the item stays on screen */
-  duration: number;
-  /** keyframe offsets (0..1) where the slide starts and ends; the end then stays until the item leaves */
-  offsets: [number, number];
-  distance: number;
-}
-
-/**
- * One slide (no return) that fits in the `windowMs` an item stays on screen: wait, slide to the end at the usual
- * speed (faster when the window is short), stay there. Null when the title fits or the window is too short.
- */
-export function onceTiming(overflowPx: number, unitPx: number, windowMs: number): OnceTiming | null {
-  if (!(overflowPx >= MARQUEE_MIN_PX) || !(windowMs > 0)) return null;
-  const room = windowMs - ONCE_LEAD_MS - ONCE_TAIL_MS;
-  if (room < 1000) return null;
-  const speed = Math.max(8, MARQUEE_SPEED_U * (unitPx > 0 ? unitPx : 10));
-  const distance = Math.ceil(overflowPx);
-  const move = Math.min(room, Math.max(600, (distance / speed) * 1000));
-  const duration = Math.round(windowMs);
-  return { duration, offsets: [ONCE_LEAD_MS / duration, (ONCE_LEAD_MS + move) / duration], distance };
 }
 
 /**

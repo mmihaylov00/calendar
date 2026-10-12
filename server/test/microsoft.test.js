@@ -11,9 +11,7 @@ import { defaultConfig } from '../core/defaults.js';
 import { microsoftConnectHandler, microsoftCallbackHandler, meHandler } from '../auth.js';
 import * as microsoft from '../microsoft.js';
 import { selfHostedFeatures } from '../capabilities.js';
-import { refreshSource, sourceStatus } from '../calendars.js';
-import { dashboardWarnings } from '../routes/system.js';
-import { exportSecrets, sanitizeImportedSecrets } from '../core/backupsCore.js';
+import { refreshSource } from '../calendars.js';
 import { graphToRaw, graphInstant, idTokenEmail, scopeGranted, calendarItem, MS_TOKEN_URL, GRAPH_API } from '../core/microsoftGraph.js';
 
 const CLIENT_ID = '7a3a24ab-0000-4000-8000-000000000002';
@@ -163,20 +161,15 @@ describe('self-hosted Microsoft calendars', () => {
     assert.equal(failed.ok, false);
     assert.equal(failed.errorCode, 'auth_failed');
     assert.ok(!String(failed.error).includes('secret'));
-    const w = dashboardWarnings({ secrets: store.getSecrets(), sources: sourceStatus(), displays: [], cfg: store.getConfig() });
-    assert.ok(w.includes('microsoft_auth_failed'), w.join());
   });
 
-  test('unlink deletes the tokens; exports with secrets carry them and imports keep them', async () => {
+  test('unlink deletes only the selected account tokens', async () => {
     const { loc, sess } = await connect();
     await redirectOf(microsoftCallbackHandler, req({ session: sess, query: { state: loc.searchParams.get('state'), code: 'c' } }));
-    const exported = exportSecrets(store.getSecrets());
-    assert.equal(exported.microsoft.accounts['ana@outlook.com'].refresh_token, 'RT-secret-1');
-    assert.deepEqual(Object.keys(sanitizeImportedSecrets(exported).microsoftAccounts), ['ana@outlook.com']);
+    assert.equal(store.getSecrets().microsoft.accounts['ana@outlook.com'].refresh_token, 'RT-secret-1');
     assert.equal(microsoft.removeAccount('ana@outlook.com'), true);
     assert.equal(microsoft.removeAccount('ana@outlook.com'), false);
     assert.deepEqual(store.getSecrets().microsoft.accounts, {});
-    assert.equal(exportSecrets(store.getSecrets()).microsoft, undefined);
   });
 });
 

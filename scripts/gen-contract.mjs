@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 // Generates web/shared/adminContract.json: every HTTP call the admin makes (web/admin/api.ts), with its method,
-// path, query keys, the feature that gates it, the request type and the top-level keys of the response type
-// (web/shared/types.ts). Self-hosted Marco and Marco Cloud both test their routes against this file, so the two
-// servers cannot drift apart without a failing test.
+// path, query keys, feature gate, request type and response keys from web/shared/types.ts.
 //
 //   node scripts/gen-contract.mjs           write the file
 //   node scripts/gen-contract.mjs --check   exit 1 when the file is out of date
@@ -20,26 +18,10 @@ const TYPES_PATH = resolve(root, 'web/shared/types.ts');
 
 /** Feature that gates each path (first match wins); null = available in every edition. */
 const FEATURE_RULES = [
-  [/^\/api\/setup\//, 'setupWizard'],
-  [/^\/api\/auth\/login$/, 'passwordLogin'],
-  [/^\/api\/admin\/password$/, 'passwordLogin'],
   [/^\/api\/admin\/(homeassistant\/|test\/homeassistant$)/, 'homeassistant'],
-  [/^\/api\/admin\/test\/rss$/, 'news'],
   [/^\/api\/admin\/google\//, 'googleCalendar'],
   [/^\/api\/admin\/microsoft\//, 'microsoftCalendar'],
   [/^\/api\/admin\/photos/, 'gallery'],
-  [/^\/api\/admin\/tokens/, 'apiTokens'],
-  [/^\/api\/admin\/backups/, 'backups'],
-  [/^\/api\/admin\/(export|import\/)/, 'importExport'],
-  [/^\/api\/admin\/activity$/, 'activity'],
-  [/^\/api\/admin\/status$/, 'status'],
-  [/^\/api\/admin\/(announce|announcements)/, 'announcements'],
-  [/^\/api\/admin\/(displays\/command|refresh-displays)$/, 'displayCommands'],
-  [/^\/api\/(account\/|admin\/household$)/, 'accountMenu'],
-  [/^\/api\/admin\/update(\/|$)/, 'updates'],
-  [/^\/api\/admin\/feedback$/, 'feedback'],
-  [/^\/api\/admin\/privacy$/, 'privacy'],
-  [/^\/api\/admin\/doorbell$/, 'doorbell'],
 ];
 
 const featureFor = (path) => FEATURE_RULES.find(([re]) => re.test(path))?.[1] ?? null;

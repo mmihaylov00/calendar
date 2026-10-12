@@ -1,7 +1,7 @@
 name: Calendar
-version: "0.6.1-ha.4"
+version: "0.6.1-ha.5"
 slug: marco
-description: Family calendar and wall dashboard using Home Assistant calendars and login.
+description: Calendar dashboard using Home Assistant calendars and login.
 url: https://github.com/mmihaylov00/calendar
 arch:
   - aarch64

@@ -1,26 +1,19 @@
 // Layouts with their own content area (#view inside .main): Today (hour-by-hour timeline), Per person (one column
-// per calendar), Photo frame (small clock card in a corner), Board (family organisation cards) and Bedside (huge
-// dim clock). The other layouts (and Two weeks, which is the month grid with two rows) leave #view empty.
+// per calendar). The other layouts (including Two weeks, a two-row month grid) leave #view empty.
 // Everything is plain HTML strings + setHTML (patched only when it changes) and one fitting pass that drops whole
 // rows that do not fit, so nothing is ever cut in half.
-import type { CountdownsResponse, PublicCalendarSource, WeatherResponse } from '../../shared/types';
-import { addDays, diffDays, formatCountdown, formatDateLine, formatTime, keyToUTC, monthName, relativeDayLabel } from '../../shared/i18n';
+import type { PublicCalendarSource } from '../../shared/types';
+import { addDays, diffDays, formatCountdown, formatDateLine, formatTime, relativeDayLabel } from '../../shared/i18n';
 import { chipColors } from '../color';
 import { ctx } from '../ctx';
 import { esc, setHTML } from '../dom';
 import { type NEvent, sortForDay } from '../eventModel';
-import { weatherIcon } from '../icons';
-import { sourceCredit } from './weather';
 import type { Tick } from '../time';
-import { Clock } from './clock';
-import { upcomingCountdowns } from './countdowns';
 
-export const VIEW_PRESETS = ['today', 'people', 'photoFrame', 'board', 'bedside'];
+export const VIEW_PRESETS = ['today', 'people'];
 
 export interface ViewData {
   events: NEvent[];
-  weather: WeatherResponse | null;
-  countdowns: CountdownsResponse | null;
 }
 
 const SKELETON: Record<string, string> = {
@@ -28,9 +21,6 @@ const SKELETON: Record<string, string> = {
     <div class="td-next"></div>
     <div class="td-line"><div class="td-grid"></div><div class="td-evs"></div><div class="td-now"><span></span></div></div>`,
   people: `<div class="pp-shared"></div><div class="pp-cols"></div>`,
-  photoFrame: `<div class="pf-card"><div class="v-clock"></div><div class="pf-wx"></div><div class="pf-next"></div></div>`,
-  board: `<div class="bd-cols"></div>`,
-  bedside: `<div class="bs"><div class="v-clock"></div><div class="bs-info"><div class="bs-wx"></div><div class="bs-next"></div></div></div>`,
 };
 
 const colStyle = (hex: string) => {
@@ -69,16 +59,6 @@ function nextOf(events: NEvent[], tick: Tick): { e: NEvent; kind: 'next' | 'now'
   return tm ? { e: tm, kind: 'tomorrow' } : null;
 }
 
-/** Short label of a future day: "Today", "Tomorrow", "Fri 17", "24 Oct". */
-function dayLabel(key: string, today: string): string {
-  const { lang } = ctx;
-  const dd = diffDays(today, key);
-  if (dd < 7) return relativeDayLabel(lang, key, today);
-  const d = keyToUTC(key);
-  const m = monthName(lang, d.getUTCMonth() + 1, 'short');
-  return `${d.getUTCDate()} ${m}`;
-}
-
 /**
  * Hide rows until `box` stops overflowing. `pick()` returns the next row to drop (or null to stop); `after(row)` runs
  * after each drop (e.g. to update a "+2 more" label, which itself takes room).
@@ -110,8 +90,6 @@ function fitLine(line: HTMLElement): void {
 
 export class Views {
   private kind = '';
-  private clock: Clock | null = null;
-  private lastTick: Tick | null = null;
 
   constructor(private root: HTMLElement) {}
 
@@ -120,38 +98,22 @@ export class Views {
     const kind = VIEW_PRESETS.includes(preset) ? preset : '';
     if (kind === this.kind) return;
     this.kind = kind;
-    this.clock = null;
     this.root.className = kind ? `view view-${kind}` : 'view';
     this.root.innerHTML = SKELETON[kind] ?? '';
-    const ck = this.root.querySelector<HTMLElement>('.v-clock');
-    if (ck) this.clock = new Clock(ck, { seconds: false });
-    if (this.lastTick) this.clock?.update(this.lastTick);
-  }
-
-  /** Every second: only the small clocks. */
-  tick(tick: Tick): void {
-    this.lastTick = tick;
-    this.clock?.update(tick);
   }
 
   render(d: ViewData, tick: Tick): void {
-    this.lastTick = tick;
     if (!this.kind) return;
-    this.clock?.update(tick);
     if (this.kind === 'today') this.today(d, tick);
     else if (this.kind === 'people') this.people(d, tick);
-    else if (this.kind === 'photoFrame') this.frame(d, tick);
-    else if (this.kind === 'board') this.board(d, tick);
-    else if (this.kind === 'bedside') this.bedside(d, tick);
   }
 
-  /** Drop whatever does not fit (after layout changes: resize, fonts, news appearing). */
+  /** Drop whole rows that do not fit after layout or font changes. */
   fit(): void {
     if (this.kind === 'today') {
       const line = this.root.querySelector<HTMLElement>('.td-allday');
       if (line) fitLine(line);
     } else if (this.kind === 'people') this.fitPeople();
-    else if (this.kind === 'board') this.fitBoard();
   }
 
   // ------------------------------------------------------------------------------------------------ Today
@@ -327,186 +289,9 @@ export class Views {
     }
   }
 
-  // ------------------------------------------------------------------------------------------------ Photo frame
-  private frame(d: ViewData, tick: Tick): void {
-    setHTML(this.root.querySelector('.pf-wx')!, weatherLine(d.weather));
-    const nx = nextOf(d.events, tick);
-    const nowMs = tick.now.getTime();
-    let next = '';
-    if (nx) {
-      const e = nx.e;
-      const when = nx.kind === 'now' ? ctx.t('happeningNow') : nx.kind === 'tomorrow' ? `${ctx.t('tomorrow')} ${hm(e.startMs)}` : `${hm(e.startMs)} · ${formatCountdown(ctx.lang, e.startMs - nowMs)}`;
-      next = `<div class="pf-ev" style="${colStyle(e.color)}"><span class="pf-em">${emojiOr(e, '<i class="td-dot"></i>')}</span><span class="pf-tt">${esc(e.title)}</span><span class="pf-when">${esc(when)}</span></div>`;
-    }
-    setHTML(this.root.querySelector('.pf-next')!, next);
-  }
-
-  // ------------------------------------------------------------------------------------------------ Bedside
-  private bedside(d: ViewData, tick: Tick): void {
-    setHTML(this.root.querySelector('.bs-wx')!, weatherLine(d.weather, false));
-    const nx = nextOf(d.events, tick);
-    let next = '';
-    if (nx) {
-      const e = nx.e;
-      const when = nx.kind === 'now' ? ctx.t('happeningNow') : nx.kind === 'tomorrow' ? `${ctx.t('tomorrow')} ${hm(e.startMs)}` : hm(e.startMs);
-      next = `<span class="bs-when">${esc(when)}</span><span class="bs-tt">${e.emoji ? `<i class="bs-em">${esc(e.emoji)}</i> ` : ''}${esc(e.title)}</span>`;
-    }
-    setHTML(this.root.querySelector('.bs-next')!, next);
-    // a bit dimmer again during the night window (the configured one, else 22:00–07:00)
-    const nm = ctx.cfg.screen.nightMode;
-    const toMin = (s: string) => {
-      const m = /^(\d{1,2}):(\d{2})/.exec(s || '');
-      return m ? +m[1] * 60 + +m[2] : -1;
-    };
-    const [f, to] = nm.enabled ? [toMin(nm.from), toMin(nm.to)] : [22 * 60, 7 * 60];
-    const n = tick.parts.hour * 60 + tick.parts.minute;
-    const late = f >= 0 && to >= 0 && f !== to && (f < to ? n >= f && n < to : n >= f || n < to);
-    document.getElementById('app')?.classList.toggle('bedside-late', late || ctx.params.get('night') === '1');
-  }
-
-  // ------------------------------------------------------------------------------------------------ Board
-  private board(d: ViewData, tick: Tick): void {
-    const { t, cfg } = ctx;
-    const today = tick.dayKey, tomorrow = addDays(today, 1);
-    const nowMs = tick.now.getTime();
-    const cards: { id: string; w: number; html: string }[] = [];
-    const card = (id: string, icon: string, title: string, body: string, w: number) =>
-      cards.push({ id, w, html: `<section class="bd-card bd-${id}"><h3 class="bd-h"><span>${icon}</span>${esc(title)}</h3>${body}</section>` });
-    const rowsHtml = (rows: string[]) => `<div class="bd-list">${rows.join('')}</div><div class="bd-more"></div>`;
-
-    // short agenda: what is left of today + tomorrow
-    const dayRows = (key: string) => {
-      const list = [...allDayOn(d.events, key), ...timedOn(d.events, key).filter((e) => e.endMs > nowMs)];
-      const rows = list.map((e) => {
-        const on = !e.bar && e.startMs <= nowMs;
-        const lead = e.bar ? barNote(e, key) || t('allDay') : on ? t('happeningNow') : hm(e.startMs);
-        return `<div class="bd-row${on ? ' ongoing' : ''}" style="${colStyle(e.color)}"><span class="bd-tile">${emojiOr(e, '<i class="td-dot"></i>')}</span><span class="bd-tt">${esc(e.title)}</span><span class="bd-meta">${esc(lead)}</span></div>`;
-      });
-      return `<div class="bd-day">${esc(relativeDayLabel(ctx.lang, key, today, false))}</div>${rows.length ? rows.join('') : `<div class="bd-none">${esc(t('nothingPlanned'))}</div>`}`;
-    };
-    card('agenda', '📅', t('agenda'), `<div class="bd-list">${dayRows(today)}${dayRows(tomorrow)}</div><div class="bd-more"></div>`, 9);
-
-    // message of the day
-    const m = cfg.message;
-    if (m.enabled && m.text.trim()) {
-      cards.push({ id: 'msg', w: 3, html: `<section class="bd-card bd-msg"><span class="bd-msg-em">${esc(m.emoji || '💬')}</span><p>${esc(m.text)}</p></section>` });
-    }
-
-    // to-do
-    const items = (cfg.todo.items || []).filter((i) => i.text?.trim());
-    if (cfg.todo.enabled && items.length) {
-      const sorted = [...items.filter((i) => !i.done), ...items.filter((i) => i.done)];
-      const open = sorted.filter((i) => !i.done).length;
-      const rows = sorted.map((i) => `<div class="bd-row bd-task${i.done ? ' done' : ''}"><span class="bd-check">${i.done ? '✓' : ''}</span><span class="bd-tt">${esc(i.text)}</span></div>`);
-      if (!open) rows.unshift(`<div class="bd-none">${esc(t('allDone'))} 🎉</div>`);
-      card('todo', '✅', t('todo'), rowsHtml(rows), 1 + rows.length);
-    }
-
-    // countdowns (birthdays get their own card)
-    if (cfg.countdowns?.enabled !== false) {
-      const cds = upcomingCountdowns(d.countdowns, today, 12).filter((v) => v.item.origin !== 'birthday');
-      if (cds.length) {
-        const rows = cds.map(({ item, days }) => {
-          const when = days === 0 ? esc(t('cdToday')) : days === 1 ? esc(t('cdTomorrow')) : `<b>${days}</b> <small>${esc(t('daysWord'))}</small>`;
-          return `<div class="bd-row bd-cd${days <= 1 ? ' soon' : ''}" style="${colStyle(item.color || cfg.screen.accent)}"><span class="bd-tile">${esc(item.emoji || '⏳')}</span><span class="bd-tt">${esc(item.title)}</span><span class="bd-meta">${when}</span></div>`;
-        });
-        card('cd', '⏳', t('countdowns'), rowsHtml(rows), 1 + rows.length);
-      }
-    }
-
-    // upcoming birthdays: the countdown list (it knows the age and looks a year ahead) + calendar birthdays
-    const seen = new Set<string>();
-    const bdays: { title: string; key: string; color: string }[] = [];
-    for (const v of upcomingCountdowns(d.countdowns, today, 40)) {
-      if (v.item.origin !== 'birthday') continue;
-      const title = typeof v.item.age === 'number' ? `${v.item.title} (${v.item.age})` : v.item.title;
-      seen.add(`${v.item.date}|${v.item.title}`);
-      bdays.push({ title, key: v.item.date, color: v.item.color || '#f15bb5' });
-    }
-    for (const e of d.events) {
-      if (!(e.allDay && (e.ev.kind === 'birthdays' || e.emoji === '🎂')) || e.startKey < today) continue;
-      if (seen.has(`${e.startKey}|${e.ev.title}`) || bdays.some((b) => b.key === e.startKey && b.title === e.title)) continue;
-      bdays.push({ title: e.title, key: e.startKey, color: e.color });
-    }
-    bdays.sort((a, b) => a.key.localeCompare(b.key) || a.title.localeCompare(b.title));
-    if (bdays.length) {
-      const rows = bdays.slice(0, 8).map((b) => {
-        const dd = diffDays(today, b.key);
-        return `<div class="bd-row bd-bday${dd <= 1 ? ' soon' : ''}" style="${colStyle(b.color)}"><span class="bd-tile">🎂</span><span class="bd-tt">${esc(b.title)}</span><span class="bd-meta">${esc(dayLabel(b.key, today))}</span></div>`;
-      });
-      card('bday', '🎂', t('birthdays'), rowsHtml(rows), 1 + rows.length);
-    }
-
-    // columns: the agenda gets the first one, the rest go to the shortest column (landscape 3, portrait 2)
-    const app = document.getElementById('app');
-    const n = app?.classList.contains('portrait') ? 2 : 3;
-    const colsOut: string[][] = Array.from({ length: n }, () => []);
-    const weight = new Array(n).fill(0);
-    colsOut[0].push(cards[0].html);
-    weight[0] = Infinity;
-    for (const c of cards.slice(1)) {
-      let best = 1;
-      for (let i = 1; i < n; i++) if (weight[i] < weight[best]) best = i;
-      colsOut[best].push(c.html);
-      weight[best] += c.w + 1.5;
-    }
-    // the grid keeps its columns even when some are empty, so a lone agenda card does not stretch across the screen
-    const html = colsOut.filter((c, i) => i === 0 || c.length).map((c) => `<div class="bd-col">${c.join('')}</div>`).join('');
-    const box = this.root.querySelector<HTMLElement>('.bd-cols')!;
-    box.style.setProperty('--bd-n', String(n));
-    setHTML(box, html);
-    this.fit();
-  }
-
-  private fitBoard(): void {
-    for (const col of Array.from(this.root.querySelectorAll<HTMLElement>('.bd-col'))) {
-      const rows = Array.from(col.querySelectorAll<HTMLElement>('.bd-row, .bd-day, .bd-none'));
-      for (const r of rows) r.classList.remove('fit-hide');
-      for (const m of Array.from(col.querySelectorAll<HTMLElement>('.bd-more'))) m.textContent = '';
-      // drop the last row of the card that has the most rows left
-      const pick = () => {
-        let best: HTMLElement | null = null, bestN = 1;
-        for (const c of Array.from(col.querySelectorAll<HTMLElement>('.bd-card'))) {
-          const vis = Array.from(c.querySelectorAll<HTMLElement>('.bd-row')).filter((r) => !r.classList.contains('fit-hide'));
-          if (vis.length > bestN) {
-            bestN = vis.length;
-            best = vis[vis.length - 1];
-          }
-        }
-        return best;
-      };
-      fitRows(col, pick, (r) => {
-        const c = r.closest('.bd-card')!;
-        // a day header whose rows are all gone goes too
-        for (const day of Array.from(c.querySelectorAll<HTMLElement>('.bd-day'))) {
-          let s = day.nextElementSibling as HTMLElement | null;
-          let any = false;
-          while (s && !s.classList.contains('bd-day')) {
-            if (!s.classList.contains('fit-hide')) any = true;
-            s = s.nextElementSibling as HTMLElement | null;
-          }
-          if (!any && day.previousElementSibling) day.classList.add('fit-hide');
-        }
-        const k = c.querySelectorAll('.bd-row.fit-hide').length;
-        const more = c.querySelector('.bd-more');
-        if (more) more.textContent = k ? ctx.t('more', { n: k }) : '';
-      });
-    }
-  }
 }
 
 function sourceName(e: NEvent): string {
   const s = ctx.cfg.calendar.sources?.find((x) => x.id === e.ev.sourceId);
   return s && s.kind !== 'holidays' ? s.name : '';
-}
-
-/** "⛅ 19° Partly cloudy" (+ "H 22° L 14°" when `full`). */
-function weatherLine(w: WeatherResponse | null, full = true): string {
-  const wc = ctx.cfg.weather;
-  if (!wc.enabled || !w?.current) return '';
-  const c = w.current;
-  const r = (n: number | null | undefined) => (n === null || n === undefined || Number.isNaN(n) ? '–' : String(Math.round(n)));
-  const hilo = full && w.today ? `<span class="v-hl">${esc(ctx.t('hiShort'))} ${r(w.today.max)}° · ${esc(ctx.t('loShort'))} ${r(w.today.min)}°</span>` : '';
-  const src = full ? `<span class="wx-src">${esc(sourceCredit(w))}</span>` : '';
-  return `<span class="v-wx-ic">${weatherIcon(c.code, c.isDay, { animated: !ctx.lite })}</span><span class="v-temp">${r(c.temp)}°</span><span class="v-cond"><span>${esc(c.description || '')}</span>${hilo}${src}</span>`;
 }

@@ -16,7 +16,7 @@ export async function loadWebModules(...paths) {
     appType: 'custom',
     server: { middlewareMode: true, hmr: false, ws: false, watch: null },
     optimizeDeps: { noDiscovery: true, include: [] },
-    define: { __APP_VERSION__: '"test"', __APP_BUILD__: '"test"' },
+    define: { __APP_VERSION__: '"test"' },
   });
   try {
     const out = [];

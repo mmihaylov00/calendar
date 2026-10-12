@@ -1,7 +1,6 @@
 import { projectScreen, SLUG_RE } from '../shared/screens';
 import { locale } from './i18n';
-import type { AppConfig, CalendarSource, IconRule, SourceKind, StoredConfig } from '../shared/types';
-import { findKeyword } from '../../server/lib/keywords.js';
+import type { AppConfig, CalendarSource, SourceKind, StoredConfig } from '../shared/types';
 import { caps as currentCaps, hasFeature, limitOf, type Caps, type LimitName } from './caps';
 import { homeAssistantMode } from './authRedirect';
 
@@ -34,20 +33,7 @@ export const normalize = (s: string) =>
     .toLowerCase()
     .trim();
 
-/** First icon rule matching `text`, same rule as the server (short keywords match whole words only). */
-export function matchIconRule(rules: IconRule[], text: string): { rule: IconRule; keyword: string; index: number } | null {
-  return findKeyword(rules, text);
-}
-
 export const KIND_EMOJI: Record<SourceKind, string> = { generic: '', airbnb: '🏠', birthdays: '🎂', holidays: '🎉' };
-
-export function resolveEmoji(rules: IconRule[], source: CalendarSource | undefined, text: string): string {
-  const m = matchIconRule(rules, text);
-  if (m?.rule.emoji) return m.rule.emoji;
-  if (source?.emoji) return source.emoji;
-  if (source) return KIND_EMOJI[source.kind] || '';
-  return '';
-}
 
 export const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 export const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -62,17 +48,6 @@ export function isHttpUrl(s: string, allowWebcal = false): boolean {
   }
 }
 
-/** Public holiday iCal feeds (Google's public holiday calendars), by ISO country code. Names are English. */
-export const HOLIDAY_PRESETS: { cc: string; flag: string; name: string; url: string }[] = [
-  { cc: 'PT', flag: '🇵🇹', name: 'Portugal holidays', url: 'https://calendar.google.com/calendar/ical/es.portuguese.official%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-  { cc: 'ES', flag: '🇪🇸', name: 'Spain holidays', url: 'https://calendar.google.com/calendar/ical/es.spain%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-  { cc: 'GB', flag: '🇬🇧', name: 'UK holidays', url: 'https://calendar.google.com/calendar/ical/en.uk%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-  { cc: 'US', flag: '🇺🇸', name: 'US holidays', url: 'https://calendar.google.com/calendar/ical/en.usa%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-  { cc: 'DE', flag: '🇩🇪', name: 'Germany holidays', url: 'https://calendar.google.com/calendar/ical/en.german%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-  { cc: 'FR', flag: '🇫🇷', name: 'France holidays', url: 'https://calendar.google.com/calendar/ical/en.french%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-  { cc: 'BR', flag: '🇧🇷', name: 'Brazil holidays', url: 'https://calendar.google.com/calendar/ical/pt.brazilian%23holiday%40group.v.calendar.google.com/public/basic.ics' },
-];
-
 export const SWATCHES = [
   '#ff5a4e', '#ff8a3d', '#ffc23d', '#9bd34a', '#2ec4b6', '#3ab0ff',
   '#5b7cfa', '#9b6bff', '#e05bd6', '#ff6f91', '#8d99ae', '#f2f2f2',
@@ -85,8 +60,6 @@ export const EMOJI_GRID = [
   '💍', '❤️', '👶', '👨‍👩‍👧', '🐾', '🐶', '🛒', '💶', '🧾', '🏦', '🔧', '🧹',
   '🎬', '🎵', '🎮', '📺', '🎨', '📸', '⭐', '📌', '⏰', '🔔', '💬', '✅',
 ];
-
-export { DEFAULT_ICON_RULES } from '../shared/emoji';
 
 export function guessKind(nameOrId: string): SourceKind {
   const s = normalize(nameOrId);
@@ -348,18 +321,10 @@ export function sectionForError(key: string): string {
   return 'screen';
 }
 
-/** User calendar sources + the built-in pseudo-sources (local events, birthdays) as picker options. */
+/** User calendar sources as picker options. */
 export function allSourceOptions(c: Pick<StoredConfig, 'calendar' | 'localEvents' | 'birthdays'>, opts: { includeDisabled?: boolean } = {}) {
   const out = c.calendar.sources
     .filter((s) => opts.includeDisabled || s.enabled)
     .map((s) => ({ id: s.id, name: s.name || s.id, color: s.color, emoji: s.emoji || KIND_EMOJI[s.kind] || '' }));
-  out.push({ id: 'local', name: c.localEvents.name || 'Local', color: c.localEvents.color, emoji: c.localEvents.emoji || '📅' });
-  out.push({ id: 'birthdays', name: c.birthdays.name || 'Birthdays', color: c.birthdays.color, emoji: c.birthdays.emoji || '🎂' });
   return out;
-}
-
-/** First name for the dashboard greeting; none when the account name is an email address (Marco Cloud accounts). */
-export function greetingName(name?: string | null): string {
-  const n = (name || '').trim();
-  return n && !n.includes('@') ? n.split(/\s+/)[0] : '';
 }

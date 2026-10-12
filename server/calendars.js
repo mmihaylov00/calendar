@@ -1,7 +1,6 @@
 // Calendar sources: fetching (ICS / Google / Microsoft), per-source cache (refreshMin, stale-on-error, disk cache),
 // merging into CalEvent[] with icon rules, kind normalisation and a stable hash.
-// v2 (docs/ARCHITECTURE.md): built-in pseudo-sources `local` / `birthdays` (localEvents.js), event rules
-// hide → rename → style (eventRules.js), per-screen source selection, admin preview and source error logging.
+// Existing calendar rules and per-screen source selections are preserved.
 import fs from 'node:fs';
 import path from 'node:path';
 import { request } from './lib/http.js';
@@ -11,15 +10,12 @@ import { t } from './core/lib/i18n.js';
 import { parseIcsText, expandEvents } from './ics.js';
 import { matchRule, normalizeAirbnbTitle, tidyTitle, KIND_EMOJI } from './rules.js';
 import { applyEventRules } from './eventRules.js';
-import { expandLocalEvents, expandBirthdays, localSource, birthdaysSource } from './localEvents.js';
 import * as google from './google.js';
 import * as microsoft from './microsoft.js';
 import * as haCalendars from './haCalendars.js';
 import { haSettings } from './homeassistant.js';
 import { getConfig, paths } from './store.js';
 import { defaultScreen, screenSourceIds } from './core/screens.js';
-import { logActivity } from './activity.js';
-import { LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_ID } from './core/defaults.js';
 
 const DAY = 86_400_000;
 const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
@@ -124,19 +120,8 @@ async function doRefresh(source, needWindow) {
       ? 'auth_failed' : err.code === 'parse_failed' || /parse|ical/i.test(entry.error) ? 'parse_failed' : 'fetch_failed';
     console.warn(`[calendars] ${source.name} (${source.id}): ${entry.error}`);
   }
-  logTransition(source, prev && prev.key === key ? prev.ok : undefined, entry);
   cache.set(source.id, entry);
   return entry;
-}
-
-/** Activity log on ok/unknown → error and error → ok transitions only (docs/ARCHITECTURE.md). Never logs URLs. */
-function logTransition(source, prevOk, entry) {
-  if (entry.ok === false && prevOk !== false) {
-    const error = String(entry.error || '').replace(/(?:https?|webcals?):\/\/\S+/gi, '<url>').slice(0, 200);
-    logActivity('source.error', { actor: 'system', level: 'warn', data: { sourceId: source.id, name: source.name, error, code: entry.errorCode } });
-  } else if (entry.ok === true && prevOk === false) {
-    logActivity('source.recovered', { actor: 'system', level: 'info', data: { sourceId: source.id, name: source.name } });
-  }
 }
 
 function primeFromDisk(source) {
@@ -192,11 +177,7 @@ export function sourceStatus() {
       count: valid ? e.count || 0 : 0,
       error: valid ? e.error || null : null,
     };
-  }).concat([
-    // Built-in pseudo-sources (F2): always "ok", count = configured items.
-    { id: LOCAL_SOURCE_ID, name: cfg.localEvents.name, enabled: cfg.localEvents.enabled, lastFetch: null, lastSuccess: null, ok: true, count: cfg.localEvents.items.length, error: null },
-    { id: BIRTHDAYS_SOURCE_ID, name: cfg.birthdays.name, enabled: cfg.birthdays.enabled, lastFetch: null, lastSuccess: null, ok: true, count: cfg.birthdays.items.length, error: null },
-  ]);
+  });
 }
 
 /** Google event → raw instance */
@@ -325,8 +306,8 @@ function rawForSource(source, entry, fromDate, toDate) {
 }
 
 /**
- * Sources (remote + pseudo) visible for `screen` (null = all enabled), optionally restricted to `onlyIds`.
- * Returns { remote: CalendarSource[], local: bool, birthdays: bool }.
+ * Remote sources visible for `screen` (null = all enabled), optionally restricted to `onlyIds`.
+ * Returns { remote: CalendarSource[] }.
  */
 function pickSources(cfg, screen, onlyIds = null) {
   let ids = screenSourceIds(cfg, screen);
@@ -334,8 +315,6 @@ function pickSources(cfg, screen, onlyIds = null) {
   const set = new Set(ids);
   return {
     remote: cfg.calendar.sources.filter((s) => s.enabled && set.has(s.id)),
-    local: set.has(LOCAL_SOURCE_ID),
-    birthdays: set.has(BIRTHDAYS_SOURCE_ID),
   };
 }
 
@@ -370,25 +349,17 @@ function computeDetailed(cfg, picked, { from, to, lang }) {
       errors.push({ sourceId: s.id, message: 'parse_failed' });
     }
   }
-  if (picked.local) {
-    events.push(...buildSourceEvents(expandLocalEvents(cfg.localEvents.items, { from, to, tz }), localSource(cfg), opts));
-  }
-  if (picked.birthdays) {
-    const raws = expandBirthdays(cfg.birthdays.items, { from: addDays(from, -1), to: addDays(to, 1), showAge: cfg.birthdays.showAge });
-    events.push(...buildSourceEvents(raws, birthdaysSource(cfg), opts));
-  }
   return { events: sortEvents(events, tz), errors };
 }
 
 const memo = new Map();
 const memoKeyOf = (cfg, picked, from, to, lang) => [
-  from, to, cfg.datetime.timezone, lang, cfg.revision, picked.local ? 'L' : '', picked.birthdays ? 'B' : '',
+  from, to, cfg.datetime.timezone, lang, cfg.revision,
   ...picked.remote.map((s) => `${s.id}:${cache.get(s.id)?.version}:${cache.get(s.id)?.sig}`),
 ].join('|');
 
 /**
- * Detailed events (internal; hidden ones included) with memoisation. Used by getEvents and countdowns.
- * `onlyIds` restricts the screen's sources further (countdowns scan only what can be flagged).
+ * Detailed events (internal; hidden ones included) with memoisation. Used by getEvents.
  */
 export async function getDetailedEvents({ from, to, screen = null, onlyIds = null, cfg = getConfig() }) {
   const lang = (screen || defaultScreen(cfg)).screen.language;
@@ -409,47 +380,11 @@ export async function getDetailedEvents({ from, to, screen = null, onlyIds = nul
 /**
  * Merged events for a local-date window. Sources without any data are awaited (first load);
  * stale sources are refreshed in the background and served from cache meanwhile.
- * `screen` (ScreenProfile) selects language + visible sources; null = every enabled source incl. local/birthdays.
+ * `screen` (ScreenProfile) selects language + visible sources; null = every enabled remote source.
  */
 export async function getEvents({ from, to, screen = null }) {
   const r = await getDetailedEvents({ from, to, screen });
   return { generatedAt: r.generatedAt, hash: r.hash, events: r.wire, errors: r.errors };
-}
-
-/**
- * Admin preview (docs/ARCHITECTURE.md): every event in [from, to] incl. hidden ones, with rule details.
- * `overrides` = sanitised draft { eventRules?, iconRules?, localEvents?, birthdays? } replacing the saved ones.
- * Reuses cached source data (first loads are awaited like getEvents, nothing is force-refetched).
- */
-export async function previewEvents({ from, to, screen = null, overrides = {} }) {
-  const base = getConfig();
-  const cfg = {
-    ...base,
-    calendar: { ...base.calendar, ...(overrides.iconRules ? { iconRules: overrides.iconRules } : {}) },
-    eventRules: overrides.eventRules ? { items: overrides.eventRules } : base.eventRules,
-    localEvents: overrides.localEvents || base.localEvents,
-    birthdays: overrides.birthdays || base.birthdays,
-  };
-  const lang = (screen || defaultScreen(cfg)).screen.language;
-  const picked = pickSources(cfg, screen);
-  await ensureSources(picked.remote, { from, to });
-  const { events, errors } = computeDetailed(cfg, picked, { from, to, lang });
-  const names = new Map([
-    ...cfg.calendar.sources.map((s) => [s.id, s.name]),
-    [LOCAL_SOURCE_ID, cfg.localEvents.name],
-    [BIRTHDAYS_SOURCE_ID, cfg.birthdays.name],
-  ]);
-  const ruleHits = {};
-  for (const r of cfg.eventRules.items) ruleHits[r.id] = 0;
-  const out = events.map((e) => {
-    for (const a of e.applied) ruleHits[a.ruleId] = (ruleHits[a.ruleId] || 0) + 1;
-    return {
-      ...toWire(e),
-      hidden: e.hidden, originalTitle: e.originalTitle, sourceName: names.get(e.sourceId) || e.sourceId,
-      applied: e.applied, iconRuleId: e.iconRuleId,
-    };
-  });
-  return { from, to, events: out, ruleHits, errors: [...collectErrors(picked.remote), ...errors] };
 }
 
 function collectErrors(sources) {
@@ -487,7 +422,7 @@ export function defaultWindow(tz) {
 }
 
 /**
- * Quick ICS check for the admin panel. `guard` (unauthenticated setup wizard): no loopback/link-local/metadata
+ * Quick ICS check for the admin panel. `guard`: no loopback/link-local/metadata
  * destinations and generic error messages (no network details: the endpoint must not work as a port scanner).
  */
 export async function testIcs(url, insecureTls = false, { guard = false } = {}) {
@@ -508,7 +443,7 @@ export async function testIcs(url, insecureTls = false, { guard = false } = {}) 
 }
 
 /**
- * The process time zone changed (Admin → Date & time or the setup wizard): floating ICS times (no TZID) were
+ * The configured time zone changed: floating ICS times (no TZID) were
  * parsed in the old zone. Mark every ICS source stale and bump its version so the next refresh re-parses it and
  * cached event lists are rebuilt.
  */
