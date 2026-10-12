@@ -8,8 +8,10 @@ Calendar opens inside Home Assistant and uses your existing HA login. The app ru
 2. Install the bundled `marco` integration into Home Assistant Core. From a Home Assistant SSH terminal with access to `/config`, run the helper from this repository:
 
    ```sh
-   python3 home-assistant/install-panel.py --config-dir /config --addon-slug 7cc5cd13_marco
+   python3 home-assistant/install-panel.py --config-dir "$(readlink -f /config)" --addon-slug 7cc5cd13_marco
    ```
+
+   Some SSH apps expose `/config` as a symlink to `/homeassistant`. Resolving it selects the actual HA configuration directory; the helper still checks the integration paths before installing.
 
    The helper preserves unrelated configuration, backs up every changed installation and never restarts a service. It installs `home-assistant/custom_components/marco/` and adds the configuration below. If your app has a different slug, pass that slug to the helper.
 
