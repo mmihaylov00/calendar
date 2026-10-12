@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.6.1-ha.8]
+
+- Keep the mouse cursor visible over the calendar, weather and photo background.
+
 ## [0.6.1-ha.7]
 
 - Return keyboard focus to the Settings button when the settings modal closes.
