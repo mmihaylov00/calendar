@@ -1,6 +1,6 @@
 // Normalises API events into calendar-day coordinates in the configured timezone.
 import type { CalEvent } from '../shared/types';
-import { addDays, dateKeyInTz, diffDays, formatTime, zonedParts } from '../shared/i18n';
+import { addDays, dateKeyInTz, diffDays, formatTime, startOfWeek, zonedParts } from '../shared/i18n';
 
 export interface NEvent {
   ev: CalEvent;
@@ -98,6 +98,18 @@ export function normalizeEvents(list: CalEvent[], tz: string): NEvent[] {
 /** Events covering a given day (by grid occupancy). */
 export function eventsOnDay(list: NEvent[], key: string, useSpan = false): NEvent[] {
   return list.filter((e) => (useSpan ? e.spanFirst <= key && e.spanLast >= key : e.startKey <= key && e.lastKey >= key));
+}
+
+/** Keep an open day's data when the live calendar advances to the next week. */
+export function calendarEventRange(today: string, weekStart: number, weeks: number, selectedDay: string | null = null): [string, string] {
+  let from = startOfWeek(today, weekStart);
+  let to = addDays(from, Math.max(weeks * 7, 21) + 1);
+  if (selectedDay) {
+    if (selectedDay < from) from = selectedDay;
+    const end = addDays(selectedDay, 1);
+    if (end > to) to = end;
+  }
+  return [from, to];
 }
 
 export function sortForDay(a: NEvent, b: NEvent): number {

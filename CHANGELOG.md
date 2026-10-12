@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.1-ha.9]
+
+- Click a calendar date to open its hourly schedule with an animated transition; return with Back to calendar or Escape.
+- Keep date selection temporary, support keyboard navigation and reduced motion, and preserve the current clock, weather and background.
+- Show the selected date's all-day and overnight events correctly across timezone and daylight-saving changes.
+
 ## [0.6.1-ha.8]
 
 - Keep the mouse cursor visible over the calendar, weather and photo background.

@@ -20,6 +20,8 @@ The [connection and installation guide](DOCS.md) explains the bundled HA integra
 
 The main view shows the saved calendar. Open **Settings** to edit it, then click **Save** to apply your changes. Closing settings retains unsaved edits; **Discard** restores the saved version.
 
+Click any date in the calendar to open its hourly day view with a short transition. **Back to calendar** or **Escape** returns to the grid. This selection does not change the saved layout, and transitions respect reduced-motion preferences.
+
 The display keeps cached data for network interruptions and refreshes when the server returns. Home Assistant authenticates access to the display and admin. See [the security policy](SECURITY.md).
 
 Calendar connections and uploaded photos survive updates. Home Assistant owns authentication, app updates and backups. Old configuration fields are retained for compatibility; retired widgets and services do not run.

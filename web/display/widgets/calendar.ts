@@ -1,5 +1,5 @@
 // Month / week grid: huge thin day numbers, lane-allocated event chips and continuous multi-day bars.
-import { addDays, diffDays, monthName, startOfWeek, weekdayNames, weekdayOfKey } from '../../shared/i18n';
+import { addDays, diffDays, formatDateLine, monthName, startOfWeek, weekdayNames, weekdayOfKey } from '../../shared/i18n';
 import { chipColors } from '../color';
 import { ctx } from '../ctx';
 import { esc, reconcile, setHTML, type Spec } from '../dom';
@@ -78,6 +78,7 @@ function textWidth(text: string, px: number, weight: number): number {
 
 export class MonthCalendar {
   readonly root: HTMLElement;
+  onDaySelect?: (day: string, button: HTMLButtonElement) => void;
   /** Two weeks layout: rows are tall, so chips may wrap onto four lines (five for the only event of a day). */
   roomy = false;
   private head: HTMLElement;
@@ -92,6 +93,19 @@ export class MonthCalendar {
     this.head = root.querySelector('.cal-head')!;
     this.dow = root.querySelector('.cal-dow')!;
     this.weeks = root.querySelector('.cal-weeks')!;
+    root.addEventListener('click', (event) => {
+      if (event.defaultPrevented || !(event.target instanceof Element)) return;
+      const target = event.target;
+      let button = target.closest<HTMLButtonElement>('.day-hit');
+      if (!button) {
+        const row = target.closest('.wk');
+        button = Array.from(row?.querySelectorAll<HTMLButtonElement>('.day-hit') ?? []).find((candidate) => {
+          const box = candidate.getBoundingClientRect();
+          return event.clientX >= box.left && event.clientX < box.right && event.clientY >= box.top && event.clientY < box.bottom;
+        }) ?? null;
+      }
+      if (button?.dataset.day) this.onDaySelect?.(button.dataset.day, button);
+    });
   }
 
   render(events: NEvent[], tick: Tick): void {
@@ -570,7 +584,9 @@ export class MonthCalendar {
       const first = dayNum === 1;
       const col = `grid-column:${2 * d + 1} / span 2`;
       const cls = `${past ? ' past' : ''}${isToday ? ' today' : ''}${wd === 0 || wd === 6 ? ' we' : ''}${first ? ' m1' : ''}`;
-      specs.push({ key: `b${key}`, className: `cell${cls}`, style: col, html: '' });
+      const dayLabel = `Open ${formatDateLine(lang, key, 'weekday_month_d_y')}`;
+      specs.push({ key: `b${key}`, className: `cell${cls}`, style: col,
+        html: `<button class="day-hit" type="button" data-day="${key}" aria-label="${esc(dayLabel)}"></button>` });
       let label = first ? esc(monthName(lang, +key.slice(5, 7), 'short')) : String(dayNum);
       if (isWeek && !first) label = `${dayNum}`;
       const numHtml = isToday ? `<span class="dot"><span>${label}</span></span>` : `<span>${label}</span>`;

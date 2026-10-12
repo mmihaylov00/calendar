@@ -5,16 +5,16 @@ import '../shared/emoji-font.css';
 import './styles.css';
 import './styles-views.css';
 import './styles-modern.css';
+import './styles-day.css';
 import type { DisplayConfig, EventsResponse, StreamHello, WeatherResponse } from '../shared/types';
-import { addDays, startOfWeek } from '../shared/i18n';
 import { glassVars, normalizeGlass } from '../shared/glass';
 import { api, ApiError } from './api';
 import { parseColor } from './color';
 import { ctx, setCtxConfig } from './ctx';
 import { normalizeConfig } from './defaults';
 import { clearCaches, screenKey } from './identity';
-import { $ } from './dom';
-import { type NEvent, normalizeEvents } from './eventModel';
+import { $, reducedMotion } from './dom';
+import { calendarEventRange, type NEvent, normalizeEvents } from './eventModel';
 import { loadCache, on, saveCache, set, state } from './store';
 import { startConfigPoll, type StreamHandlers } from './live';
 import { connectStream } from './stream';
@@ -50,7 +50,12 @@ const views = new Views($('#view'));
 const screenNote = $('#screen-note');
 const statusDot = $('#status');
 const accessNote = $('#access-note');
+const mainEl = $('.main');
+const dayNav = $('#day-nav');
+const dayBack = $('#day-back');
 let customStyle: HTMLStyleElement | null = null;
+let selectedDay: string | null = null;
+let viewAnimation: Animation | null = null;
 
 let nEvents: NEvent[] = [];
 let nEventsKey = '';
@@ -81,10 +86,12 @@ function applyLayout(): void {
     cfg.background.enabled ? 'has-photo' : 'no-photo',
     PRESET_BASE[preset] ? `preset-${PRESET_BASE[preset]}` : '',
   ].filter(Boolean).join(' ');
-  app.classList.toggle('has-view', VIEW_PRESETS.includes(preset));
-  views.setPreset(preset);
+  app.classList.toggle('has-view', !!selectedDay || VIEW_PRESETS.includes(preset));
+  app.classList.toggle('day-detail', !!selectedDay);
+  dayNav.hidden = !selectedDay;
+  views.setPreset(selectedDay ? 'today' : preset);
   const view = params.get('view') || cfg.calendar.view;
-  const showAgendaMain = preset === 'agenda' || view === 'agenda';
+  const showAgendaMain = !selectedDay && (preset === 'agenda' || view === 'agenda');
   app.classList.toggle('view-agenda', showAgendaMain);
   app.classList.toggle('cal-off', !cfg.calendar.enabled);
 }
@@ -152,6 +159,10 @@ function applyConfig(raw: DisplayConfig): void {
   }
   // Small landscape screens (e.g. 1280×720 on the Pi): one week fewer so text can be bigger.
   if (window.innerWidth > window.innerHeight && window.innerHeight <= 820 && effectivePreset(cfg) !== 'twoWeeks') cfg.calendar.weeks = Math.min(cfg.calendar.weeks, 4);
+  if (selectedDay && (!cfg.calendar.enabled || VIEW_PRESETS.includes(effectivePreset(cfg)) || effectivePreset(cfg) === 'agenda' || cfg.calendar.view === 'agenda')) {
+    selectedDay = null;
+    viewAnimation?.cancel();
+  }
   setCtxConfig(cfg);
   setTimezone(ctx.tz);
   const root = document.documentElement;
@@ -228,6 +239,10 @@ function renderCalendar(tick: Tick): void {
   const preset = effectivePreset(cfg);
   renderView(tick);
   if (!cfg.calendar.enabled) return;
+  if (selectedDay) {
+    highlights.render(evs, tick);
+    return;
+  }
   // layouts with their own view (today, people, …) do not show the month grid / agenda
   if (VIEW_PRESETS.includes(preset)) {
     if (preset === 'today') highlights.render(evs, tick);
@@ -245,8 +260,39 @@ function renderCalendar(tick: Tick): void {
 
 /** Content of the layouts with their own view (no-op for the others). */
 function renderView(tick: Tick): void {
-  views.render({ events: ctx.cfg.calendar.enabled ? eventsNormalized() : [] }, tick);
+  views.render({ events: ctx.cfg.calendar.enabled ? eventsNormalized() : [] }, tick, selectedDay ?? undefined);
 }
+
+function showDay(day: string | null, trigger?: HTMLButtonElement): void {
+  if (accessDenied || !ctx.cfg.calendar.enabled || selectedDay === day) return;
+  const previous = selectedDay;
+  viewAnimation?.cancel();
+  if (trigger) {
+    const cell = trigger.getBoundingClientRect();
+    const box = mainEl.getBoundingClientRect();
+    mainEl.style.transformOrigin = `${cell.left + cell.width / 2 - box.left}px ${cell.top + cell.height / 2 - box.top}px`;
+  } else mainEl.style.transformOrigin = 'center';
+  selectedDay = day;
+  applyLayout();
+  renderAll();
+  if (day) dayBack.focus({ preventScroll: true });
+  else (document.querySelector<HTMLButtonElement>(`.day-hit[data-day="${previous}"]`) ?? document.querySelector<HTMLButtonElement>('.day-hit'))?.focus({ preventScroll: true });
+  if (!reducedMotion() && typeof mainEl.animate === 'function') {
+    viewAnimation = mainEl.animate([
+      { opacity: 0, transform: `translateY(${day ? 8 : -8}px) scale(.97)` },
+      { opacity: 1, transform: 'none' },
+    ], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  }
+}
+
+calendar.onDaySelect = (day, button) => showDay(day, button);
+dayBack.addEventListener('click', () => showDay(null));
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && selectedDay && !event.defaultPrevented) {
+    event.preventDefault();
+    showDay(null);
+  }
+});
 
 function renderWeather(tick: Tick): void {
   weather.render(state.weather, tick.dayKey);
@@ -304,6 +350,8 @@ let configPoll: ReturnType<typeof startConfigPoll> | null = null;
 function denyAccess(status: number): void {
   if (accessDenied) return;
   accessDenied = true;
+  viewAnimation?.cancel();
+  selectedDay = null;
   intervals.forEach(clearInterval);
   intervals.length = 0;
   liveStream?.close();
@@ -329,10 +377,7 @@ function deniedBy(e: unknown): boolean {
 // Data
 // ---------------------------------------------------------------------------------------------
 function eventsRange(): [string, string] {
-  const today = current().dayKey;
-  const from = startOfWeek(today, ctx.cfg.calendar.weekStart);
-  const to = addDays(from, Math.max(ctx.cfg.calendar.weeks * 7, 21) + 1);
-  return [from, to];
+  return calendarEventRange(current().dayKey, ctx.cfg.calendar.weekStart, ctx.cfg.calendar.weeks, selectedDay);
 }
 
 async function fetchEvents(): Promise<void> {

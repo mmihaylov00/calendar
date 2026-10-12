@@ -1,0 +1,72 @@
+.day-hit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.day-hit:hover {
+  background: rgb(var(--accent-rgb) / 0.08);
+}
+
+.day-hit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+  background: rgb(var(--accent-rgb) / 0.12);
+}
+
+.cal .num,
+.cal .ev,
+.cal .more,
+.cal .stack {
+  cursor: pointer;
+}
+
+.day-nav {
+  display: flex;
+  flex: none;
+  margin-bottom: 1.4rem;
+}
+
+.day-nav[hidden] {
+  display: none;
+}
+
+.day-nav button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 44px;
+  padding: 0.6rem 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  color: var(--fg);
+  background: var(--panel);
+  font: inherit;
+  font-size: max(14px, 1.8rem);
+  cursor: pointer;
+}
+
+.day-nav button:hover {
+  background: rgb(var(--accent-rgb) / 0.1);
+}
+
+.day-nav button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.day-detail .view-today .td-title {
+  white-space: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .day-hit {
+    transition: none;
+  }
+}

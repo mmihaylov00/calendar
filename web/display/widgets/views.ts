@@ -3,9 +3,10 @@
 // Everything is plain HTML strings + setHTML (patched only when it changes) and one fitting pass that drops whole
 // rows that do not fit, so nothing is ever cut in half.
 import type { PublicCalendarSource } from '../../shared/types';
-import { addDays, diffDays, formatCountdown, formatDateLine, formatTime, relativeDayLabel } from '../../shared/i18n';
+import { addDays, diffDays, formatCountdown, formatDateLine, formatTime, relativeDayLabel, zonedParts } from '../../shared/i18n';
 import { chipColors } from '../color';
 import { ctx } from '../ctx';
+import { dayTimeline, selectedDayKey } from '../dayTimeline';
 import { esc, setHTML } from '../dom';
 import { type NEvent, sortForDay } from '../eventModel';
 import type { Tick } from '../time';
@@ -28,6 +29,11 @@ const colStyle = (hex: string) => {
   return `--c:${c.base};--tint:${c.tint};--shade:${c.shade};--on:${c.onSolid}`;
 };
 const hm = (ms: number) => formatTime(new Date(ms), ctx.tz, ctx.cfg.datetime.format24, ctx.cfg.datetime.showAmPm);
+const hourLabel = (ms: number) => {
+  const p = zonedParts(new Date(ms), ctx.tz);
+  const minute = String(p.minute).padStart(2, '0');
+  return ctx.cfg.datetime.format24 ? `${String(p.hour).padStart(2, '0')}:${minute}` : `${p.hour % 12 || 12}${p.minute ? `:${minute}` : ''} ${p.hour < 12 ? 'AM' : 'PM'}`;
+};
 const emojiOr = (e: NEvent, fallback = '') => (e.emoji ? esc(e.emoji) : fallback);
 
 /** Timed single-day events of a day, by start. */
@@ -48,14 +54,13 @@ function barNote(e: NEvent, key: string): string {
 }
 
 /** The next thing to look at: upcoming today, else what is on now, else tomorrow's first event. */
-function nextOf(events: NEvent[], tick: Tick): { e: NEvent; kind: 'next' | 'now' | 'tomorrow' } | null {
+function nextOf(events: NEvent[], tick: Tick, today: NEvent[]): { e: NEvent; kind: 'next' | 'now' | 'tomorrow' } | null {
   const nowMs = tick.now.getTime();
-  const today = timedOn(events, tick.dayKey);
   const next = today.find((e) => e.startMs > nowMs);
   if (next) return { e: next, kind: 'next' };
   const on = today.filter((e) => e.startMs <= nowMs && e.endMs > nowMs).pop();
   if (on) return { e: on, kind: 'now' };
-  const tm = timedOn(events, addDays(tick.dayKey, 1))[0];
+  const tm = dayTimeline(events, addDays(tick.dayKey, 1), ctx.tz).timed[0]?.e;
   return tm ? { e: tm, kind: 'tomorrow' } : null;
 }
 
@@ -102,9 +107,9 @@ export class Views {
     this.root.innerHTML = SKELETON[kind] ?? '';
   }
 
-  render(d: ViewData, tick: Tick): void {
+  render(d: ViewData, tick: Tick, selectedDay?: string): void {
     if (!this.kind) return;
-    if (this.kind === 'today') this.today(d, tick);
+    if (this.kind === 'today') this.today(d, tick, selectedDayKey(selectedDay, tick.dayKey));
     else if (this.kind === 'people') this.people(d, tick);
   }
 
@@ -117,25 +122,24 @@ export class Views {
   }
 
   // ------------------------------------------------------------------------------------------------ Today
-  private today(d: ViewData, tick: Tick): void {
+  private today(d: ViewData, tick: Tick, key: string): void {
     const { lang, t } = ctx;
     const root = this.root;
-    const key = tick.dayKey;
+    const isToday = key === tick.dayKey;
     const nowMs = tick.now.getTime();
-    const p = tick.parts;
-    // the date as the screen writes it everywhere else ("Miércoles, 14 de octubre", "Wednesday, 14 October")
-    setHTML(root.querySelector('.td-title')!, `<b>${esc(t('today'))}</b><span>${esc(formatDateLine(lang, key, ctx.cfg.datetime.dateFormat, ctx.cfg.datetime.dateCustom))}</span>`);
+    const day = dayTimeline(d.events, key, ctx.tz);
+    setHTML(root.querySelector('.td-title')!, `${isToday ? `<b>${esc(t('today'))}</b>` : ''}<span>${esc(formatDateLine(lang, key, ctx.cfg.datetime.dateFormat, ctx.cfg.datetime.dateCustom))}</span>`);
 
-    // all-day + multi-day things of today, as chips next to the title
-    const chips = allDayOn(d.events, key).map((e) => {
+    // All-day and accommodation stays, as chips next to the selected date.
+    const chips = day.allDay.map((e) => {
       const note = barNote(e, key);
       return `<span class="td-chip" style="${colStyle(e.color)}">${e.emoji ? `<i>${esc(e.emoji)}</i>` : ''}<b>${esc(e.title)}</b>${note ? `<em>${esc(note)}</em>` : ''}</span>`;
     });
     setHTML(root.querySelector('.td-allday')!, chips.join(''));
 
     // the next event, large
-    const nx = nextOf(d.events, tick);
-    let next: string;
+    const nx = isToday ? nextOf(d.events, tick, day.timed.map(({ e }) => e)) : null;
+    let next = '';
     if (nx) {
       const e = nx.e;
       const kicker = nx.kind === 'now'
@@ -147,33 +151,42 @@ export class Views {
       next = `<div class="td-card${nx.kind === 'now' ? ' is-now' : ''}" style="${colStyle(e.color)}">
         <span class="td-em">${emojiOr(e, '<i class="td-dot"></i>')}</span>
         <div class="td-txt"><span class="td-k">${esc(kicker)}</span><span class="td-tt">${esc(e.title)}</span><span class="td-sub">${sub}</span></div></div>`;
-    } else {
-      next = `<div class="td-card is-empty"><div class="td-txt"><span class="td-tt">${esc(t('nothingMoreToday'))}</span></div></div>`;
+    } else if (isToday || (!day.allDay.length && !day.timed.length)) {
+      next = `<div class="td-card is-empty"><div class="td-txt"><span class="td-tt">${esc(t(isToday ? 'nothingMoreToday' : 'nothingPlanned'))}</span></div></div>`;
     }
-    setHTML(root.querySelector('.td-next')!, next);
+    const nextEl = root.querySelector<HTMLElement>('.td-next')!;
+    nextEl.style.display = next ? '' : 'none';
+    setHTML(nextEl, next);
+
+    if (!day.duration) {
+      setHTML(root.querySelector('.td-grid')!, '');
+      setHTML(root.querySelector('.td-evs')!, '');
+      root.querySelector<HTMLElement>('.td-now')!.style.display = 'none';
+      this.fit();
+      return;
+    }
 
     // hour-by-hour timeline: 07:00–22:00 at least, stretched to every event of the day and to "now"
-    const evs = timedOn(d.events, key);
-    const startOfDay = nowMs - ((p.hour * 60 + p.minute) * 60 + p.second) * 1000;
-    const minOf = (ms: number) => (ms - startOfDay) / 60000;
-    let h0 = Math.min(7, p.hour), h1 = Math.max(22, p.hour + 1);
-    for (const e of evs) {
-      h0 = Math.min(h0, Math.floor(minOf(e.startMs) / 60));
-      h1 = Math.max(h1, Math.ceil(Math.min(24 * 60, minOf(e.endMs)) / 60));
+    const nowMin = (nowMs - day.start) / 60000;
+    let h0 = day.morning / 60, h1 = day.evening / 60;
+    if (isToday) {
+      h0 = Math.min(h0, Math.floor(nowMin / 60));
+      h1 = Math.max(h1, Math.floor(nowMin / 60) + 1);
+    }
+    for (const e of day.timed) {
+      h0 = Math.min(h0, Math.floor(e.a / 60));
+      h1 = Math.max(h1, Math.ceil(e.b / 60));
     }
     h0 = Math.max(0, h0);
-    h1 = Math.min(24, Math.max(h1, h0 + 1));
+    h1 = Math.min(day.duration / 60, Math.max(h1, h0 + 1));
     const span = (h1 - h0) * 60;
     const pct = (m: number) => `${(((m - h0 * 60) / span) * 100).toFixed(3)}%`;
-    const nowMin = p.hour * 60 + p.minute;
-    const f24 = ctx.cfg.datetime.format24;
-    const hourLbl = (h: number) => (f24 ? `${String(h).padStart(2, '0')}:00` : `${h % 12 === 0 ? 12 : h % 12} ${h < 12 ? 'AM' : 'PM'}`);
     const step = h1 - h0 > 15 ? 2 : 1;
     let grid = '';
     for (let h = h0; h <= h1; h++) {
-      const near = Math.abs(h * 60 - nowMin) < 22;
-      const lbl = (h - h0) % step === 0 && h < 24 && !near ? `<span>${esc(hourLbl(h))}</span>` : '';
-      grid += `<div class="td-hr${h * 60 < nowMin ? ' past' : ''}" style="top:${pct(h * 60)}">${lbl}</div>`;
+      const near = isToday && Math.abs(h * 60 - nowMin) < 22;
+      const lbl = (h - h0) % step === 0 && h * 60 < day.duration && !near ? `<span>${esc(hourLabel(day.start + h * 3600_000))}</span>` : '';
+      grid += `<div class="td-hr${isToday && h * 60 < nowMin ? ' past' : ''}" style="top:${pct(h * 60)}">${lbl}</div>`;
     }
     setHTML(root.querySelector('.td-grid')!, grid);
 
@@ -182,10 +195,9 @@ export class Views {
     const H = box.clientHeight || 1;
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 10;
     const minMin = Math.ceil(((rem * 4.4) / H) * span);
-    const items = evs.map((e) => {
-      const a = Math.max(h0 * 60, minOf(e.startMs));
-      const b = Math.min(h1 * 60, Math.max(minOf(e.endMs), a + 15));
-      return { e, a, b, vis: Math.max(b, a + minMin), lane: 0, of: 1 };
+    const items = day.timed.map(({ e, a, b }) => {
+      const end = Math.min(h1 * 60, Math.max(b, a + 15));
+      return { e, a, b: end, vis: Math.min(h1 * 60, Math.max(end, a + minMin)), lane: 0, of: 1 };
     });
     let cluster: typeof items = [];
     let clusterEnd = -1;
@@ -205,17 +217,20 @@ export class Views {
     }
     closeCluster();
     const rows = items.map(({ e, a, b, vis, lane, of }) => {
-      const past = e.endMs <= nowMs;
-      const on = e.startMs <= nowMs && e.endMs > nowMs;
+      const past = isToday && e.endMs <= nowMs;
+      const on = isToday && e.startMs <= nowMs && e.endMs > nowMs;
       const tall = ((b - a) / span) * H > rem * 7.4;
       const loc = tall && e.ev.location ? `<span class="td-loc">${esc(e.ev.location)}</span>` : '';
       return `<div class="td-ev${past ? ' past' : ''}${on ? ' ongoing' : ''}${tall ? ' tall' : ''}" style="${colStyle(e.color)};top:${pct(a)};height:calc(${(((vis - a) / span) * 100).toFixed(3)}% - 0.3rem);left:calc(${((lane / of) * 100).toFixed(2)}% + 0.2rem);width:calc(${(100 / of).toFixed(2)}% - 0.4rem)">
-        <span class="td-l1"><b>${esc(hm(e.startMs))}</b>${e.emoji ? `<i>${esc(e.emoji)}</i>` : ''}<span>${esc(e.title)}</span></span>${loc}</div>`;
+        <span class="td-l1"><b>${esc(hm(day.start + a * 60000))}</b>${e.emoji ? `<i>${esc(e.emoji)}</i>` : ''}<span>${esc(e.title)}</span></span>${loc}</div>`;
     });
     setHTML(box, rows.join(''));
     const nowEl = root.querySelector<HTMLElement>('.td-now')!;
-    nowEl.style.top = pct(nowMin + p.second / 60);
-    nowEl.firstElementChild!.textContent = hm(nowMs);
+    nowEl.style.display = isToday ? '' : 'none';
+    if (isToday) {
+      nowEl.style.top = pct(nowMin);
+      nowEl.firstElementChild!.textContent = hm(nowMs);
+    }
     this.fit();
   }
 

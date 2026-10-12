@@ -51,7 +51,7 @@ interface Keyed extends HTMLElement {
   __data?: string[];
 }
 
-export const reducedMotion = () => document.documentElement.classList.contains('lite');
+export const reducedMotion = () => document.documentElement.classList.contains('lite') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
  * Keyed reconciliation of `parent`'s children against `specs`.
