@@ -6,6 +6,80 @@ import { loadWebModules } from './webModules.js';
 const [live] = await loadWebModules('/web/display/live.ts');
 const opts = {};
 
+test('overlapping calendar loads and stream greetings share one event request', async () => {
+  let calls = 0;
+  let finish;
+  const refresh = live.createEventRefresh(() => 'revision:1|2026-10-12|2026-11-10', () => {
+    calls++;
+    return new Promise((resolve) => { finish = resolve; });
+  });
+  const load = refresh();
+  const hello = refresh();
+  await Promise.resolve();
+  assert.equal(calls, 1);
+  finish();
+  await Promise.all([load, hello]);
+  const returnToTab = refresh();
+  await Promise.resolve();
+  assert.equal(calls, 2);
+  finish();
+  await returnToTab;
+});
+
+test('a calendar window or config change during a load fetches the latest request once', async () => {
+  let key = 'revision:1|old-window';
+  let finish;
+  const calls = [];
+  const refresh = live.createEventRefresh(() => key, () => {
+    calls.push(key);
+    return new Promise((resolve) => { finish = resolve; });
+  });
+  const first = refresh();
+  await Promise.resolve();
+  key = 'revision:2|new-window';
+  const changed = refresh();
+  key = 'revision:3|latest-window';
+  const latest = refresh();
+  finish();
+  await new Promise(setImmediate);
+  assert.deepEqual(calls, ['revision:1|old-window', 'revision:3|latest-window']);
+  finish();
+  await Promise.all([first, changed, latest]);
+});
+
+test('failed event requests are shared and do not prevent the next opening from retrying', async () => {
+  let fail = true;
+  let calls = 0;
+  const refresh = live.createEventRefresh(() => 'same-window', async () => {
+    calls++;
+    if (fail) throw new Error('offline');
+  });
+  const results = await Promise.allSettled([refresh(), refresh()]);
+  assert.equal(calls, 1);
+  assert.ok(results.every((r) => r.status === 'rejected' && r.reason.message === 'offline'));
+  fail = false;
+  await refresh();
+  assert.equal(calls, 2);
+});
+
+test('a window change while loading refetches even without another foreground trigger', async () => {
+  let key = 'old-week';
+  let finish;
+  const calls = [];
+  const refresh = live.createEventRefresh(() => key, () => {
+    calls.push(key);
+    return new Promise((resolve) => { finish = resolve; });
+  });
+  const load = refresh();
+  await Promise.resolve();
+  key = 'new-week';
+  finish();
+  await new Promise(setImmediate);
+  assert.deepEqual(calls, ['old-week', 'new-week']);
+  finish();
+  await load;
+});
+
 test('config poll refetches data only when the revision changes', opts, async () => {
   let rev = 1;
   let serverRev = 1;

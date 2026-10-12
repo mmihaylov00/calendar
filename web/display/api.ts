@@ -51,7 +51,7 @@ export const api = {
   /** First config fetch at boot: short timeout so an unreachable server falls back to the cache quickly. */
   configQuick: () => getJSON<DisplayConfig>(withScreen('/api/display/config'), 5000),
   events: (from: string, to: string) =>
-    getJSON<EventsResponse>(withScreen(`/api/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)),
+    getJSON<EventsResponse>(withScreen(`/api/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`), 30_000),
   weather: () => getJSON<WeatherResponse>(withScreen('/api/weather')),
   /** `after` = gallery file shown last, so sequential orders continue from there and random avoids repeating it. */
   photos: (count = 20, after = '') =>

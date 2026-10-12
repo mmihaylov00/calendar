@@ -28,6 +28,11 @@ async function withApp(fn) {
     calls.push(parsed.pathname);
     assert.equal(parsed.origin, 'http://supervisor');
     assert.equal(options.headers.authorization, 'Bearer supervisor-private');
+    if (parsed.pathname === '/core/api/services/homeassistant/update_entity') {
+      assert.equal(options.method, 'POST');
+      assert.deepEqual(JSON.parse(options.body), { entity_id: 'calendar.family' });
+      return Response.json([]);
+    }
     if (parsed.pathname === '/core/api/calendars') return Response.json([{ entity_id: 'calendar.family', name: 'Family' }]);
     if (parsed.pathname.startsWith('/core/api/calendars/')) return Response.json([{ summary: 'Synced calendar', start: { date: '2026-10-25' }, end: { date: '2026-10-26' } }]);
     throw new Error(`unexpected outbound request ${parsed.pathname}`);

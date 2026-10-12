@@ -1,4 +1,4 @@
-// Calendar display: real data polling, live updates, calendar layouts and photo backgrounds.
+// Calendar display: on-demand events, live updates, calendar layouts and photo backgrounds.
 import '@fontsource-variable/inter';
 import '@fontsource-variable/outfit';
 import '../shared/emoji-font.css';
@@ -16,7 +16,7 @@ import { clearCaches, screenKey } from './identity';
 import { $, reducedMotion } from './dom';
 import { calendarEventRange, type NEvent, normalizeEvents } from './eventModel';
 import { loadCache, on, saveCache, set, state } from './store';
-import { startConfigPoll, type StreamHandlers } from './live';
+import { createEventRefresh, startConfigPoll, type StreamHandlers } from './live';
 import { connectStream } from './stream';
 import { current, onTick, setTimezone, startTicker, type Tick } from './time';
 import { Agenda } from './widgets/agenda';
@@ -376,27 +376,38 @@ function deniedBy(e: unknown): boolean {
 // ---------------------------------------------------------------------------------------------
 // Data
 // ---------------------------------------------------------------------------------------------
+let eventLoadSucceeded = false;
 function eventsRange(): [string, string] {
   return calendarEventRange(current().dayKey, ctx.cfg.calendar.weekStart, ctx.cfg.calendar.weeks, selectedDay);
 }
 
-async function fetchEvents(): Promise<void> {
-  try {
-    const [from, to] = eventsRange();
-    const r = await api.events(from, to);
-    if (accessDenied) return;
-    setOnline(true);
-    if (r.errors?.length) console.warn('[events] source errors', r.errors);
-    if (!state.events || state.events.hash !== r.hash) {
-      set('events', r);
-      saveCache('events', r);
-    }
-  } catch (e) {
-    if (deniedBy(e)) return;
-    console.warn('[events]', (e as Error).message);
-    setOnline(false);
-  }
+function eventsRequestKey(): string {
+  return [state.config?.revision, ...eventsRange()].join('|');
 }
+
+const fetchEvents = createEventRefresh(
+  eventsRequestKey,
+  async () => {
+    if (accessDenied || document.hidden || !ctx.cfg.calendar.enabled) return;
+    try {
+      const key = eventsRequestKey();
+      const [from, to] = eventsRange();
+      const r = await api.events(from, to);
+      if (accessDenied || key !== eventsRequestKey()) return;
+      eventLoadSucceeded = true;
+      setOnline(true);
+      if (r.errors?.length) console.warn('[events] source errors', r.errors);
+      if (!state.events || state.events.hash !== r.hash) {
+        set('events', r);
+        saveCache('events', r);
+      }
+    } catch (e) {
+      if (deniedBy(e)) return;
+      console.warn('[events]', (e as Error).message);
+      setOnline(false);
+    }
+  },
+);
 
 async function fetchWeather(): Promise<void> {
   try {
@@ -460,10 +471,9 @@ photos.onExhausted = () => fetchPhotos();
 // Timers
 // ---------------------------------------------------------------------------------------------
 const intervals: ReturnType<typeof setInterval>[] = [];
-function startPolling(): void {
+function startMediaPolling(): void {
   intervals.forEach(clearInterval);
   intervals.length = 0;
-  intervals.push(setInterval(fetchEvents, 60_000));
   intervals.push(setInterval(fetchWeather, 10 * 60_000));
   intervals.push(setInterval(fetchPhotos, 60 * 60_000));
 }
@@ -554,7 +564,7 @@ async function boot(): Promise<void> {
 
 function goLive(): void {
   if (accessDenied) return;
-  startPolling();
+  startMediaPolling();
   void fetchEvents();
   void fetchWeather();
   void fetchPhotos();
@@ -562,11 +572,14 @@ function goLive(): void {
   liveStream ??= connectStream(liveHandlers);
 }
 
+let firstHello = true;
 const liveHandlers: StreamHandlers = {
   hello: (d: Partial<StreamHello>) => {
     setOnline(true);
-    if (typeof d.revision === 'number' && d.revision !== state.config?.revision) void fetchConfig();
-    void fetchEvents();
+    if (typeof d.revision === 'number' && d.revision !== state.config?.revision) {
+      void fetchConfig().then((ok) => ok ? fetchEvents() : undefined);
+    } else if (!firstHello || !eventLoadSucceeded) void fetchEvents();
+    firstHello = false;
     if (d.serverVersion) void maybeReloadForVersion(d.serverVersion);
   },
   config: () => void fetchConfig().then((ok) => ok ? fetchEvents() : undefined),
@@ -587,9 +600,12 @@ const liveHandlers: StreamHandlers = {
 
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && !accessDenied) {
-    void configPoll?.tick();
-    void fetchEvents();
+    void (configPoll?.tick() ?? Promise.resolve()).then(fetchEvents);
   }
+});
+
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted && !document.hidden && !accessDenied) void fetchEvents();
 });
 
 /**

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.1-ha.12]
+
+- Refresh events when Calendar opens or its browser tab becomes visible, and remove Calendar's recurring event polling and background refresh worker.
+- Ask Home Assistant to update selected calendar entities before reading their events; retain HA's own automatic Google sync.
+- Share overlapping refreshes, preserve last-good events on source errors, and remove obsolete per-calendar polling controls.
+
 ## [0.6.1-ha.11]
 
 - Show calendar event times as `07:00` and `19:00` instead of abbreviated `7h` and `19h` labels.

@@ -29,9 +29,9 @@ Existing calendar providers, credentials, photos and layout preferences survive 
 
 Enabled remote sources are fetched independently. ICS and provider recurrences expand inside the requested window; existing calendar styling rules remain applied. A source failure retains its last successful event cache. OAuth refreshes are shared per account and never replace working credentials with invalid token responses.
 
-Google authorization is managed by HA's Google Calendar integration. Calendar lists HA calendar entities and reads events using Supervisor's server-side credential. Private iCal feeds and existing direct-provider sources remain compatible.
+Google authorization is managed by HA's Google Calendar integration. Calendar lists HA calendar entities and uses Supervisor's server-side credential to request `homeassistant.update_entity` before reading their events on demand. Home Assistant retains its own automatic Google sync. Private iCal feeds and existing direct-provider sources remain compatible.
 
-The browser obtains authorized configuration before showing offline cached data. Authorization failures clear cached payloads, stop photo rotation and hide calendar content. SSE carries only configuration, event, photo, reload and revocation messages; normal polling retries keep the view usable when a stream is unavailable.
+The browser obtains authorized configuration before showing offline cached data. Authorization failures clear cached payloads, stop photo rotation and hide calendar content. Events load when Calendar opens, its tab becomes visible, or its configuration/window changes. Overlapping requests share one load and refetch if the requested window or revision changes. Calendar has no recurring event fetch or server background refresh worker. SSE carries configuration, event, photo, reload and revocation messages; configuration checks and weather/photo timers remain independent of calendar fetching.
 
 ## Home Assistant authentication
 

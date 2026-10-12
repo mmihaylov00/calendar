@@ -68,11 +68,12 @@ function defaultGoogleWindow(tz) {
   return { from: addDays(today, -62), to: addDays(today, 400) };
 }
 
-async function doRefresh(source, needWindow) {
+async function doRefresh(source, needWindow, run) {
   const prev = cache.get(source.id);
   const key = sourceKey(source);
   const entry = prev && prev.key === key ? { ...prev } : { key, version: 0, count: 0 };
   entry.fetchedAt = Date.now();
+  let payload;
   try {
     if (source.type === 'ics') {
       const text = await fetchIcsText(source.url, source.insecureTls);
@@ -80,7 +81,7 @@ async function doRefresh(source, needWindow) {
       const sig = hash(text);
       if (sig !== entry.sig) entry.version = (entry.version || 0) + 1;
       Object.assign(entry, { vevents, sig, count: vevents.length });
-      saveDiskCache(source, { fetchedAt: entry.fetchedAt, text });
+      payload = { fetchedAt: entry.fetchedAt, text };
     } else {
       const tz = getConfig().datetime.timezone;
       const w = defaultGoogleWindow(tz);
@@ -97,7 +98,7 @@ async function doRefresh(source, needWindow) {
       const to = zonedMidnight(addDays(w.to, 1), tz);
       let items;
       if (source.type === 'homeassistant') {
-        items = await haCalendars.listEvents(source.entityId, from, to);
+        items = await haCalendars.listEvents(source.entityId, from, to, { refresh: run.force });
       } else if (source.type === 'microsoft') {
         // Needs the server's own Entra app (MICROSOFT_CLIENT_ID / MICROSOFT_CLIENT_SECRET, server/microsoft.js).
         if (!microsoft.microsoftConfigured()) throw new Error('Microsoft is not configured on this server (MICROSOFT_CLIENT_ID / MICROSOFT_CLIENT_SECRET)');
@@ -108,7 +109,7 @@ async function doRefresh(source, needWindow) {
       const sig = itemsSig(source, items);
       if (sig !== entry.sig) entry.version = (entry.version || 0) + 1;
       Object.assign(entry, { items, sig, window: w, count: items.length });
-      saveDiskCache(source, { fetchedAt: entry.fetchedAt, items, window: w });
+      payload = { fetchedAt: entry.fetchedAt, items, window: w };
     }
     entry.ok = true;
     entry.error = null;
@@ -120,7 +121,11 @@ async function doRefresh(source, needWindow) {
       ? 'auth_failed' : err.code === 'parse_failed' || /parse|ical/i.test(entry.error) ? 'parse_failed' : 'fetch_failed';
     console.warn(`[calendars] ${source.name} (${source.id}): ${entry.error}`);
   }
-  cache.set(source.id, entry);
+  // A source removed or replaced while its request was running must not recreate its cache.
+  if (run.active) {
+    if (payload) saveDiskCache(source, payload);
+    cache.set(source.id, entry);
+  }
   return entry;
 }
 
@@ -146,22 +151,37 @@ const covers = (entry, w) => !w || !entry.window || (entry.window.from <= w.from
 
 /** Refresh a source if stale (or forced). Concurrent callers share one fetch. */
 export function refreshSource(source, { force = false, window = null } = {}) {
+  const key = sourceKey(source);
+  const running = inflight.get(source.id);
+  if (running?.key === key) {
+    return running.promise.then((entry) => {
+      const needsWindow = source.type !== 'ics' && entry.ok !== false && !covers(entry, window);
+      if (running.active && ((force && !running.force) || needsWindow)) return refreshSource(source, { force, window });
+      return entry;
+    });
+  }
+  if (running) running.active = false;
   primeFromDisk(source);
   const entry = cache.get(source.id);
-  if (entry?.pendingText) {
-    const text = entry.pendingText;
-    delete entry.pendingText;
-    const p = parseIcsText(text).then((vevents) => {
-      Object.assign(entry, { vevents, count: vevents.length, sig: hash(text) });
-    }).catch(() => {});
-    inflight.set(source.id, p);
-    p.finally(() => inflight.delete(source.id));
-  }
-  if (inflight.has(source.id)) return inflight.get(source.id).then(() => cache.get(source.id));
-  if (!force && isFresh(source, entry) && (source.type === 'ics' || covers(entry, window))) return Promise.resolve(entry);
-  const p = doRefresh(source, window).finally(() => inflight.delete(source.id));
-  inflight.set(source.id, p);
-  return p;
+  if (!force && entry?.pendingText === undefined && isFresh(source, entry) && (source.type === 'ics' || covers(entry, window))) return Promise.resolve(entry);
+  const run = { key, force, active: true, promise: null };
+  run.promise = (async () => {
+    if (entry?.key === key && entry.pendingText !== undefined) {
+      const text = entry.pendingText;
+      delete entry.pendingText;
+      try {
+        const vevents = await parseIcsText(text);
+        Object.assign(entry, { vevents, count: vevents.length, sig: hash(text) });
+      } catch (err) {
+        entry.fetchedAt = 0;
+        console.warn(`[calendars] ${source.name} (${source.id}) cached ICS parse failed: ${err.message}`);
+      }
+    }
+    if (!force && isFresh(source, entry) && (source.type === 'ics' || covers(entry, window))) return entry;
+    return doRefresh(source, window, run);
+  })().finally(() => { if (inflight.get(source.id) === run) inflight.delete(source.id); });
+  inflight.set(source.id, run);
+  return run.promise;
 }
 
 export function sourceStatus() {
@@ -319,14 +339,15 @@ function pickSources(cfg, screen, onlyIds = null) {
 }
 
 /** Make sure remote sources have data: await first loads, refresh stale ones in the background. */
-async function ensureSources(sources, window) {
+async function ensureSources(sources, window, refresh) {
   await Promise.all(sources.map(async (s) => {
     primeFromDisk(s);
     const e = cache.get(s.id);
     const valid = e && e.key === sourceKey(s);
     const mustAwait = !valid || e.pendingText || (!hasData(e) && !e.error)
       || (s.type !== 'ics' && hasData(e) && !covers(e, window));
-    if (mustAwait) await refreshSource(s, { window });
+    if (refresh) await refreshSource(s, { force: true, window });
+    else if (mustAwait) await refreshSource(s, { window });
     else if (!isFresh(s, e)) refreshSource(s).catch(() => {});
   }));
 }
@@ -361,10 +382,10 @@ const memoKeyOf = (cfg, picked, from, to, lang) => [
 /**
  * Detailed events (internal; hidden ones included) with memoisation. Used by getEvents.
  */
-export async function getDetailedEvents({ from, to, screen = null, onlyIds = null, cfg = getConfig() }) {
+export async function getDetailedEvents({ from, to, screen = null, onlyIds = null, cfg = getConfig(), refresh = false }) {
   const lang = (screen || defaultScreen(cfg)).screen.language;
   const picked = pickSources(cfg, screen, onlyIds);
-  await ensureSources(picked.remote, { from, to });
+  await ensureSources(picked.remote, { from, to }, refresh);
   const key = memoKeyOf(cfg, picked, from, to, lang);
   let hit = memo.get(key);
   if (!hit) {
@@ -380,10 +401,10 @@ export async function getDetailedEvents({ from, to, screen = null, onlyIds = nul
 /**
  * Merged events for a local-date window. Sources without any data are awaited (first load);
  * stale sources are refreshed in the background and served from cache meanwhile.
- * `screen` (ScreenProfile) selects language + visible sources; null = every enabled remote source.
+ * `refresh` awaits fresh sources even within the cache TTL. `screen` selects language + visible sources.
  */
-export async function getEvents({ from, to, screen = null }) {
-  const r = await getDetailedEvents({ from, to, screen });
+export async function getEvents({ from, to, screen = null, refresh = false }) {
+  const r = await getDetailedEvents({ from, to, screen, refresh });
   return { generatedAt: r.generatedAt, hash: r.hash, events: r.wire, errors: r.errors };
 }
 
@@ -397,28 +418,21 @@ function collectErrors(sources) {
   return errs;
 }
 
-/** Refresh every stale enabled source (used by the background refresher). */
-export async function refreshAll({ force = false } = {}) {
-  const cfg = getConfig();
-  const sources = cfg.calendar.sources.filter((s) => s.enabled);
-  // Safety net: one hung source must never stall the whole refresher.
-  const cap = (p) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('refresh timeout')), 90_000).unref())]);
-  await Promise.allSettled(sources.map((s) => cap(refreshSource(s, { force }))));
-  // drop cache entries of removed sources
+/** Drop removed sources from memory and disk on startup/config saves, without contacting any provider. */
+export function pruneSourceCache(cfg = getConfig()) {
   const ids = new Set(cfg.calendar.sources.map((s) => s.id));
   for (const id of cache.keys()) if (!ids.has(id)) cache.delete(id);
+  for (const [id, run] of inflight) if (!ids.has(id)) {
+    run.active = false;
+    inflight.delete(id);
+  }
+  memo.clear();
   try {
     for (const f of fs.readdirSync(paths.cache)) {
       const m = /^src_(.+)\.json$/.exec(f);
       if (m && !cfg.calendar.sources.some((s) => cacheFile(s.id).endsWith(f))) fs.unlinkSync(path.join(paths.cache, f));
     }
   } catch { /* ignore */ }
-}
-
-/** Default window used for change detection: a bit before the current month to ~4 months ahead. */
-export function defaultWindow(tz) {
-  const today = localDate(new Date(), tz);
-  return { from: addDays(today.slice(0, 8) + '01', -7), to: addDays(today, 120) };
 }
 
 /**

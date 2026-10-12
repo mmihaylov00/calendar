@@ -1,6 +1,6 @@
 {
   "name": "calendar",
-  "version": "0.6.1-ha.11",
+  "version": "0.6.1-ha.12",
   "private": true,
   "type": "module",
   "description": "Home Assistant family dashboard with Google Calendar, private iCal feeds, weather and photos.",

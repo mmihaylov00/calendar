@@ -12,7 +12,6 @@ import {
   EmojiPicker,
   Empty,
   Field,
-  NumberInput,
   PageHeader,
   ReorderButtons,
   Segmented,
@@ -167,23 +166,17 @@ function SourceRow({
             <span class="mono small muted">{src.googleCalendarId}</span>
           </div>
         )}
-        <div class="src__opts">
-          <label class="mini-field" title={t('How often (minutes) it is downloaded again')}>
-            <span>{t('Refresh every')}</span>
-            <NumberInput value={src.refreshMin} min={1} max={1440} suffix="min" error={!!errors[`${p}.refreshMin`]} onValue={(v) => update((s) => void (s.refreshMin = v))} />
-          </label>
-          {src.type === 'ics' && (has('insecureTls') || !!src.insecureTls) && (
+        {src.type === 'ics' && <div class="src__opts">
+          {(has('insecureTls') || !!src.insecureTls) && (
             <label class="mini-toggle" title={t('Accept self-signed HTTPS certificates (local network only)')}>
               <Toggle size="sm" checked={!!src.insecureTls} onChange={(v) => update((s) => void (s.insecureTls = v))} />
               <span>{t('Self-signed certificate')}</span>
             </label>
           )}
-          {src.type === 'ics' && (
-            <Button size="sm" icon="play" loading={test.loading} disabled={!urlValid} onClick={runTest}>
-              {t('Test')}
-            </Button>
-          )}
-        </div>
+          <Button size="sm" icon="play" loading={test.loading} disabled={!urlValid} onClick={runTest}>
+            {t('Test')}
+          </Button>
+        </div>}
         {test.res && (
           <div class={`test-result ${test.res.ok ? 'is-ok' : 'is-err'}`}>
             {test.res.ok ? (
@@ -339,6 +332,7 @@ export function CalendarsSection(props: SectionProps) {
         title={t('Calendars')}
         desc={t('Choose Google calendars connected in Home Assistant, or add a private iCal link.')}
       />
+      <p class="muted small">Events refresh when Calendar opens or you return to its browser tab. Home Assistant also manages its own calendar sync.</p>
 
       {(props.me.homeAssistant || props.full.homeassistant.enabled) && <HomeAssistantCalendars {...props} />}
 

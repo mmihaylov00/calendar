@@ -8,13 +8,15 @@ All browser URLs are relative to the current HA ingress prefix. Supervisor's cre
 | --- | --- |
 | `GET /api/health` | Internal health check, build version and supported capabilities. |
 | `GET /api/display/config?screen=` | Calendar, clock, layout, background and weather configuration. Source descriptions contain only public display metadata. |
-| `GET /api/events?from=&to=&screen=` | Expanded remote calendar events, content hash and per-source errors. |
+| `GET /api/events?from=&to=&screen=` | Refresh the selected enabled sources and return expanded events, content hash and per-source errors. HA entities are manually updated before their events are read. |
 | `GET /api/weather` | Current weather, forecast and provider metadata. |
 | `GET /api/photos` | Available photo backgrounds. |
 | `GET /api/stream?screen=` | SSE: `hello`, `config`, `events`, `photos`, `reload`, `revoked` and liveness pings. |
 | `GET /media/:file` | Authorized gallery image or thumbnail. |
 
 The browser uses the default saved profile. Old profile IDs/slugs and private display credentials remain compatible. Access failures return `401` or `403`; the browser clears cached calendar content instead of showing it.
+
+Event requests run on demand and await source refreshes. Concurrent requests share source fetches; failures retain each source's last successful cache and return a generic source error. Opening or returning to Calendar triggers a request. Home Assistant's own Google polling is configured independently.
 
 ## Control panel
 

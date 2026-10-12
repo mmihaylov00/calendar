@@ -16,7 +16,7 @@ export function displayConfig(cfg, screenKey) {
 }
 
 export async function displayEvents(cfg, screen, window) {
-  return getEvents({ ...window, screen });
+  return getEvents({ ...window, screen, refresh: true });
 }
 
 function streamInit(req) {

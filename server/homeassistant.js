@@ -15,10 +15,12 @@ export function haSettings(override = {}) {
   };
 }
 
-export async function haGet(path, { url, token } = haSettings()) {
+async function haRequest(path, { url, token }, { method = 'GET', body } = {}) {
   if (!url) throw new Error('Home Assistant URL not configured');
   if (!token) throw new Error(process.env.MARCO_HOME_ASSISTANT === '1' ? 'Supervisor API token is unavailable' : 'Home Assistant token not configured');
   const res = await request(`${url}${path}`, {
+    method,
+    body: body === undefined ? undefined : JSON.stringify(body),
     headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
     timeout: 10_000,
     throwOnError: false,
@@ -27,6 +29,9 @@ export async function haGet(path, { url, token } = haSettings()) {
   if (!res.ok) throw new HttpError(`HTTP ${res.status}`, res.status);
   try { return JSON.parse(res.text); } catch { throw new HttpError('Home Assistant returned invalid JSON', 502); }
 }
+
+export const haGet = (path, settings = haSettings()) => haRequest(path, settings);
+export const haPost = (path, body) => haRequest(path, haSettings(), { method: 'POST', body });
 
 export async function getState(entityId) {
   return haGet(`/api/states/${encodeURIComponent(entityId)}`, haSettings());

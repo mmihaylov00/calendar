@@ -9,7 +9,7 @@ import { defaultConfig } from '../core/defaults.js';
 import { validateConfig } from '../core/validate.js';
 import { haSettings, haGet, haUsable } from '../homeassistant.js';
 import { calendarToRaw, listCalendars, listEvents } from '../haCalendars.js';
-import { refreshSource, getEvents } from '../calendars.js';
+import { refreshSource, getEvents, pruneSourceCache, sourceStatus } from '../calendars.js';
 import { adminRouter } from '../routes/admin.js';
 
 const DATE_EVENT = { summary: 'Holiday', start: { date: '2026-10-25' }, end: { date: '2026-10-27' } };
@@ -17,7 +17,7 @@ const TIMED_EVENT = { summary: 'Lunch', start: { dateTime: '2026-10-25T10:00:00Z
 let sourceNumber = 0;
 
 describe('Home Assistant calendar entities', () => {
-  let dir, realFetch, savedEnv, calls, response;
+  let dir, realFetch, savedEnv, calls, response, updateResponse;
   const envKeys = ['MARCO_HOME_ASSISTANT', 'SUPERVISOR_TOKEN'];
   const source = () => ({ id: `ha_test_${++sourceNumber}`, type: 'homeassistant', name: 'Family', entityId: 'calendar.family', enabled: true, refreshMin: 5, kind: 'generic', color: '#123456', emoji: '' });
 
@@ -30,11 +30,17 @@ describe('Home Assistant calendar entities', () => {
     realFetch = globalThis.fetch;
     calls = [];
     response = () => Response.json([DATE_EVENT, TIMED_EVENT]);
+    updateResponse = () => Response.json([]);
     globalThis.fetch = async (url, init) => {
       const parsed = new URL(String(url));
       calls.push({ url: parsed, init });
       assert.equal(parsed.origin, 'http://supervisor');
       assert.equal(init.headers.authorization, 'Bearer supervisor-secret');
+      if (parsed.pathname === '/core/api/services/homeassistant/update_entity') {
+        assert.equal(init.method, 'POST');
+        assert.match(JSON.parse(init.body).entity_id, /^calendar\./);
+        return updateResponse();
+      }
       return response(parsed);
     };
   });
@@ -97,8 +103,112 @@ describe('Home Assistant calendar entities', () => {
       ['Holiday', '2026-10-25', '2026-10-27', true, true],
       ['Lunch', '2026-10-25T12:00:00+02:00', '2026-10-25T13:00:00+02:00', false, false],
     ]);
-    assert.ok(calls[0].url.searchParams.has('start'));
-    assert.ok(calls[0].url.searchParams.has('end'));
+    assert.ok(calls[1].url.searchParams.has('start'));
+    assert.ok(calls[1].url.searchParams.has('end'));
+  });
+
+  test('opening the calendar awaits an HA update before reading events, even while the cache is fresh', async () => {
+    const calendar = source();
+    store.updateConfig((cfg) => { cfg.calendar.sources = [calendar]; });
+    const window = { from: '2026-10-24', to: '2026-10-27' };
+    const first = await getEvents({ ...window, refresh: true });
+    calls.length = 0;
+    response = () => Response.json([{ ...TIMED_EVENT, summary: 'Fresh lunch' }]);
+    const cached = await getEvents(window);
+    assert.equal(cached.hash, first.hash);
+    assert.equal(calls.length, 0, 'internal cached reads do not force upstream sync');
+    let releaseUpdate;
+    updateResponse = () => new Promise((resolve) => { releaseUpdate = () => resolve(Response.json([])); });
+    const opening = getEvents({ ...window, refresh: true });
+    await new Promise(setImmediate);
+    assert.deepEqual(calls.map((c) => c.url.pathname), ['/core/api/services/homeassistant/update_entity']);
+    assert.deepEqual(JSON.parse(calls[0].init.body), { entity_id: calendar.entityId });
+    releaseUpdate();
+    const fresh = await opening;
+    assert.deepEqual(fresh.events.map((event) => event.title), ['Fresh lunch']);
+    assert.notEqual(fresh.hash, first.hash);
+    assert.equal(calls[1].url.pathname, '/core/api/calendars/calendar.family');
+    assert.ok(!JSON.stringify(store.getSecrets()).includes('supervisor-secret'));
+  });
+
+  test('concurrent calendar opens share one HA update and event fetch', async () => {
+    const calendar = source();
+    store.updateConfig((cfg) => { cfg.calendar.sources = [calendar]; });
+    let releaseUpdate;
+    updateResponse = () => new Promise((resolve) => { releaseUpdate = () => resolve(Response.json([])); });
+    const request = { from: '2026-10-24', to: '2026-10-27', refresh: true };
+    const opens = Promise.all([getEvents(request), getEvents(request)]);
+    await new Promise(setImmediate);
+    assert.equal(calls.length, 1);
+    releaseUpdate();
+    const [a, b] = await opens;
+    assert.equal(a.hash, b.hash);
+    assert.equal(a.events.length, 2);
+    assert.equal(calls.length, 2);
+  });
+
+  test('concurrent wider requests extend an in-flight narrow window once and return its older events', async () => {
+    const calendar = source();
+    store.updateConfig((cfg) => { cfg.calendar.sources = [calendar]; cfg.datetime.timezone = 'UTC'; });
+    const older = new Date(Date.now() - 180 * 86_400_000).toISOString().slice(0, 10);
+    const nextDay = new Date(Date.now() - 179 * 86_400_000).toISOString().slice(0, 10);
+    const olderEvent = { summary: 'Older event', start: { date: older }, end: { date: nextDay } };
+    response = (url) => Response.json(url.searchParams.get('start').slice(0, 10) <= older
+      ? [DATE_EVENT, TIMED_EVENT, olderEvent] : [DATE_EVENT, TIMED_EVENT]);
+    let releaseFirstUpdate;
+    updateResponse = () => releaseFirstUpdate ? Response.json([])
+      : new Promise((resolve) => { releaseFirstUpdate = () => resolve(Response.json([])); });
+    const narrow = getEvents({ from: '2026-10-24', to: '2026-10-27', refresh: true });
+    await new Promise(setImmediate);
+    const widerRequest = { from: older, to: nextDay, refresh: true };
+    const wider = getEvents(widerRequest);
+    const anotherWider = getEvents(widerRequest);
+    releaseFirstUpdate();
+    const [, a, b] = await Promise.all([narrow, wider, anotherWider]);
+    assert.deepEqual(a.events.map((event) => event.title), ['Older event']);
+    assert.deepEqual(b.events, a.events);
+    assert.equal(calls.filter((call) => call.init.method === 'POST').length, 2);
+    const eventCalls = calls.filter((call) => call.url.pathname.startsWith('/core/api/calendars/'));
+    assert.equal(eventCalls.length, 2);
+    assert.equal(eventCalls[1].url.searchParams.get('start').slice(0, 10), older);
+  });
+
+  test('failed on-demand HA synchronization retains last good events and reports a generic error', async () => {
+    const calendar = source();
+    store.updateConfig((cfg) => { cfg.calendar.sources = [calendar]; });
+    const request = { from: '2026-10-24', to: '2026-10-27', refresh: true };
+    const good = await getEvents(request);
+    calls.length = 0;
+    updateResponse = () => new Response('', { status: 503 });
+    const older = new Date(Date.now() - 180 * 86_400_000).toISOString().slice(0, 10);
+    const [failed, wider] = await Promise.all([getEvents(request), getEvents({ from: older, to: older, refresh: true })]);
+    assert.deepEqual(failed.events, good.events);
+    assert.deepEqual(failed.errors, [{ sourceId: calendar.id, message: 'fetch_failed' }]);
+    assert.deepEqual(wider.errors, failed.errors, 'a failed joined refresh is not retried just to extend its window');
+    assert.equal(calls.length, 1, 'failed synchronization does not continue to a stale HA event request');
+    assert.equal(sourceStatus()[0].ok, false);
+  });
+
+  test('cache cleanup performs no fetch and an in-flight removed source cannot recreate its disk cache', async () => {
+    const calendar = source();
+    store.updateConfig((cfg) => { cfg.calendar.sources = [calendar]; });
+    await refreshSource(calendar, { force: true });
+    const file = path.join(store.paths.cache, `src_${calendar.id}.json`);
+    assert.equal(fs.existsSync(file), true);
+    let releaseUpdate;
+    updateResponse = () => new Promise((resolve) => { releaseUpdate = () => resolve(Response.json([])); });
+    const refreshing = refreshSource(calendar, { force: true });
+    await new Promise(setImmediate);
+    const count = calls.length;
+    store.updateConfig((cfg) => { cfg.calendar.sources = []; });
+    pruneSourceCache();
+    assert.equal(calls.length, count);
+    assert.equal(fs.existsSync(file), false);
+    releaseUpdate();
+    await refreshing;
+    assert.equal(fs.existsSync(file), false, 'removed source stays removed after its old request completes');
+    store.updateConfig((cfg) => { cfg.calendar.sources = [calendar]; });
+    assert.equal(sourceStatus()[0].lastFetch, null, 'removed memory cache cannot reappear either');
   });
 
   test('the source cache notices HA event changes and retains good events when HA fails or returns malformed dates', async () => {
@@ -130,7 +240,7 @@ describe('Home Assistant calendar entities', () => {
     for (const entityId of ['sensor.family', 'calendar.family/../../config', '', 'calendar.family?x=1']) {
       cfg.calendar.sources[0].entityId = entityId;
       assert.ok(validateConfig(cfg).errors.some((e) => e.path === 'calendar.sources[0].entityId'));
-      await assert.rejects(listEvents(entityId, new Date(), new Date()), /calendar entity/);
+      await assert.rejects(listEvents(entityId, new Date(), new Date(), { refresh: true }), /calendar entity/);
     }
     assert.equal(calls.length, 0);
     assert.throws(() => calendarToRaw({ ...DATE_EVENT, start: { date: '2026-02-30' } }), /invalid all-day/);

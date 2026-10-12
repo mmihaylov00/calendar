@@ -24,6 +24,8 @@ Click any date in the calendar to open its hourly day view with a short transiti
 
 The display keeps cached data for network interruptions and refreshes when the server returns. Home Assistant authenticates access to the display and admin. See [the security policy](SECURITY.md).
 
+Events refresh when Calendar opens, when you return to its browser tab, and after calendar settings change. Calendar fetches event sources on demand; it asks Home Assistant to update the selected calendar entities before reading their events. Home Assistant's normal automatic Google Calendar sync stays enabled. Opening another HA page does not load Calendar's events.
+
 Calendar connections and uploaded photos survive updates. Home Assistant owns authentication, app updates and backups. Old configuration fields are retained for compatibility; retired widgets and services do not run.
 
 ## Development

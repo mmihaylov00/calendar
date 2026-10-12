@@ -3,6 +3,25 @@ import type { StreamHello } from '../shared/types';
 
 export const CONFIG_POLL_MS = 90_000;
 
+/** Share overlapping event loads, then fetch again if their calendar window or config changed. */
+export function createEventRefresh(requestKey: () => string, load: () => Promise<void>): () => Promise<void> {
+  let request: { key: string; done: Promise<void> } | null = null;
+  return async function refresh() {
+    const key = requestKey();
+    if (request) {
+      const active = request;
+      await active.done;
+      if (active.key !== key) await refresh();
+      return;
+    }
+    const active = { key, done: Promise.resolve().then(load) };
+    request = active;
+    try { await active.done; }
+    finally { request = null; }
+    if (active.key !== requestKey()) await refresh();
+  };
+}
+
 export interface ConfigPollOptions {
   /** Current config revision (before the fetch). */
   revision: () => number | undefined;
