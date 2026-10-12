@@ -270,10 +270,9 @@ export function GlassCard({ cfg, set }: Pick<SectionProps, 'cfg' | 'set'>) {
   return (
     <Card
       id="layout-glass"
-      scope="screen"
       title={t('Glass')}
       icon="sparkles"
-      desc={t('How the glass cards of the Modern style look on this screen.')}
+      desc={t('Adjust the glass cards in the Modern style.')}
       actions={
         <Button size="sm" variant="ghost" disabled={isDefault} onClick={() => set((d) => void (d.screen.glass = { ...GLASS_DEFAULTS }))}>
           {t('Reset')}
@@ -337,7 +336,7 @@ function PresetOptions({ cfg, set, full }: SectionProps) {
       d.layout.people = opts.map((o) => o.id).filter((x) => next.has(x)).slice(0, 5);
     });
   return (
-    <Card id="layout-options" scope="screen" title={t('Columns per person')} icon="list" desc={t('Each chosen calendar is a column with today and tomorrow. Holidays and birthdays go in a shared line above.')}>
+    <Card id="layout-options" title={t('Columns per person')} icon="list" desc={t('Each chosen calendar is a column with today and tomorrow. Holidays and birthdays go in a shared line above.')}>
       <Segmented
         full
         value={auto ? 'auto' : 'pick'}
@@ -372,7 +371,7 @@ function PresetOptions({ cfg, set, full }: SectionProps) {
             })}
           </ul>
           <p class="muted small">{t('Up to five columns, shown in the order of this list.')}</p>
-          {ids.length === 0 && <Callout kind="warn">{t('No calendar is ticked: the screen will ask you to choose one.')}</Callout>}
+          {ids.length === 0 && <Callout kind="warn">{t('Choose at least one calendar to show as a column.')}</Callout>}
         </>
       )}
     </Card>
@@ -386,13 +385,12 @@ export function LayoutSection(props: SectionProps) {
   const style: DisplayStyle = cfg.screen.style === 'modern' ? 'modern' : 'classic';
   return (
     <>
-      <PageHeader title={t('Layout')} scope="screen" desc={t('Choose how elements are arranged on the screen.')} />
+      <PageHeader title={t('Layout')} desc={t('Choose how calendar elements are arranged.')} />
       <Card
         id="layout-style"
-        scope="screen"
         title={t('Display style')}
         icon="palette"
-        desc={t('Independent of the layout: each screen can have its own style.')}
+        desc={t('Choose the calendar style independently of its layout.')}
       >
         <Field label={t('Style')}>
           <Segmented
@@ -442,7 +440,7 @@ export function LayoutSection(props: SectionProps) {
         ))}
       </div>
       <PresetOptions {...props} />
-      <Card id="layout-side" scope="screen" title={t('Side panel')} icon="layout" desc={t('Only for layouts with a side column.')} muted={!hasSide}>
+      <Card id="layout-side" title={t('Side panel')} icon="layout" desc={t('Only for layouts with a side column.')} muted={!hasSide}>
         <div class="grid grid--2">
           <Field label={t('Position')}>
             <Segmented

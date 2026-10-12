@@ -4,14 +4,13 @@ import { appUrl } from '../shared/path';
 import type { AppConfig, AuthMeResponse, StoredConfig } from '../shared/types';
 import { api, ApiError, UNAUTHORIZED_EVENT } from './api';
 import { loadCaps, type Caps } from './caps';
-import { BrandMark } from './components/BrandMark';
 import { choiceDialog, confirmDialog, DialogHost, toast, ToastHost } from './components/feedback';
 import { Icon } from './components/icons';
-import { Button, setScopeScreenName } from './components/ui';
+import { Button } from './components/ui';
 import { saveWithRevision, type ConflictChoice } from './configMerge';
 import { t } from './i18n';
 import { filterNav, NAV_ITEMS, routeFor } from './navFilter';
-import { Preview } from './Preview';
+import { SettingsDialog } from './SettingsDialog';
 import { BackgroundSection } from './sections/Background';
 import { CalendarsSection } from './sections/Calendars';
 import type { SectionProps } from './sections/common';
@@ -30,17 +29,6 @@ const SECTIONS = {
 
 const requestedRoute = () => location.hash.replace(/^#\/?/, '').split('/')[0];
 
-function useWidePreview() {
-  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 1360px)').matches);
-  useEffect(() => {
-    const media = window.matchMedia('(min-width: 1360px)');
-    const changed = () => setWide(media.matches);
-    media.addEventListener('change', changed);
-    return () => media.removeEventListener('change', changed);
-  }, []);
-  return wide;
-}
-
 export function App() {
   const [me, setMe] = useState<AuthMeResponse | null>(null);
   const [caps, setCaps] = useState<Caps | null>(null);
@@ -50,11 +38,8 @@ export function App() {
   const [route, setRoute] = useState(requestedRoute);
   const [saving, setSaving] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
-  const [previewKey, setPreviewKey] = useState(0);
-  const [showPreview, setShowPreview] = useState(true);
-  const [sheet, setSheet] = useState(false);
-  const [navOpen, setNavOpen] = useState(false);
-  const wide = useWidePreview();
+  const [displayKey, setDisplayKey] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(() => !!requestedRoute());
 
   const load = useCallback(async () => {
     try {
@@ -88,7 +73,7 @@ export function App() {
   useEffect(() => {
     const changed = () => {
       setRoute(requestedRoute());
-      setNavOpen(false);
+      if (requestedRoute()) setSettingsOpen(true);
     };
     window.addEventListener('hashchange', changed);
     return () => window.removeEventListener('hashchange', changed);
@@ -96,10 +81,12 @@ export function App() {
 
   const nav = useMemo(() => caps ? filterNav(NAV_ITEMS, caps) : NAV_ITEMS, [caps]);
   const currentRoute = routeFor(route, nav) as keyof typeof SECTIONS;
-  const go = useCallback((target: string) => { location.hash = `#/${routeFor(target.split('/')[0], NAV_ITEMS)}`; }, []);
+  const go = useCallback((target: string) => {
+    setSettingsOpen(true);
+    location.hash = `#/${routeFor(target.split('/')[0], NAV_ITEMS)}`;
+  }, []);
   const screenId = draft ? defaultScreenOf(draft).id : '';
   const view = useMemo(() => draft ? projectScreen(draft, screenId) : null, [draft, screenId]);
-  setScopeScreenName('');
   const dirty = useMemo(() => !!draft && !!saved && JSON.stringify(draft) !== JSON.stringify(saved), [draft, saved]);
   const allErrors = useMemo(() => draft ? validateAll(draft, caps ?? undefined) : { global: {}, screens: {}, total: 0 }, [draft, caps]);
   const errors: Errors = { ...allErrors.global, ...(allErrors.screens[screenId] ?? {}) };
@@ -115,18 +102,21 @@ export function App() {
     setSaved(config);
     setDraft(clone(config));
     setShowErrors(false);
-    setPreviewKey((key) => key + 1);
+    setDisplayKey((key) => key + 1);
   }, []);
 
-  const askConflict = (): Promise<ConflictChoice> => choiceDialog<'reload' | 'overwrite'>({
-    title: t('The calendar changed while you were editing'),
-    body: t('Load the saved version, or save your changes on top of it. Changes you did not make are retained.'),
-    cancel: t('Keep editing'),
-    choices: [
-      { value: 'reload', label: t('Load saved version'), kind: 'ghost' },
-      { value: 'overwrite', label: t('Save my changes'), kind: 'primary' },
-    ],
-  });
+  const askConflict = (): Promise<ConflictChoice> => {
+    setSettingsOpen(true);
+    return choiceDialog<'reload' | 'overwrite'>({
+      title: t('The calendar changed while you were editing'),
+      body: t('Load the saved version, or save your changes on top of it. Changes you did not make are retained.'),
+      cancel: t('Keep editing'),
+      choices: [
+        { value: 'reload', label: t('Load saved version'), kind: 'ghost' },
+        { value: 'overwrite', label: t('Save my changes'), kind: 'primary' },
+      ],
+    });
+  };
 
   const save = useCallback(async (): Promise<boolean> => {
     const config = draftRef.current;
@@ -178,7 +168,10 @@ export function App() {
     const shortcut = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
         event.preventDefault();
-        if (dirty && !saving) void save();
+        if (dirty && !saving) {
+          setSettingsOpen(true);
+          void save();
+        }
       }
     };
     const leaving = (event: BeforeUnloadEvent) => {
@@ -202,11 +195,13 @@ export function App() {
   }
 
   const screen = defaultScreenOf(saved);
-  const query = new URLSearchParams({ screen: screen.slug });
-  const openUrl = appUrl(`/?${query}`);
-  query.set('preview', '1');
-  const previewUrl = appUrl(`/?${query}`);
-  const previewSide = wide && showPreview;
+  const query = new URLSearchParams({ screen: screen.slug, preview: '1', v: String(displayKey) });
+  const displayUrl = appUrl(`/?${query}`);
+  const closeSettings = () => {
+    if (saving || document.querySelector('.calendar-settings .modal-backdrop')) return;
+    setSettingsOpen(false);
+    history.replaceState(null, '', `${location.pathname}${location.search}`);
+  };
   const Section = SECTIONS[currentRoute];
   const sectionProps: SectionProps = {
     cfg: view, set, errors: showErrors || dirty ? errors : {}, me, save, dirty,
@@ -214,34 +209,36 @@ export function App() {
   };
 
   return (
-    <div class={`shell ${previewSide ? 'has-preview' : ''} ${navOpen ? 'nav-open' : ''}`}>
-      <aside class="sidebar">
-        <div class="brand"><BrandMark size={34} /><strong class="wordmark">calendar</strong></div>
-        <nav class="nav" aria-label={t('Calendar controls')}>
-          {nav.map((item) => <a href={`#/${item.id}`} class={`nav__item ${currentRoute === item.id ? 'is-active' : ''}`} aria-current={currentRoute === item.id ? 'page' : undefined}><Icon name={item.icon} size={18} /><span>{t(item.label)}</span></a>)}
-        </nav>
-      </aside>
-      <div class="scrim" onClick={() => setNavOpen(false)} />
-      <div class="main-col">
-        <header class="topbar">
-          <button type="button" class="icon-btn topbar__menu" aria-label={t('Navigation')} onClick={() => setNavOpen(!navOpen)}><Icon name="menu" size={18} /></button>
-          <div class="topbar__crumb"><strong>{t(nav.find((item) => item.id === currentRoute)?.label ?? 'Calendars')}</strong></div>
-          <div class="topbar__actions">
-            <a class="btn btn--ghost" href={openUrl} target="_blank" rel="noopener"><Icon name="external" size={16} />{t('Open calendar')}</a>
-            <button type="button" class={`icon-btn ${previewSide || sheet ? 'is-active' : ''}`} title={t('Preview')} onClick={() => wide ? setShowPreview(!showPreview) : setSheet(true)}><Icon name="eye" size={18} /></button>
-          </div>
+    <div class="calendar-app">
+      <main class="calendar-workspace" aria-label={t('Calendar')}>
+        <header class="calendar-workspace__toolbar">
+          <strong>{t('Calendar')}</strong>
+          <button type="button" class="calendar-settings-button" onClick={() => setSettingsOpen(true)} aria-haspopup="dialog" aria-expanded={settingsOpen} aria-label={dirty ? t('Settings · unsaved changes') : t('Settings')}>
+            <Icon name="settings" size={20} /><span>{t('Settings')}</span>{dirty && <span class="calendar-settings-button__dot" aria-hidden="true" />}
+          </button>
         </header>
-        <div class="content-row">
-          <main class={`content content--${currentRoute}`} key={currentRoute}><Section {...sectionProps} /></main>
-          {previewSide && <aside class="preview-col"><Preview variant="side" saved url={previewUrl} openUrl={openUrl} reloadKey={previewKey} portrait={view.screen.orientation === 'portrait'} onClose={() => setShowPreview(false)} /></aside>}
+        <iframe class="calendar-workspace__display" key={displayUrl} src={displayUrl} title={t('Calendar')} />
+      </main>
+      {settingsOpen && <SettingsDialog onClose={closeSettings} closingDisabled={saving}>
+        <header class="calendar-settings__header">
+          <h2 id="calendar-settings-title">{t('Calendar settings')}</h2>
+          <button type="button" class="icon-btn" onClick={closeSettings} disabled={saving} aria-label={t('Close settings')}><Icon name="x" size={20} /></button>
+        </header>
+        <div class="calendar-settings__body">
+          <nav class="calendar-settings__nav" aria-label={t('Calendar controls')}>
+            {nav.map((item) => <a href={`#/${item.id}`} class={`nav__item ${currentRoute === item.id ? 'is-active' : ''}`} aria-current={currentRoute === item.id ? 'page' : undefined}><Icon name={item.icon} size={18} /><span>{t(item.label)}</span></a>)}
+          </nav>
+          <div class={`content calendar-settings__content content--${currentRoute}`} key={currentRoute}><Section {...sectionProps} /></div>
         </div>
-        <div class={`savebar ${dirty || saving ? 'is-visible' : ''}`} role="region" aria-label={t('Unsaved changes')}>
-          <div class="savebar__inner"><span class="savebar__status">{t('Unsaved changes')}</span><Button variant="ghost" onClick={discard} disabled={saving}>{t('Discard')}</Button><Button variant="primary" icon="check" loading={saving} onClick={() => void save()}>{t('Save')}</Button></div>
-        </div>
-      </div>
-      {sheet && !previewSide && <div class="sheet-backdrop" onClick={(event) => event.target === event.currentTarget && setSheet(false)}><div class="sheet"><Preview variant="sheet" saved url={previewUrl} openUrl={openUrl} reloadKey={previewKey} portrait={view.screen.orientation === 'portrait'} onClose={() => setSheet(false)} /></div></div>}
-      <ToastHost />
-      <DialogHost />
+        <footer class="calendar-settings__footer" aria-label={t('Changes')}>
+          <span class="calendar-settings__status" role="status">{dirty ? t('Unsaved changes') : t('Changes saved')}</span>
+          <Button variant="ghost" onClick={discard} disabled={saving || !dirty}>{t('Discard')}</Button>
+          <Button variant="primary" icon="check" loading={saving} disabled={!dirty} onClick={() => void save()}>{t('Save')}</Button>
+        </footer>
+        <ToastHost />
+        <DialogHost />
+      </SettingsDialog>}
+      {!settingsOpen && <ToastHost />}
     </div>
   );
 }

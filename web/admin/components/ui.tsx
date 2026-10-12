@@ -18,8 +18,6 @@ export function Card(props: {
   children?: ComponentChildren;
   class?: string;
   muted?: boolean;
-  /** "Solo esta pantalla" / "Todas las pantallas" badge next to the title. */
-  scope?: 'screen' | 'global';
   id?: string;
 }) {
   return (
@@ -35,7 +33,6 @@ export function Card(props: {
             {props.title && (
               <h3>
                 {props.title}
-                {props.scope && <ScopeBadge scope={props.scope} />}
               </h3>
             )}
             {props.desc && <p>{props.desc}</p>}
@@ -48,13 +45,12 @@ export function Card(props: {
   );
 }
 
-export function PageHeader({ title, desc, children, scope }: { title: string; desc?: string; children?: ComponentChildren; scope?: 'screen' | 'global' }) {
+export function PageHeader({ title, desc, children }: { title: string; desc?: string; children?: ComponentChildren }) {
   return (
     <div class="page-head">
       <div>
         <h1>
           {title}
-          {scope && <ScopeBadge scope={scope} />}
         </h1>
         {desc && <p>{desc}</p>}
       </div>
@@ -503,7 +499,7 @@ export function EmojiPicker(props: { value: string; onChange: (v: string) => voi
       >
         {props.value || <Icon name="plus" size={14} />}
       </button>
-      {open && createPortal(<EmojiPanel panelRef={panelRef} anchor={btnRef} value={props.value} allowNone={props.allowNone} onPick={pick} />, document.body)}
+      {open && createPortal(<EmojiPanel panelRef={panelRef} anchor={btnRef} value={props.value} allowNone={props.allowNone} onPick={pick} />, btnRef.current?.closest('dialog') ?? document.body)}
     </div>
   );
 }
@@ -868,26 +864,6 @@ export function ReorderButtons({ index, count, onMove }: { index: number; count:
   );
 }
 
-/* ------------------------------------------------------------------ v2 helpers */
-
-let scopeScreenName = '';
-/** Set by the App so scope badges can say which screen is being edited. */
-export const setScopeScreenName = (n: string) => void (scopeScreenName = n);
-
-export function ScopeBadge({ scope }: { scope: 'screen' | 'global' }) {
-  return scope === 'screen' ? (
-    <span class="scope scope--screen" title={t('This setting only affects the screen you are editing')}>
-      <Icon name="monitor" size={11} />
-      {scopeScreenName ? t('{name} only', { name: scopeScreenName }) : t('This screen only')}
-    </span>
-  ) : (
-    <span class="scope scope--global" title={t('Shared by all screens')}>
-      <Icon name="globe" size={11} />
-      {t('All screens')}
-    </span>
-  );
-}
-
 /**
  * Generic modal dialog (forms, editors). Esc / backdrop click / ✕ close it; with `dirty` they ask first
  * so a stray tap doesn't throw the form away. Escape that closes a popover or the confirm is ignored.
@@ -921,6 +897,7 @@ export function Modal(props: {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !e.defaultPrevented) {
+        e.preventDefault();
         e.stopPropagation();
         void requestClose();
       }

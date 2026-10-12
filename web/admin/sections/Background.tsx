@@ -27,8 +27,8 @@ export function BackgroundSection({ cfg, set, errors }: SectionProps) {
   const intervals = INTERVALS.includes(b.intervalSec) ? INTERVALS : [...INTERVALS, b.intervalSec].sort((a, c) => a - c);
   return (
     <>
-      <PageHeader scope="screen" title={t('Background')} desc={t('Background photos and rotation.')} />
-      <Card id="bg-photos" scope="screen" title={t('Background photos')} icon="image">
+      <PageHeader title={t('Background')} desc={t('Background photos and rotation.')} />
+      <Card id="bg-photos" title={t('Background photos')} icon="image">
         <ToggleRow label={t('Show background photos')} checked={b.enabled} onChange={(v) => set((d) => void (d.background.enabled = v))} />
         <div class={`stack ${b.enabled ? '' : 'is-disabled'}`}>
           {(galleryOn || b.source !== 'stock') && (

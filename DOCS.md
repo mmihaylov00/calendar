@@ -33,8 +33,8 @@ On older Home Assistant versions **Apps** is named **Add-ons**. The sidebar inte
 Use Home Assistant to manage Google authorization:
 
 1. Add and configure the [Google Calendar integration](https://www.home-assistant.io/integrations/google/) under **Settings → Devices & services**. Select the calendars you want available in HA.
-2. In Calendar, open **Calendars → Home Assistant calendars**, click **Refresh** and check the calendars you want to add.
-3. Click **Save**. Use **Open calendar** or the preview to see the selected calendars.
+2. In Calendar, open **Settings → Calendars → Home Assistant calendars**, click **Refresh** and check the calendars you want to add.
+3. Click **Save**. Close settings to see the selected calendars in the main view.
 
 Calendar reads upcoming events through the HA API using the app credential supplied privately by Supervisor. It does not receive your Google OAuth credentials, and it does not create or edit Google events. Other HA calendar integrations can be used in the same way.
 
@@ -46,4 +46,4 @@ Configuration, calendar caches, credentials and photos live in `/data/marco`, in
 
 Update and back up Calendar through Home Assistant. The English-only interface starts with no sample content. Existing calendar configuration, credentials and photos are retained when updating.
 
-The app has no exposed LAN port. The calendar view and preview use an active administrator's Home Assistant session. The control panel opens directly to calendar connections; layout, backgrounds, weather and photos are its other pages.
+The app has no exposed LAN port. The calendar opens directly using an active administrator's Home Assistant session. Its top-right **Settings** button opens calendar connections, layout, backgrounds, weather and photos in a modal. Closing the modal keeps unsaved edits; **Save** applies them and **Discard** restores the saved version.

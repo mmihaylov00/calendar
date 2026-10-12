@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.1-ha.6]
+
+- Open the Home Assistant panel directly to the live calendar, weather and photo background.
+- Move calendar connections, layout, background, weather and gallery controls into a modal opened by Settings at the top right.
+- Keep unsaved edits when settings closes, retain revision-aware Save and Discard, and remove obsolete multi-screen labels and preview controls.
+
 ## [0.6.1-ha.5]
 
 - Reduce the control panel to calendar connections, layout, backgrounds, weather and photos.

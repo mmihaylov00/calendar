@@ -15,7 +15,7 @@ Calendar runs as a Home Assistant app. Express serves the API and built browser 
 | `server/sse.js` | Authorized live configuration, calendar and photo updates. |
 | `home-assistant/custom_components/marco/` | Native `/calendar-dashboard` panel and active-admin authorization endpoint. |
 | `home-assistant/install-panel.py` | Atomic panel installation with a configuration backup; never restarts services. |
-| `web/admin/` | Calendar connections, layout, backgrounds, weather, photos and explicit draft saving. |
+| `web/admin/` | Calendar workspace with the live display iframe, a native settings dialog, and revision-aware draft saving. |
 | `web/display/` | Calendar rendering, local offline cache, CSS photo transitions and live updates. |
 | `web/shared/` | Browser contracts, configuration projection, English strings and image cropping. |
 

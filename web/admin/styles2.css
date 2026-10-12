@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Admin v2: multi-screen, dashboard, alerts, events manager, system pages
+   Calendar: additional form and gallery styles
    (extends styles.css; same tokens and design language)
    ========================================================================== */
 
@@ -89,40 +89,6 @@ code {
   margin: 2px -20px;
 }
 
-/* ---------------------------------------------------------------- scope badges */
-.scope {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 8px;
-  vertical-align: 2px;
-  height: 19px;
-  padding: 0 7px;
-  border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-}
-h1 .scope {
-  vertical-align: 5px;
-  font-size: 11px;
-  height: 21px;
-}
-.scope--screen {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 13%, transparent);
-}
-.scope--global {
-  color: var(--muted);
-  background: var(--surface-3);
-}
-.field__label .scope,
-.toggle-row__label .scope {
-  margin-left: 6px;
-  vertical-align: 1px;
-}
-
 /* ---------------------------------------------------------------- flash highlight (deep links / palette) */
 .is-flash {
   animation: flash 1.6s var(--ease);
@@ -134,77 +100,6 @@ h1 .scope {
   }
   100% {
     box-shadow: 0 0 0 0 transparent, var(--shadow);
-  }
-}
-.card,
-.preset-grid {
-  scroll-margin-top: calc(var(--topbar-h) + 16px);
-}
-
-/* ---------------------------------------------------------------- sidebar additions */
-.nav-search {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin: 0 12px 8px;
-  height: 36px;
-  padding: 0 8px 0 11px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 13px;
-  transition: border-color 0.15s, color 0.15s;
-}
-.nav-search span {
-  flex: 1;
-  text-align: left;
-}
-.nav-search:hover {
-  border-color: var(--border-strong);
-  color: var(--text-2);
-}
-.nav__title-scr {
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--accent);
-  margin-left: 4px;
-  font-weight: 600;
-}
-.nav__count {
-  font-size: 11px;
-  font-weight: 700;
-  min-width: 20px;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  background: var(--surface-3);
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-.nav__count.is-on {
-  background: color-mix(in srgb, var(--ok) 18%, transparent);
-  color: var(--ok);
-}
-
-/* topbar responsive helpers */
-.show-lg {
-  display: none !important;
-}
-@media (max-width: 1180px) {
-  .hide-lg {
-    display: none !important;
-  }
-  .show-lg {
-    display: flex !important;
-  }
-}
-@media (max-width: 1100px) {
-  .hide-md {
-    display: none !important;
   }
 }
 
@@ -329,23 +224,13 @@ h1 .scope {
   gap: 6px;
 }
 
-/* calendars: per-screen sources */
+/* Calendar source availability */
 .gcal.is-dim {
   opacity: 0.55;
 }
-.preview__scr {
-  color: var(--accent);
-  font-weight: 600;
-}
 
 /* ---------------------------------------------------------------- responsive */
-@media (max-width: 1000px) {
-  /* one column: back to the reading order (screens, weather, events, health, alerts, activity) */
-}
 @media (max-width: 680px) {
-  .topbar__crumb {
-    display: none;
-  }
   .hero h1 {
     font-size: 23px;
   }
@@ -467,11 +352,6 @@ h1 .scope {
   .page-head__actions .btn {
     flex: 1;
   }
-}
-/* hidden savebar must not be focusable (and must not show in full-page captures) */
-.savebar:not(.is-visible) {
-  visibility: hidden;
-  transition: transform 0.4s var(--spring), visibility 0s 0.4s;
 }
 
 .mini-layout.is-portrait {

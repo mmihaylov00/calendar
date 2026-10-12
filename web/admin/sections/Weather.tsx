@@ -2,7 +2,6 @@ import { useEffect, useState } from 'preact/hooks';
 import { HaEntityPicker } from '../components/HaEntityPicker';
 import { Icon } from '../components/icons';
 import { Button, Callout, Card, Field, NumberInput, PageHeader, Segmented, Select, TextInput, ToggleRow } from '../components/ui';
-import { ScopeBadge } from '../components/ui';
 import type { GeocodeResult, OpenMeteoModel, WeatherKeyStatus, WeatherProvider } from '../../shared/types';
 import { api, ApiError } from '../api';
 import { toast } from '../components/feedback';
@@ -39,7 +38,7 @@ export function WeatherSection({ cfg, set, errors, me }: SectionProps) {
     <>
       <PageHeader title={t('Weather')} desc={t('Forecast, humidity and wind for your town. Choose where the data comes from: every source is free.')} />
       <Card id="wx-main" title={t('Weather')} icon="cloud">
-        <ToggleRow label={<>{t('Show weather')} <ScopeBadge scope="screen" /></>} checked={w.enabled} onChange={(v) => set((d) => void (d.weather.enabled = v))} />
+        <ToggleRow label={t('Show weather')} checked={w.enabled} onChange={(v) => set((d) => void (d.weather.enabled = v))} />
         <div class={`stack ${w.enabled ? '' : 'is-disabled'}`}>
           <Field label={t('Location')} hint={t('Search a city to fill in the coordinates.')}>
             <form class="search-row" onSubmit={search}>
@@ -100,7 +99,7 @@ export function WeatherSection({ cfg, set, errors, me }: SectionProps) {
                 onChange={(v) => set((d) => void (d.weather.units = v))}
               />
             </Field>
-            <Field label={<>{t('Extended forecast')} <ScopeBadge scope="screen" /></>}>
+            <Field label={t('Extended forecast')}>
               <Segmented
                 full
                 value={w.forecastDays}
@@ -115,7 +114,7 @@ export function WeatherSection({ cfg, set, errors, me }: SectionProps) {
       </Card>
       <WeatherSourceCard cfg={cfg} set={set} errors={errors} haOffered={haOffered} />
       {haOffered && (
-        <Card id="wx-ha" scope="global" title={t('Home Assistant data')} icon="home" desc={t('Optional: use your weather station and indoor sensors.')} muted={!haOn}>
+        <Card id="wx-ha" title={t('Home Assistant data')} icon="home" desc={t('Optional: use your weather station and indoor sensors.')} muted={!haOn}>
           <div class="grid grid--3">
             <Field label={t('Weather entity')} error={errors['weather.haWeatherEntity']}>
               <HaEntityPicker domain="weather" enabled={haOn} value={w.haWeatherEntity} error={!!errors['weather.haWeatherEntity']} onChange={(v) => set((d) => { d.weather.haWeatherEntity = v; d.homeassistant.enabled = true; })} />
@@ -227,7 +226,7 @@ function WeatherSourceCard({ cfg, set, errors, haOffered }: Pick<SectionProps, '
   const keyError = errors['weather.apiKey'];
 
   return (
-    <Card id="wx-source" scope="global" title={t('Data source')} icon="globe" desc={t('Where Calendar gets the forecast. You can change it at any time.')}>
+    <Card id="wx-source" title={t('Data source')} icon="globe" desc={t('Where Calendar gets the forecast. You can change it at any time.')}>
       <div class="access-mode wx-sources" role="radiogroup" aria-label={t('Data source')}>
         {opts.map((o) => (
           <button type="button" role="radio" aria-checked={provider === o.v} class={`access-mode__opt ${provider === o.v ? 'is-active' : ''}`} onClick={() => set((d) => { d.weather.provider = o.v; if (o.v === 'homeassistant') d.homeassistant.enabled = true; })}>
@@ -307,7 +306,7 @@ function WeatherSourceCard({ cfg, set, errors, haOffered }: Pick<SectionProps, '
             </a>
           </>
         ) : null}
-        . {t('The screens credit it with a small note next to the weather.')}
+        . {t('Calendar credits it with a small note next to the weather.')}
       </p>
     </Card>
   );

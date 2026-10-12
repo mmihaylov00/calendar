@@ -234,7 +234,7 @@ function HomeAssistantCalendars({ cfg, set }: SectionProps) {
     }
   });
   return (
-    <Card title={t('Home Assistant calendars')} id="cal-homeassistant" icon="calendar" scope="global"
+    <Card title={t('Home Assistant calendars')} id="cal-homeassistant" icon="calendar"
       desc={t('Choose calendars already connected in Home Assistant, including Google Calendar.')}
       actions={<Button size="sm" loading={loading} onClick={() => void load()}>{t('Refresh')}</Button>}>
       {error ? <Callout kind="error">{error}</Callout> : calendars === null ? <div class="skeleton" /> : calendars.length === 0 ? (
@@ -261,8 +261,8 @@ function HomeAssistantCalendars({ cfg, set }: SectionProps) {
   );
 }
 
-/** Per-screen: which sources this screen shows (`calendar.sourceIds`: null = all, incl. new ones). */
-function ScreenSourcesCard({ cfg, set, full }: SectionProps) {
+/** Visible calendars (`calendar.sourceIds`: null includes all calendars added later). */
+function VisibleCalendarsCard({ cfg, set, full }: SectionProps) {
   const ids = cfg.calendar.sourceIds ?? null;
   const opts = allSourceOptions(full, { includeDisabled: true });
   const disabled = new Set(full.calendar.sources.filter((s) => !s.enabled).map((s) => s.id));
@@ -275,8 +275,7 @@ function ScreenSourcesCard({ cfg, set, full }: SectionProps) {
   return (
     <Card
       id="cal-screen-sources"
-      scope="screen"
-      title={t('Calendars on this screen')}
+      title={t('Visible calendars')}
       icon="eye"
       desc={t('Choose which calendars are shown.')}
     >
@@ -314,7 +313,7 @@ function ScreenSourcesCard({ cfg, set, full }: SectionProps) {
           })}
         </ul>
       )}
-      {!all && (ids ?? []).length === 0 && <Callout kind="warn">{t('No calendar ticked: this screen will show no events.')}</Callout>}
+      {!all && (ids ?? []).length === 0 && <Callout kind="warn">{t('No calendars selected. No events will be shown.')}</Callout>}
     </Card>
   );
 }
@@ -346,7 +345,6 @@ export function CalendarsSection(props: SectionProps) {
       <Card
         title={t('Connected calendars')}
         id="cal-sources"
-        scope="global"
         icon="link"
         desc={t('Each calendar has its own colour and emoji. The order defines the legend priority.')}
         actions={
@@ -385,9 +383,9 @@ export function CalendarsSection(props: SectionProps) {
       </Card>
 
 
-      <ScreenSourcesCard {...props} />
+      <VisibleCalendarsCard {...props} />
 
-      <Card id="cal-view" scope="screen" title={t('Calendar view')} icon="calendar">
+      <Card id="cal-view" title={t('Calendar view')} icon="calendar">
         <ToggleRow label={t('Show calendar')} checked={c.enabled} onChange={(v) => set((d) => void (d.calendar.enabled = v))} />
         <div class={`stack ${c.enabled ? '' : 'is-disabled'}`}>
           <div class="grid grid--2">

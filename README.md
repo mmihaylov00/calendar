@@ -2,7 +2,7 @@
 
 Personal Home Assistant fork of [mr-reb00t/marco](https://github.com/mr-reb00t/marco), maintained at [mmihaylov00/calendar](https://github.com/mmihaylov00/calendar).
 
-Calendar displays calendars, a clock, weather and photo backgrounds inside Home Assistant. The control panel contains calendar connections, layout, backgrounds, weather and photos. This fork uses English throughout and starts without sample content.
+Calendar opens directly to your calendar, clock, weather and photo backgrounds inside Home Assistant. The top-right **Settings** button opens calendar connections, layout, backgrounds, weather and photos in a modal. This fork uses English throughout and starts without sample content.
 
 ## Install in Home Assistant
 
@@ -12,13 +12,13 @@ Calendar opens at `/calendar-dashboard` through Home Assistant ingress and uses 
 
 ## Connecting Google Calendar
 
-Add Google's calendar integration in Home Assistant, then choose its calendar entities under Calendar's **Calendars → Home Assistant calendars** and click **Save**. Calendar reads upcoming events through the HA API without handling Google OAuth credentials. Other HA calendars and private iCal feeds are also supported.
+Add Google's calendar integration in Home Assistant, then open Calendar's **Settings → Calendars → Home Assistant calendars**, select its calendar entities and click **Save**. Calendar reads upcoming events through the HA API without handling Google OAuth credentials. Other HA calendars and private iCal feeds are also supported.
 
 The [connection and installation guide](DOCS.md) explains the bundled HA integration required for the native panel and per-request user authorization. Keep OAuth credentials and private iCal URLs out of this repository.
 
 ## Display
 
-Use **Open calendar** to open the calendar with your Home Assistant session. Use the preview to try layout changes before saving.
+The main view shows the saved calendar. Open **Settings** to edit it, then click **Save** to apply your changes. Closing settings retains unsaved edits; **Discard** restores the saved version.
 
 The display keeps cached data for network interruptions and refreshes when the server returns. Home Assistant authenticates access to the display and admin. See [the security policy](SECURITY.md).
 
